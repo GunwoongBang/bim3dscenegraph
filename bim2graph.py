@@ -1,6 +1,8 @@
 import ifcopenshell
+import ifcopenshell.geom
 import logger as logger
 import os
+import numpy as np
 
 # ============================================================================
 # Query Loader
@@ -84,6 +86,7 @@ def extract_walls(model):
         # Extract loadBearing and isExternal properties
         load_bearing = None
         is_external = None
+        bbox = extract_wall_bbox(model, wall)
 
         if hasattr(wall, "IsDefinedBy"):
             for rel in wall.IsDefinedBy:
@@ -111,7 +114,9 @@ def extract_walls(model):
             "name": wall.Name if hasattr(wall, "Name") else "Unknown",
             "ifcClass": wall.is_a(),
             "loadBearing": load_bearing,
-            "isExternal": is_external
+            "isExternal": is_external,
+            "bbox_min": bbox[0] if bbox else None,
+            "bbox_max": bbox[1] if bbox else None
         }
         walls.append(wall_data)
 
@@ -175,7 +180,7 @@ def extract_layers(model, walls):
 
 
 def extract_space_wall_edges(model):
-    """Extract space-wall relationships with direction sense"""
+    """Extract space-wall topological relationships (no direction sense)"""
     edges = []
 
     for rel in model.by_type("IfcRelSpaceBoundary"):
@@ -185,27 +190,47 @@ def extract_space_wall_edges(model):
         if not space or not element:
             continue
 
-        # Only process walls
         if not element.is_a("IfcWall"):
             continue
 
-        direction_sense = getattr(rel, "DirectionSense", None)
-
-        edge_data = {
+        edges.append({
             "space_id": space.GlobalId,
-            "wall_id": element.GlobalId,
-            "directionSense": direction_sense
-        }
-        edges.append(edge_data)
+            "wall_id": element.GlobalId
+        })
 
     logger.logText(
-        "BIM2GRAPH", f"{len(edges)} Space-Wall edges with direction sense extracted")
+        "BIM2GRAPH",
+        f"{len(edges)} Space-Wall topological edges extracted"
+    )
     return edges
+
+
+def extract_wall_bbox(model, wall):
+    """Extract axis-aligned bounding box (AABB) of an IfcWall"""
+    settings = ifcopenshell.geom.settings()
+    settings.set(settings.USE_WORLD_COORDS, True)
+
+    try:
+        shape = ifcopenshell.geom.create_shape(settings, wall)
+        verts = np.array(shape.geometry.verts).reshape(-1, 3)
+
+        bbox_min = np.round(verts.min(axis=0), 5).tolist()
+        bbox_max = np.round(verts.max(axis=0), 5).tolist()
+
+        return bbox_min, bbox_max
+
+    except Exception as e:
+        logger.logText(
+            "BIM2GRAPH",
+            f"Geometry extraction failed for wall {wall.GlobalId}: {e}"
+        )
+        return None
 
 
 # ============================================================================
 # Neo4j Database Operations
 # ============================================================================
+
 
 def reset_database(tx):
     """Delete all nodes and relationships from the database"""
@@ -258,12 +283,12 @@ def create_wall_layer_edges(tx, layers):
 
 
 def create_space_wall_edges(tx, edges):
-    """Create space-wall relationships with direction sense"""
+    """Create space-wall relationships"""
     q = _query_manager.get("CREATE_SPACE_WALL_EDGES")
     if q:
         tx.run(q, edges=edges)
     logger.logText(
-        "BIM2GRAPH", f"Created {len(edges)} Space-Wall relationships with direction sense")
+        "BIM2GRAPH", f"Created {len(edges)} Space-Wall relationships")
 
 
 # ============================================================================
@@ -302,4 +327,4 @@ def generate_graph(driver, arc_path):
         if space_wall_edges:
             session.execute_write(create_space_wall_edges, space_wall_edges)
 
-    logger.logText("BIM2GRAPH", "Graph generation complete")
+    logger.logText("BIM2GRAPH", "Graph generation completed")

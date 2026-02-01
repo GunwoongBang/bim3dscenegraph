@@ -1,19 +1,21 @@
+import os
 from neo4j import GraphDatabase
+from dotenv import load_dotenv
 import bim2graph
 import logger as logger
 
+load_dotenv()
+
 ARC_PATH = "ifc_models/Duplex/Duplex_ARC.ifc"
 
-NEO4J_URI = "neo4j://127.0.0.1:7687"
-NEO4J_USER = "neo4j"
-NEO4J_PASSWORD = "Bs13246578!"
+NEO4J_URI = os.getenv("NEO4J_URI")
+NEO4J_USER = os.getenv("NEO4J_USER")
+NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
+
+if not all([NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD]):
+    raise RuntimeError("Neo4j credentials not found")
 
 divider = "-" * 100
-
-# TODO:
-# 1. Convert IFC2X3 models to IFC4 to utilize DirectionSense property in walls
-# 2. Update Cypher queries to filter based on DirectionSense once IFC4 models are used
-# 3. Test the extraction and graph generation with updated models
 
 
 def graph_initiate():
