@@ -7,6 +7,7 @@ import logger as logger
 load_dotenv()
 
 ARC_PATH = "ifc_models/Duplex/Duplex_ARC.ifc"
+# ARC_PATH = "ifc_models/BIMcollab/BIMcollab_ARC.ifc"
 
 NEO4J_URI = os.getenv("NEO4J_URI")
 NEO4J_USER = os.getenv("NEO4J_USER")

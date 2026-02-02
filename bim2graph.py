@@ -1,5 +1,6 @@
 import ifcopenshell
 import ifcopenshell.geom
+import ifcopenshell.util.placement
 import logger as logger
 import os
 import numpy as np
@@ -61,15 +62,35 @@ _query_manager = QueryManager()
 # IFC Data Extraction
 # ============================================================================
 
+def extract_space_centroid(model, space):
+    """Calculate the centroid of a space's geometry in world coordinates."""
+    settings = ifcopenshell.geom.settings()
+    settings.set(settings.USE_WORLD_COORDS, True)
+
+    try:
+        shape = ifcopenshell.geom.create_shape(settings, space)
+        verts = np.array(shape.geometry.verts).reshape(-1, 3)
+        centroid = np.round(verts.mean(axis=0), 5).tolist()
+        return centroid
+    except Exception as e:
+        logger.logText(
+            "BIM2GRAPH",
+            f"Centroid extraction failed for space {space.GlobalId}: {e}"
+        )
+        return None
+
+
 def extract_spaces(model):
-    """Extract all spaces from the IFC model"""
+    """Extract all spaces from the IFC model."""
     spaces = []
     for space in model.by_type("IfcSpace"):
+        centroid = extract_space_centroid(model, space)
         space_data = {
             "id": space.GlobalId,
             "name": space.Name if hasattr(space, "Name") else "Unknown",
             "longName": space.LongName if hasattr(space, "LongName") else None,
-            "ifcClass": space.is_a()
+            "ifcClass": space.is_a(),
+            "centroid": centroid
         }
         spaces.append(space_data)
 
@@ -77,8 +98,48 @@ def extract_spaces(model):
     return spaces
 
 
+def extract_wall_layer_info(wall):
+    """
+    Extract layer set information from a wall.
+    Returns directionSense, layerCount, axis2 direction, and origin.
+    """
+    direction_sense = None
+    layer_count = 0
+    axis2 = None
+    origin = None
+
+    # Get layer set usage info
+    if hasattr(wall, "HasAssociations"):
+        for assoc in wall.HasAssociations:
+            if assoc.is_a("IfcRelAssociatesMaterial"):
+                material = assoc.RelatingMaterial
+                if material.is_a("IfcMaterialLayerSetUsage"):
+                    direction_sense = getattr(material, "DirectionSense", None)
+                    layer_set = material.ForLayerSet
+                    if layer_set and hasattr(layer_set, "MaterialLayers"):
+                        layer_count = len(layer_set.MaterialLayers)
+                    break
+                elif material.is_a("IfcMaterialLayerSet"):
+                    if hasattr(material, "MaterialLayers"):
+                        layer_count = len(material.MaterialLayers)
+                    break
+
+    # Get wall placement matrix for axis2 direction and origin
+    try:
+        matrix = ifcopenshell.util.placement.get_local_placement(
+            wall.ObjectPlacement)
+        # Extract origin (translation component)
+        origin = np.round(matrix[:3, 3], 5).tolist()
+        # Extract AXIS2 direction (Y-axis column in local coords)
+        axis2 = np.round(matrix[:3, 1], 5).tolist()
+    except Exception:
+        pass
+
+    return direction_sense, layer_count, axis2, origin
+
+
 def extract_walls(model):
-    """Extract all walls from the IFC model"""
+    """Extract all walls from the IFC model."""
     walls = []
 
     # Get all walls (IfcWall includes IfcWallStandardCase as subtypes)
@@ -87,6 +148,10 @@ def extract_walls(model):
         load_bearing = None
         is_external = None
         bbox = extract_wall_bbox(model, wall)
+
+        # Extract layer set direction info
+        direction_sense, layer_count, axis2, origin = extract_wall_layer_info(
+            wall)
 
         if hasattr(wall, "IsDefinedBy"):
             for rel in wall.IsDefinedBy:
@@ -116,7 +181,11 @@ def extract_walls(model):
             "loadBearing": load_bearing,
             "isExternal": is_external,
             "bbox_min": bbox[0] if bbox else None,
-            "bbox_max": bbox[1] if bbox else None
+            "bbox_max": bbox[1] if bbox else None,
+            "directionSense": direction_sense,
+            "layerCount": layer_count,
+            "axis2": axis2,
+            "origin": origin
         }
         walls.append(wall_data)
 
@@ -148,6 +217,16 @@ def extract_layers(model, walls):
 
                     # Handle IfcMaterialLayerSetUsage
                     if material.is_a("IfcMaterialLayerSetUsage"):
+                        # Check if layers are stratified along AXIS2 (perpendicular to wall surface)
+                        layer_direction = getattr(
+                            material, "LayerSetDirection", None)
+                        if layer_direction and layer_direction != "AXIS2":
+                            logger.logText(
+                                "BIM2GRAPH",
+                                f"Warning: Wall {ifc_wall.Name} ({wall_id}) has layers "
+                                f"stratified along {layer_direction} instead of AXIS2"
+                            )
+
                         layer_set = material.ForLayerSet
                         if layer_set and hasattr(layer_set, "MaterialLayers"):
                             for i, mat_layer in enumerate(layer_set.MaterialLayers):
@@ -179,9 +258,45 @@ def extract_layers(model, walls):
     return layers
 
 
-def extract_space_wall_edges(model):
-    """Extract space-wall topological relationships (no direction sense)"""
+def compute_space_side_of_wall(space_centroid, wall_origin, wall_axis2):
+    """
+    Determine which side of the wall's AXIS2 the space is on.
+
+    Args:
+        space_centroid: [x, y, z] coordinates of space centroid
+        wall_origin: [x, y, z] coordinates of wall reference point
+        wall_axis2: [dx, dy, dz] direction vector of wall's AXIS2
+
+    Returns:
+        "POSITIVE" or "NEGATIVE" based on dot product
+    """
+    if not space_centroid or not wall_origin or not wall_axis2:
+        return None
+
+    # Vector from wall origin to space centroid
+    v = np.array(space_centroid) - np.array(wall_origin)
+
+    # Dot product determines which side
+    dot = np.dot(v, np.array(wall_axis2))
+
+    return "POSITIVE" if dot > 0 else "NEGATIVE"
+
+
+def extract_space_wall_edges(model, spaces, walls):
+    """
+    Extract space-wall topological relationships with side information.
+
+    The 'side' property indicates which side of the wall's AXIS2 the space is on,
+    enabling queries to determine the correct layer order from any space.
+    """
     edges = []
+
+    # Build lookup dicts for space centroids and wall geometry
+    space_centroids = {s["id"]: s.get("centroid") for s in spaces}
+    wall_geometry = {
+        w["id"]: (w.get("origin"), w.get("axis2"))
+        for w in walls
+    }
 
     for rel in model.by_type("IfcRelSpaceBoundary"):
         space = getattr(rel, "RelatingSpace", None)
@@ -193,14 +308,28 @@ def extract_space_wall_edges(model):
         if not element.is_a("IfcWall"):
             continue
 
+        space_id = space.GlobalId
+        wall_id = element.GlobalId
+
+        # Compute which side of the wall this space is on
+        space_centroid = space_centroids.get(space_id)
+        wall_origin, wall_axis2 = wall_geometry.get(wall_id, (None, None))
+        side = compute_space_side_of_wall(
+            space_centroid, wall_origin, wall_axis2)
+
+        # Get boundary type (internal/external)
+        boundary_type = getattr(rel, "InternalOrExternalBoundary", None)
+
         edges.append({
-            "space_id": space.GlobalId,
-            "wall_id": element.GlobalId
+            "space_id": space_id,
+            "wall_id": wall_id,
+            "side": side,
+            "boundaryType": str(boundary_type) if boundary_type else None
         })
 
     logger.logText(
         "BIM2GRAPH",
-        f"{len(edges)} Space-Wall topological edges extracted"
+        f"{len(edges)} Space-Wall topological edges extracted (with side info)"
     )
     return edges
 
@@ -310,7 +439,7 @@ def generate_graph(driver, arc_path):
     spaces = extract_spaces(model)
     walls = extract_walls(model)
     layers = extract_layers(model, walls)
-    space_wall_edges = extract_space_wall_edges(model)
+    space_wall_edges = extract_space_wall_edges(model, spaces, walls)
 
     # Write to Neo4j
     with driver.session() as session:
