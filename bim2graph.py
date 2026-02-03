@@ -457,3 +457,9 @@ def generate_graph(driver, arc_path):
             session.execute_write(create_space_wall_edges, space_wall_edges)
 
     logger.logText("BIM2GRAPH", "Graph generation completed")
+
+
+# TODO:
+# Model MEP (pipes) elements and their relationships to spacial elements
+# Check for whether pipe elements have geometry that is quriable
+# Compute the depth of pipe elements from wall surfacess
