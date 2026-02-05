@@ -3,6 +3,9 @@ Wall and layer extraction from IFC models.
 """
 
 from . import geometry
+import ifcopenshell.geom
+
+STR_PATH = "ifc_models/Example/Example_STR.ifc"
 
 
 def get_pset_property(element, prop_name, pset_name=None):
@@ -107,14 +110,16 @@ def extract_walls(model, logger=None):
             - directionSense: Layer direction from material usage
             - layerCount: Number of material layers
             - axis2: Layer stratification direction vector
-            - origin: Wall reference point in millimeters
+            - center: Wall geometric center in millimeters
     """
     walls = []
 
     for wall in model.by_type("IfcWall"):
         # Extract geometry
         bbox = geometry.extract_bbox(wall)
-        origin, axis2 = geometry.extract_placement(wall)
+        center = geometry.extract_centroid(wall)
+        # Only need axis2 for layer direction
+        _, axis2 = geometry.extract_placement(wall)
 
         if bbox is None and logger:
             logger.logText(
@@ -140,7 +145,7 @@ def extract_walls(model, logger=None):
             "directionSense": direction_sense,
             "layerCount": layer_count,
             "axis2": axis2,
-            "origin": origin
+            "center": center
         }
         walls.append(wall_data)
 

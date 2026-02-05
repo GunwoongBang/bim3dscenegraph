@@ -6,7 +6,8 @@ import logger as logger
 
 load_dotenv()
 
-ARC_PATH = "ifc_models/Example/Example_ARC.isfc"
+ARC_PATH = "ifc_models/Example/Example_ARC.ifc"
+MEP_PATH = "ifc_models/Example/Example_MEP.ifc"
 
 NEO4J_URI = os.getenv("NEO4J_URI")
 NEO4J_USER = os.getenv("NEO4J_USER")
@@ -36,8 +37,8 @@ if __name__ == "__main__":
         # BIM2GRAPH
         # ====================================================================
 
-        # Generate a BIM-derived graph from BIM models
-        generate_graph(driver, ARC_PATH, logger=logger)
+        # Generate a BIM-derived graph from BIM models (ARC + MEP)
+        generate_graph(driver, ARC_PATH, logger=logger, mep_path=MEP_PATH)
 
         # ====================================================================
         # SENSOR2GRAPH
@@ -56,7 +57,5 @@ if __name__ == "__main__":
 
 
 # TODO
-# 1. Now the separated IFC models are created
-# 2. Next step is to create MEP nodes (?) and relationships between BIM (wall or layer) and MEP nodes
 # 3. Also need to encode structural information among layers based on Example_STR.ifc file -- all the structural elements are in this file
 # 4. Finalize the BIM2GRAPH process and test the entire pipeline

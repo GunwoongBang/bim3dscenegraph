@@ -5,16 +5,16 @@ Relationship extraction from IFC models (space-wall boundaries, etc.).
 import numpy as np
 
 
-def compute_space_side_of_wall(space_centroid, wall_origin, wall_axis2):
+def compute_space_side_of_wall(space_centroid, wall_center, wall_axis2):
     """
     Determine which side of the wall's AXIS2 the space is on.
 
-    Uses dot product of the vector from wall origin to space centroid
+    Uses dot product of the vector from wall center to space centroid
     with the wall's AXIS2 direction to determine the side.
 
     Args:
         space_centroid: [x, y, z] coordinates of space centroid in mm
-        wall_origin: [x, y, z] coordinates of wall reference point in mm
+        wall_center: [x, y, z] coordinates of wall geometric center in mm
         wall_axis2: [dx, dy, dz] direction vector of wall's AXIS2
 
     Returns:
@@ -22,11 +22,11 @@ def compute_space_side_of_wall(space_centroid, wall_origin, wall_axis2):
         "NEGATIVE" if space is on negative side of AXIS2
         None if any input is missing
     """
-    if not space_centroid or not wall_origin or not wall_axis2:
+    if not space_centroid or not wall_center or not wall_axis2:
         return None
 
-    # Vector from wall origin to space centroid
-    v = np.array(space_centroid) - np.array(wall_origin)
+    # Vector from wall center to space centroid
+    v = np.array(space_centroid) - np.array(wall_center)
 
     # Dot product determines which side
     dot = np.dot(v, np.array(wall_axis2))
@@ -63,7 +63,7 @@ def extract_space_wall_edges(model, spaces, walls, logger=None):
     # Build lookup dicts
     space_centroids = {s["id"]: s.get("centroid") for s in spaces}
     wall_geometry = {
-        w["id"]: (w.get("origin"), w.get("axis2"))
+        w["id"]: (w.get("center"), w.get("axis2"))
         for w in walls
     }
 
@@ -82,9 +82,9 @@ def extract_space_wall_edges(model, spaces, walls, logger=None):
 
         # Compute which side of the wall this space is on
         space_centroid = space_centroids.get(space_id)
-        wall_origin, wall_axis2 = wall_geometry.get(wall_id, (None, None))
+        wall_center, wall_axis2 = wall_geometry.get(wall_id, (None, None))
         side = compute_space_side_of_wall(
-            space_centroid, wall_origin, wall_axis2)
+            space_centroid, wall_center, wall_axis2)
 
         # Get boundary type (internal/external)
         boundary_type = getattr(rel, "InternalOrExternalBoundary", None)

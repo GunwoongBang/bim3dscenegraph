@@ -34,7 +34,8 @@ class Neo4jOperations:
         schema_queries = [
             "ENSURE_SCHEMA_SPACES",
             "ENSURE_SCHEMA_WALLS",
-            "ENSURE_SCHEMA_LAYERS"
+            "ENSURE_SCHEMA_LAYERS",
+            "ENSURE_SCHEMA_MEP",
         ]
         for query_name in schema_queries:
             q = self.qm.get(query_name)
@@ -76,3 +77,17 @@ class Neo4jOperations:
         if q:
             tx.run(q, edges=edges)
         self._log(f"Created {len(edges)} Space-Wall relationships")
+
+    def upsert_mep_elements(self, tx, mep_elements):
+        """Create or update MEP element nodes in Neo4j."""
+        q = self.qm.get("UPSERT_MEP_ELEMENTS")
+        if q:
+            tx.run(q, elements=mep_elements)
+        self._log(f"Upserted {len(mep_elements)} MEP nodes")
+
+    def create_mep_wall_edges(self, tx, edges):
+        """Create MEP-Wall relationships."""
+        q = self.qm.get("CREATE_MEP_WALL_EDGES")
+        if q:
+            tx.run(q, edges=edges)
+        self._log(f"Created {len(edges)} MEP-Wall relationships")

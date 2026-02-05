@@ -31,7 +31,7 @@ SET w.name = wall.name,
     w.directionSense = wall.directionSense,
     w.layerCount = wall.layerCount,
     w.axis2 = wall.axis2,
-    w.origin = wall.origin
+    w.center = wall.center
 
 -- name: UPSERT_LAYERS
 UNWIND $layers AS layer
@@ -81,3 +81,38 @@ WITH s, w, b, l,
      END AS viewOrder
 WHERE viewOrder = 0
 RETURN s.name AS space, w.name AS wall, l.name AS surfaceMaterial
+
+-- name: ENSURE_SCHEMA_MEP
+CREATE CONSTRAINT mep_id IF NOT EXISTS FOR (m:MEP) REQUIRE m.id IS UNIQUE
+
+-- name: UPSERT_MEP_ELEMENTS
+UNWIND $elements AS elem
+MERGE (m:MEP { id: elem.id })
+SET m.name = elem.name,
+    m.ifcClass = elem.ifcClass,
+    m.objectType = elem.objectType,
+    m.center = elem.center,
+    m.bbox_min = elem.bbox_min,
+    m.bbox_max = elem.bbox_max
+
+-- name: CREATE_MEP_WALL_EDGES
+UNWIND $edges AS edge
+MATCH (m:MEP { id: edge.mep_id })
+MATCH (w:Wall { id: edge.wall_id })
+CALL (m, w, edge) {
+  WITH m, w, edge
+  WHERE edge.relationship = 'PASSES_THROUGH'
+  MERGE (m)-[:PASSES_THROUGH]->(w)
+  UNION
+  WITH m, w, edge
+  WHERE edge.relationship = 'NEAR'
+  MERGE (m)-[:NEAR]->(w)
+}
+
+-- name: GET_MEP_NEAR_WALL
+// Find MEP elements that pass through or are near a specific wall
+MATCH (m:MEP)-[r:PASSES_THROUGH|NEAR]->(w:Wall {name: $wallName})
+RETURN m.name AS mepElement, 
+       m.objectType AS type,
+       type(r) AS relationship,
+       w.name AS wall
