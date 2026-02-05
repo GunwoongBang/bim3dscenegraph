@@ -19,7 +19,7 @@ from .extractor import (
 )
 
 
-def generate_graph(driver, ifc_path, logger=None, query_manager=None, mep_path=None):
+def generate_graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
     """
     Generate a BIM-derived graph from an IFC model and persist to Neo4j.
 
@@ -33,26 +33,27 @@ def generate_graph(driver, ifc_path, logger=None, query_manager=None, mep_path=N
 
     Args:
         driver: Neo4j driver instance
-        ifc_path: Path to the IFC model file
+        arc_path: Path to the architectural IFC model file
+        str_path: Path to the structural IFC model file
+        mep_path: Path to the MEP IFC model file
         logger: Optional logger for output messages
         query_manager: Optional QueryManager instance (creates default if None)
-        mep_path: Optional path to MEP IFC model file
 
     Example:
         driver = GraphDatabase.driver(uri, auth=(user, password))
-        generate_graph(driver, "model.ifc", logger=my_logger, mep_path="mep.ifc")
+        generate_graph(driver, "arch.ifc", "str.ifc", "mep.ifc", logger=my_logger)
     """
     if logger:
-        logger.logText("BIM2GRAPH", f"Loading IFC model from {ifc_path}")
+        logger.logText(
+            "BIM2GRAPH", f'Loading {"ARC" if arc_path else None}, {"STR" if str_path else None}, {"MEP" if mep_path else None} IFC models')
 
     # Initialize components
-    if query_manager is None:
-        query_manager = QueryManager()
+    query_manager = QueryManager()
 
     neo4j_ops = Neo4jOperations(query_manager, logger)
 
     # Load IFC model
-    model = ifcopenshell.open(ifc_path)
+    model = ifcopenshell.open(arc_path)
 
     # =========================================================================
     # Extract data from IFC

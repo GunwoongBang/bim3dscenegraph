@@ -3,9 +3,6 @@ Wall and layer extraction from IFC models.
 """
 
 from . import geometry
-import ifcopenshell.geom
-
-STR_PATH = "ifc_models/Example/Example_STR.ifc"
 
 
 def get_pset_property(element, prop_name, pset_name=None):

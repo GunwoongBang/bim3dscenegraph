@@ -7,6 +7,7 @@ import logger as logger
 load_dotenv()
 
 ARC_PATH = "ifc_models/Example/Example_ARC.ifc"
+STR_PATH = "ifc_models/Example/Example_STR.ifc"
 MEP_PATH = "ifc_models/Example/Example_MEP.ifc"
 
 NEO4J_URI = os.getenv("NEO4J_URI")
@@ -38,7 +39,8 @@ if __name__ == "__main__":
         # ====================================================================
 
         # Generate a BIM-derived graph from BIM models (ARC + MEP)
-        generate_graph(driver, ARC_PATH, logger=logger, mep_path=MEP_PATH)
+        generate_graph(driver, arc_path=ARC_PATH,
+                       str_path=STR_PATH, mep_path=MEP_PATH, logger=logger)
 
         # ====================================================================
         # SENSOR2GRAPH
