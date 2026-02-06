@@ -58,6 +58,11 @@ if __name__ == "__main__":
     logger.logText("PROJECT", "Ended")
 
 
-# TODO
-# 3. Also need to encode structural information among layers based on Example_STR.ifc file -- all the structural elements are in this file
-# 4. Finalize the BIM2GRAPH process and test the entire pipeline
+# TODO - Till next meeting:
+# 1. Pipes need to be connected to layer nodes (light fixtures to walls)
+# 2. Extract MEP systems' geometry (But how..?)
+# 3. Structural layers should be considered as load bearing elements
+# 4. Visual improvement - 3D coordinates (what would be its pros and cons?)
+
+# TODO - Daily:
+# - Let's go with the structural layer encoding with Example_STR.ifc
