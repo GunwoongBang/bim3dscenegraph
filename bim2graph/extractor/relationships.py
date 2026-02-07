@@ -96,10 +96,4 @@ def extract_space_wall_edges(model, spaces, walls, logger=None):
             "boundaryType": str(boundary_type) if boundary_type else None
         })
 
-    if logger:
-        logger.logText(
-            "BIM2GRAPH",
-            f"{len(edges)} Space-Wall topological edges extracted (with side info)"
-        )
-
     return edges

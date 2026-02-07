@@ -88,6 +88,74 @@ def get_material_info(element):
     return direction_sense, layer_count, material_type
 
 
+def get_wall_thickness(element):
+    """
+    Calculate total wall thickness from material layers.
+
+    Args:
+        element: IFC wall element
+
+    Returns:
+        Total thickness in model units (typically mm), or None if not available
+    """
+    for assoc in getattr(element, "HasAssociations", []):
+        if not assoc.is_a("IfcRelAssociatesMaterial"):
+            continue
+
+        material = assoc.RelatingMaterial
+        material_layers = None
+
+        if material.is_a("IfcMaterialLayerSetUsage"):
+            layer_set = material.ForLayerSet
+            if layer_set:
+                material_layers = getattr(layer_set, "MaterialLayers", [])
+        elif material.is_a("IfcMaterialLayerSet"):
+            material_layers = getattr(material, "MaterialLayers", [])
+
+        if material_layers:
+            total = sum(
+                getattr(layer, "LayerThickness", 0) or 0
+                for layer in material_layers
+            )
+            return total if total > 0 else None
+
+        return None
+
+
+def extract_str_elements(str_model, logger=None):
+    """
+    Extract structural elements from the STR model and return a list of updates.
+
+    Args:
+        str_model: ifcopenshell model instance of the STR file
+        logger: Optional logger for output messages
+
+    Returns:
+        List of structural elements with properties relevant for updating layer nodes in the graph.
+    """
+    str_elements = []
+
+    for elem in str_model.by_type("IfcWall"):
+        # Extract load bearing info for walls
+        load_bearing = get_pset_property(elem, "LoadBearing")
+        bbox = geometry.extract_bbox(elem)
+        thickness = get_wall_thickness(elem)
+
+        str_elements.append({
+            "id": elem.GlobalId,
+            "loadBearing": load_bearing,
+            "thickness": thickness,
+            "bbox_min": bbox[0] if bbox else None,
+            "bbox_max": bbox[1] if bbox else None,
+        })
+
+    if logger:
+        logger.logText(
+            "BIM2GRAPH", f"{len(str_elements)} structural wall elements extracted from STR model")
+
+    return str_elements
+
+
 def extract_walls(model, logger=None):
     """
     Extract all walls from the IFC model.
@@ -152,20 +220,21 @@ def extract_walls(model, logger=None):
     return walls
 
 
-def extract_layers(model, walls, logger=None):
+def extract_layers(model, walls, str_model=None, logger=None):
     """
     Extract all material layers from walls.
 
     Args:
         model: ifcopenshell model instance
-        walls: List of wall dictionaries (from extract_walls)
+        walls: List of wall dictionaries(from extract_walls)
+        str_model: ifcopenshell model instance for structural layer info (optional)
         logger: Optional logger for output messages
 
     Returns:
         List of layer dictionaries with keys:
             - id: Composite id (wall_id + layer index)
             - wall_id: Parent wall GlobalId
-            - layerIndex: Position in layer stack (0 = first)
+            - layerIndex: Position in layer stack (0=first)
             - thickness: Layer thickness in model units
             - name: Material name
             - ifcClass: Always "IfcMaterialLayer"
@@ -213,10 +282,14 @@ def extract_layers(model, walls, logger=None):
                     if mat_layer.Material:
                         mat_name = getattr(mat_layer.Material, "Name", None)
 
+                    str_element = extract_str_elements(str_model, logger)
+                    print("Structural layer encoding under construction.")
+
                     layer_data = {
                         "id": f"{wall_id}_layer_{i}",
                         "wall_id": wall_id,
                         "layerIndex": i,
+                        # "loadBearing": str_type if str_type else None,
                         "thickness": getattr(mat_layer, "LayerThickness", None),
                         "name": mat_name or f"Layer {i}",
                         "ifcClass": "IfcMaterialLayer"

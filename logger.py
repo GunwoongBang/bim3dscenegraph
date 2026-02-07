@@ -7,7 +7,7 @@ handler.setFormatter(logging.Formatter('%(message)s'))
 _initialized_loggers = set()
 
 
-def logText(phase, text):
+def logText(phase, text=None):
     logger = logging.getLogger(phase)
     if phase not in _initialized_loggers:
         logger.setLevel(logging.INFO)
@@ -15,6 +15,6 @@ def logText(phase, text):
         _initialized_loggers.add(phase)
 
     if (phase == "Divider"):
-        logger.info(f"{text}")
+        logger.info("-"*100)
     else:
-        logger.info(f"{phase}: {text}")
+        logger.info(f"[{phase}]: {text}")

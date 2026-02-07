@@ -7,10 +7,8 @@ from . import geometry
 
 # MEP element types to extract
 MEP_TYPES = [
-    "IfcFlowSegment",       # Pipes, ducts
-    "IfcFlowTerminal",      # Endpoints like fixtures
-    "IfcFlowFitting",       # Connectors, elbows
-    "IfcBuildingElementProxy",  # Generic elements (receptacles, switches)
+    "IfcFlowSegment",       # Pipes
+    "IfcBuildingElementProxy",  # Light fixtures (receptacles, switches)
 ]
 
 
@@ -83,14 +81,14 @@ def bbox_intersects(bbox1_min, bbox1_max, bbox2_min, bbox2_max, tolerance=0):
         True if boxes intersect (or are within tolerance)
     """
     for i in range(3):
-        if bbox1_max[i] + tolerance < bbox2_min[i] - tolerance:
+        if bbox1_max[i] < bbox2_min[i]:
             return False
-        if bbox2_max[i] + tolerance < bbox1_min[i] - tolerance:
+        if bbox2_max[i] < bbox1_min[i]:
             return False
     return True
 
 
-def compute_mep_wall_relationships(mep_elements, walls, tolerance=100, logger=None):
+def compute_mep_wall_relationships(mep_elements, walls, logger=None):
     """
     Compute relationships between MEP elements and walls based on geometry.
 
@@ -101,7 +99,6 @@ def compute_mep_wall_relationships(mep_elements, walls, tolerance=100, logger=No
     Args:
         mep_elements: List of MEP dictionaries (from extract_mep_elements)
         walls: List of wall dictionaries (from extract_walls)
-        tolerance: Distance tolerance in mm for "near" relationships
         logger: Optional logger for output messages
 
     Returns:
@@ -126,7 +123,7 @@ def compute_mep_wall_relationships(mep_elements, walls, tolerance=100, logger=No
             if not wall_bbox_min or not wall_bbox_max:
                 continue
 
-            # Check for direct intersection (passes through)
+            # Check for direct intersection
             if bbox_intersects(mep_bbox_min, mep_bbox_max,
                                wall_bbox_min, wall_bbox_max, tolerance=0):
                 relationships.append({
@@ -134,23 +131,5 @@ def compute_mep_wall_relationships(mep_elements, walls, tolerance=100, logger=No
                     "wall_id": wall["id"],
                     "relationship": "PASSES_THROUGH"
                 })
-            # Check for near relationship
-            elif bbox_intersects(mep_bbox_min, mep_bbox_max,
-                                 wall_bbox_min, wall_bbox_max, tolerance=tolerance):
-                relationships.append({
-                    "mep_id": mep["id"],
-                    "wall_id": wall["id"],
-                    "relationship": "NEAR"
-                })
-
-    if logger:
-        passes = sum(
-            1 for r in relationships if r["relationship"] == "PASSES_THROUGH")
-        near = sum(1 for r in relationships if r["relationship"] == "NEAR")
-        logger.logText(
-            "BIM2GRAPH",
-            f"{len(relationships)} MEP-Wall relationships found "
-            f"({passes} pass through, {near} near)"
-        )
 
     return relationships

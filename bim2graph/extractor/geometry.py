@@ -33,7 +33,7 @@ def m_to_mm(coords):
     Returns:
         List of coordinates in millimeters, rounded to 5 decimal places
     """
-    return (np.array(coords) * 1000).round(5).tolist()
+    return (np.array(coords) * 1000).round(2).tolist()
 
 
 def extract_vertices(element):

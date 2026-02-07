@@ -17,13 +17,11 @@ NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
 if not all([NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD]):
     raise RuntimeError("Neo4j credentials not found")
 
-divider = "-" * 100
-
 
 def graph_initiate():
     driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
     logger.logText("PROJECT", "Neo4j driver initiated")
-    logger.logText("Divider", divider)
+    logger.logText("Divider")
     return driver
 
 
@@ -49,10 +47,12 @@ if __name__ == "__main__":
         # ====================================================================
         # GRAPH MERGING
         # ====================================================================
+    except Exception as e:
+        logger.logText("PROJECT", f"Error: {e}")
     finally:
         # Ensure driver is always closed
         driver.close()
-        logger.logText("Divider", divider)
+        logger.logText("Divider")
         logger.logText("PROJECT", "Neo4j driver closed")
 
     logger.logText("PROJECT", "Ended")
