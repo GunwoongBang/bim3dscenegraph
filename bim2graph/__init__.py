@@ -29,7 +29,9 @@ from .extractor import (
     extract_spaces,
     extract_walls,
     extract_layers,
+    extract_str_elements,
     extract_space_wall_edges,
+    get_pset_property,
     geometry,
 )
 
@@ -47,6 +49,8 @@ __all__ = [
     'extract_spaces',
     'extract_walls',
     'extract_layers',
+    'extract_str_elements',
     'extract_space_wall_edges',
+    'get_pset_property',
     'geometry',
 ]

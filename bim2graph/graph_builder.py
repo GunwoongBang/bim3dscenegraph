@@ -13,8 +13,8 @@ from .extractor import (
     extract_spaces,
     extract_walls,
     extract_layers,
-    extract_space_wall_edges,
     extract_str_elements,
+    extract_space_wall_edges,
     extract_mep_elements,
     compute_mep_wall_relationships,
 )
@@ -62,8 +62,13 @@ def generate_graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
     # Extract data from IFC
     # =========================================================================
     spaces = extract_spaces(arc_model, logger)
-    walls = extract_walls(arc_model, str_model, logger)
-    layers = extract_layers(arc_model, walls, str_model, logger)
+    walls = extract_walls(arc_model, logger)
+
+    # Extract structural elements if STR model is provided
+    str_elements = extract_str_elements(
+        str_model, logger) if str_model else None
+    layers = extract_layers(arc_model, walls, str_elements, logger)
+
     space_wall_edges = extract_space_wall_edges(
         arc_model, spaces, walls, logger)
 

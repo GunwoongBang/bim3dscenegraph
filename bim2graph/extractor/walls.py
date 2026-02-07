@@ -2,42 +2,13 @@
 Wall and layer extraction from IFC models.
 """
 
+from typing import Any, Optional
+
 from . import geometry
+from .ifc_utils import get_pset_property, get_material_association
 
 
-def get_pset_property(element, prop_name, pset_name=None):
-    """
-    Extract a property value from an IFC element's property sets.
-
-    Args:
-        element: IFC element with IsDefinedBy relationships
-        prop_name: Name of the property to find
-        pset_name: Optional specific property set name to search in
-
-    Returns:
-        Property value (unwrapped if IfcValue), or None if not found
-    """
-    for rel in getattr(element, "IsDefinedBy", []):
-        if not rel.is_a("IfcRelDefinesByProperties"):
-            continue
-
-        pset = rel.RelatingPropertyDefinition
-        if not pset.is_a("IfcPropertySet"):
-            continue
-
-        if pset_name and pset.Name != pset_name:
-            continue
-
-        for prop in getattr(pset, "HasProperties", []):
-            if prop.is_a("IfcPropertySingleValue") and prop.Name == prop_name:
-                val = getattr(prop, "NominalValue", None)
-                if val is not None:
-                    return val.wrappedValue if hasattr(val, "wrappedValue") else val
-
-    return None
-
-
-def get_material_info(element):
+def get_material_info(element) -> tuple[Optional[str], int, Optional[str]]:
     """
     Extract material layer set information from an element.
 
@@ -50,79 +21,113 @@ def get_material_info(element):
             - layer_count: Number of material layers
             - material_type: Type of material definition found
     """
+    material_def, material_layers = get_material_association(element)
+
+    if material_def is None:
+        return None, 0, None
+
     direction_sense = None
     layer_count = 0
-    material_type = None
+    material_type = material_def.is_a()
 
-    for assoc in getattr(element, "HasAssociations", []):
-        if not assoc.is_a("IfcRelAssociatesMaterial"):
-            continue
+    if material_def.is_a("IfcMaterialLayerSetUsage"):
+        direction_sense = getattr(material_def, "DirectionSense", None)
+        if material_layers:
+            layer_count = len(material_layers)
 
-        material = assoc.RelatingMaterial
+    elif material_def.is_a("IfcMaterialLayerSet"):
+        if material_layers:
+            layer_count = len(material_layers)
 
-        if material.is_a("IfcMaterialLayerSetUsage"):
-            direction_sense = getattr(material, "DirectionSense", None)
-            layer_set = material.ForLayerSet
-            if layer_set and hasattr(layer_set, "MaterialLayers"):
-                layer_count = len(layer_set.MaterialLayers)
-            material_type = "IfcMaterialLayerSetUsage"
-            break
+    elif material_def.is_a("IfcMaterialList"):
+        if hasattr(material_def, "Materials"):
+            layer_count = len(material_def.Materials)
 
-        elif material.is_a("IfcMaterialLayerSet"):
-            if hasattr(material, "MaterialLayers"):
-                layer_count = len(material.MaterialLayers)
-            material_type = "IfcMaterialLayerSet"
-            break
-
-        elif material.is_a("IfcMaterialList"):
-            if hasattr(material, "Materials"):
-                layer_count = len(material.Materials)
-            material_type = "IfcMaterialList"
-            break
-
-        elif material.is_a("IfcMaterial"):
-            layer_count = 1
-            material_type = "IfcMaterial"
-            break
+    elif material_def.is_a("IfcMaterial"):
+        layer_count = 1
 
     return direction_sense, layer_count, material_type
 
 
-def get_wall_thickness(element):
+def get_material_layers(element) -> list[dict]:
     """
-    Calculate total wall thickness from material layers.
+    Extract individual material layer details from an element.
+
+    Args:
+        element: IFC element with HasAssociations (typically IfcWall)
+
+    Returns:
+        List of dicts with keys:
+            - thickness: Layer thickness in model units
+            - name: Material name
+            - index: Layer position (0-based)
+        Returns empty list if no layers found.
+    """
+    _, material_layers = get_material_association(element)
+
+    if not material_layers:
+        return []
+
+    layers = []
+    for i, mat_layer in enumerate(material_layers):
+        mat_name = None
+        if mat_layer.Material:
+            mat_name = getattr(mat_layer.Material, "Name", None)
+        layers.append({
+            "thickness": getattr(mat_layer, "LayerThickness", None),
+            "name": mat_name,
+            "index": i
+        })
+    return layers
+
+
+def get_layer_info(element) -> tuple[Optional[float], Optional[list[str]]]:
+    """
+    Extract aggregated layer info from a wall element.
 
     Args:
         element: IFC wall element
 
     Returns:
-        Total thickness in model units (typically mm), or None if not available
+        Tuple (total_thickness, material_names_list) or (None, None) if not available
     """
-    for assoc in getattr(element, "HasAssociations", []):
-        if not assoc.is_a("IfcRelAssociatesMaterial"):
-            continue
+    layers = get_material_layers(element)
+    if not layers:
+        return None, None
 
-        material = assoc.RelatingMaterial
-        material_layers = None
+    thickness = sum(layer["thickness"] or 0 for layer in layers)
+    mat_names = [layer["name"] for layer in layers if layer["name"]]
+    return thickness, mat_names
 
-        if material.is_a("IfcMaterialLayerSetUsage"):
-            layer_set = material.ForLayerSet
-            if layer_set:
-                material_layers = getattr(layer_set, "MaterialLayers", [])
-        elif material.is_a("IfcMaterialLayerSet"):
-            material_layers = getattr(material, "MaterialLayers", [])
 
-        if material_layers:
-            total = sum(
-                getattr(layer, "LayerThickness", 0) or 0
-                for layer in material_layers
-            )
-            return total if total > 0 else None
+def match_layer_to_str(
+    layer_thickness: Optional[float],
+    mat_name: Optional[str],
+    str_elements: list[dict]
+) -> Optional[bool]:
+    """
+    Match a layer to structural elements by thickness and material name.
 
+    Args:
+        layer_thickness: Layer thickness in model units
+        mat_name: Material name
+        str_elements: List of structural element dicts from extract_str_elements
+
+    Returns:
+        loadBearing value (True/False) if matched, None otherwise
+    """
+    if not str_elements or layer_thickness is None:
         return None
 
+    for str_elem in str_elements:
+        if (str_elem["thickness"] == layer_thickness and
+                mat_name in str_elem["materials"]):
+            return str_elem["loadBearing"]
 
-def extract_str_elements(str_model, logger=None):
+    return None
+
+
+def extract_str_elements(str_model, logger=None) -> list[dict]:
     """
     Extract structural elements from the STR model and return a list of updates.
 
@@ -133,30 +138,34 @@ def extract_str_elements(str_model, logger=None):
     Returns:
         List of structural elements with properties relevant for updating layer nodes in the graph.
     """
+    if str_model is None:
+        return []
+
     str_elements = []
 
     for elem in str_model.by_type("IfcWall"):
         # Extract load bearing info for walls
         load_bearing = get_pset_property(elem, "LoadBearing")
         bbox = geometry.extract_bbox(elem)
-        thickness = get_wall_thickness(elem)
+        thickness, mat_names = get_layer_info(elem)
 
         str_elements.append({
             "id": elem.GlobalId,
             "loadBearing": load_bearing,
             "thickness": thickness,
+            "materials": mat_names or [],
             "bbox_min": bbox[0] if bbox else None,
             "bbox_max": bbox[1] if bbox else None,
         })
 
     if logger:
         logger.logText(
-            "BIM2GRAPH", f"{len(str_elements)} structural wall elements extracted from STR model")
+            "BIM2GRAPH", f"{len(str_elements)} structural wall elements extracted")
 
     return str_elements
 
 
-def extract_walls(model, logger=None):
+def extract_walls(model, logger=None) -> list[dict]:
     """
     Extract all walls from the IFC model.
 
@@ -203,8 +212,8 @@ def extract_walls(model, logger=None):
             "id": wall.GlobalId,
             "name": getattr(wall, "Name", None) or "Unknown",
             "ifcClass": wall.is_a(),
-            "loadBearing": load_bearing,
-            "isExternal": is_external,
+            # "loadBearing": load_bearing,
+            # "isExternal": is_external,
             "bbox_min": bbox[0] if bbox else None,
             "bbox_max": bbox[1] if bbox else None,
             "directionSense": direction_sense,
@@ -220,14 +229,19 @@ def extract_walls(model, logger=None):
     return walls
 
 
-def extract_layers(model, walls, str_model=None, logger=None):
+def extract_layers(
+    model,
+    walls: list[dict],
+    str_elements: Optional[list[dict]] = None,
+    logger=None
+) -> list[dict]:
     """
     Extract all material layers from walls.
 
     Args:
         model: ifcopenshell model instance
-        walls: List of wall dictionaries(from extract_walls)
-        str_model: ifcopenshell model instance for structural layer info (optional)
+        walls: List of wall dictionaries (from extract_walls)
+        str_elements: Pre-extracted structural elements (from extract_str_elements), optional
         logger: Optional logger for output messages
 
     Returns:
@@ -235,12 +249,14 @@ def extract_layers(model, walls, str_model=None, logger=None):
             - id: Composite id (wall_id + layer index)
             - wall_id: Parent wall GlobalId
             - layerIndex: Position in layer stack (0=first)
+            - loadBearing: Boolean or None (from STR matching)
             - thickness: Layer thickness in model units
             - name: Material name
             - ifcClass: Always "IfcMaterialLayer"
     """
     layers = []
     wall_ids = {w["id"] for w in walls}
+    str_elements = str_elements or []
 
     # Build lookup of IFC wall objects
     ifc_walls = {
@@ -252,53 +268,37 @@ def extract_layers(model, walls, str_model=None, logger=None):
         if wall_id not in wall_ids:
             continue
 
-        for assoc in getattr(ifc_wall, "HasAssociations", []):
-            if not assoc.is_a("IfcRelAssociatesMaterial"):
-                continue
+        material_layers = get_material_layers(ifc_wall)
 
-            material = assoc.RelatingMaterial
-            material_layers = None
+        for layer in material_layers:
+            mat_name = layer["name"]
+            layer_thickness = layer["thickness"]
+            layer_index = layer["index"]
 
-            if material.is_a("IfcMaterialLayerSetUsage"):
-                # Validate layer direction
-                layer_direction = getattr(material, "LayerSetDirection", None)
-                if layer_direction and layer_direction != "AXIS2" and logger:
-                    logger.logText(
-                        "BIM2GRAPH",
-                        f"Warning: Wall {ifc_wall.Name} ({wall_id}) has layers "
-                        f"stratified along {layer_direction} instead of AXIS2"
-                    )
+            # Match with STR elements
+            layer_load_bearing = match_layer_to_str(
+                layer_thickness, mat_name, str_elements
+            )
 
-                layer_set = material.ForLayerSet
-                if layer_set:
-                    material_layers = getattr(layer_set, "MaterialLayers", [])
+            if layer_load_bearing is not None and logger:
+                logger.logText(
+                    "BIM2GRAPH",
+                    f"Layer '{mat_name}' matched with STR element, loadBearing={layer_load_bearing}"
+                )
 
-            elif material.is_a("IfcMaterialLayerSet"):
-                material_layers = getattr(material, "MaterialLayers", [])
-
-            if material_layers:
-                for i, mat_layer in enumerate(material_layers):
-                    mat_name = None
-                    if mat_layer.Material:
-                        mat_name = getattr(mat_layer.Material, "Name", None)
-
-                    str_element = extract_str_elements(str_model, logger)
-                    print("Structural layer encoding under construction.")
-
-                    layer_data = {
-                        "id": f"{wall_id}_layer_{i}",
-                        "wall_id": wall_id,
-                        "layerIndex": i,
-                        # "loadBearing": str_type if str_type else None,
-                        "thickness": getattr(mat_layer, "LayerThickness", None),
-                        "name": mat_name or f"Layer {i}",
-                        "ifcClass": "IfcMaterialLayer"
-                    }
-                    layers.append(layer_data)
-                break  # Only process first material association
+            layer_data = {
+                "id": f"{wall_id}_layer_{layer_index}",
+                "wall_id": wall_id,
+                "layerIndex": layer_index,
+                "loadBearing": layer_load_bearing,
+                "thickness": layer_thickness,
+                "name": mat_name or f"Layer {layer_index}",
+                "ifcClass": "IfcMaterialLayer"
+            }
+            layers.append(layer_data)
 
     if logger:
         logger.logText(
-            "BIM2GRAPH", f"{len(layers)} Wall Layer elements extracted")
+            "BIM2GRAPH", f"{len(layers)} Wall-Layer elements extracted")
 
     return layers

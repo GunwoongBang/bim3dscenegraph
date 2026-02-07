@@ -93,7 +93,7 @@ def compute_mep_wall_relationships(mep_elements, walls, logger=None):
     Compute relationships between MEP elements and walls based on geometry.
 
     An MEP element is related to a wall if:
-    1. Their bounding boxes intersect (MEP passes through or touches wall)
+    1. Their bounding boxes intersect (MEP passes through wall)
     2. Or MEP is within tolerance distance of wall (MEP is near wall surface)
 
     Args:
@@ -105,7 +105,7 @@ def compute_mep_wall_relationships(mep_elements, walls, logger=None):
         List of relationship dictionaries with keys:
             - mep_id: MEP element GlobalId
             - wall_id: Wall GlobalId
-            - relationship: "PASSES_THROUGH" or "NEAR"
+            - relationship: "PASSES_THROUGH"
     """
     relationships = []
 

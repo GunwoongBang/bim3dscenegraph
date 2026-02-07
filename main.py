@@ -58,11 +58,14 @@ if __name__ == "__main__":
     logger.logText("PROJECT", "Ended")
 
 
-# TODO - Till next meeting:
-# 1. Pipes need to be connected to layer nodes (light fixtures to walls)
-# 2. Extract MEP systems' geometry (But how..?)
-# 3. Structural layers should be considered as load bearing elements
-# 4. Visual improvement - 3D coordinates (what would be its pros and cons?)
+"""
+TODO - Future works:
+    1. Extract MEP systems' geometry - bounding box or center point
+    2. Visual improvement - 3D coordinates (what would be its pros and cons?)
 
-# TODO - Daily:
-# - Let's go with the structural layer encoding with Example_STR.ifc
+NOTE - What's been done:
+    1. Sturctural elements are extracted from the STR model and matched with ARC layers
+    2. MEP elements are extracted from the MEP model and connected to wall layers
+        + MEP-Wall relationships are computed based on bounding box intersection
+        + MEP cannot be connected to layers due to lack of geometric information - 
+"""

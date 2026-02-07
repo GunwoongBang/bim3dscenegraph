@@ -39,6 +39,7 @@ MERGE (l:Layer { id: layer.id })
 SET l.name = layer.name,
     l.ifcClass = layer.ifcClass,
     l.layerIndex = layer.layerIndex,
+    l.loadBearing = layer.loadBearing,
     l.thickness = layer.thickness
 
 -- name: CREATE_WALL_LAYER_EDGES
