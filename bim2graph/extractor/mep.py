@@ -68,14 +68,13 @@ def extract_mep_elements(model, logger=None):
     return mep_elements
 
 
-def bbox_intersects(bbox1_min, bbox1_max, bbox2_min, bbox2_max, tolerance=0):
+def bbox_intersects(bbox1_min, bbox1_max, bbox2_min, bbox2_max):
     """
     Check if two axis-aligned bounding boxes intersect.
 
     Args:
         bbox1_min, bbox1_max: First bounding box corners [x, y, z]
         bbox2_min, bbox2_max: Second bounding box corners [x, y, z]
-        tolerance: Expansion of boxes for near-miss detection (mm)
 
     Returns:
         True if boxes intersect (or are within tolerance)

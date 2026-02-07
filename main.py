@@ -62,10 +62,12 @@ if __name__ == "__main__":
 TODO - Future works:
     1. Extract MEP systems' geometry - bounding box or center point
     2. Visual improvement - 3D coordinates (what would be its pros and cons?)
+    3. What should be the next step? 
+        * Scaling up the BIM2GRAPH pipeline with a bigger IFC model? Or move on to SENSOR2GRAPH and then merging
 
 NOTE - What's been done:
     1. Sturctural elements are extracted from the STR model and matched with ARC layers
     2. MEP elements are extracted from the MEP model and connected to wall layers
-        + MEP-Wall relationships are computed based on bounding box intersection
-        + MEP cannot be connected to layers due to lack of geometric information - 
+        * MEP-Wall relationships are computed based on bounding box intersection
+        * MEP cannot be connected to layers due to lack of geometric information - 
 """

@@ -69,10 +69,10 @@ def get_material_association(element):
             material_layers = getattr(material, "MaterialLayers", [])
             return material, material_layers
 
-        elif material.is_a("IfcMaterialList"):
-            return material, None
+        # elif material.is_a("IfcMaterialList"):
+        #     return material, None
 
-        elif material.is_a("IfcMaterial"):
-            return material, None
+        # elif material.is_a("IfcMaterial"):
+        #     return material, None
 
     return None, None
