@@ -20,16 +20,16 @@ from .extractor import (
 )
 
 
-def generate_graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
+def bim2graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
     """
     Generate a BIM-derived graph from an IFC model and persist to Neo4j.
 
-    This function orchestrates the full ETL pipeline:
+    This function orchestrates the full pipeline:
         1. Load IFC model
         2. Extract spatial elements (spaces, walls)
         3. Extract material layers
-        4. Extract topological relationships
-        5. Optionally load MEP model and extract MEP elements
+        4. Encode structural elements based on STR model
+        5. Load MEP model and extract MEP elements
         6. Persist all data to Neo4j
 
     Args:
@@ -38,22 +38,17 @@ def generate_graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
         str_path: Path to the structural IFC model file
         mep_path: Path to the MEP IFC model file
         logger: Optional logger for output messages
-        query_manager: Optional QueryManager instance (creates default if None)
-
-    Example:
-        driver = GraphDatabase.driver(uri, auth=(user, password))
-        generate_graph(driver, "arch.ifc", "str.ifc", "mep.ifc", logger=my_logger)
     """
     if logger:
         logger.logText(
-            "BIM2GRAPH", f'{"ARC" if arc_path else None}{", STR" if str_path else None}{", MEP" if mep_path else None} IFC models loaded')
+            "BIM2GRAPH", f'"ARC"{", STR" if str_path else None}{", MEP" if mep_path else None} IFC models loaded')
 
     # Initialize components
     query_manager = QueryManager()
 
     neo4j_ops = Neo4jOperations(query_manager, logger)
 
-    # Load IFC model
+    # Load IFC models
     arc_model = ifcopenshell.open(arc_path)
     str_model = ifcopenshell.open(str_path) if str_path else None
     mep_model = ifcopenshell.open(mep_path) if mep_path else None

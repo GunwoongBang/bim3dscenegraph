@@ -77,7 +77,7 @@ def bbox_intersects(bbox1_min, bbox1_max, bbox2_min, bbox2_max):
         bbox2_min, bbox2_max: Second bounding box corners [x, y, z]
 
     Returns:
-        True if boxes intersect (or are within tolerance)
+        True if boxes intersect
     """
     for i in range(3):
         if bbox1_max[i] < bbox2_min[i]:
@@ -91,9 +91,7 @@ def compute_mep_wall_relationships(mep_elements, walls, logger=None):
     """
     Compute relationships between MEP elements and walls based on geometry.
 
-    An MEP element is related to a wall if:
-    1. Their bounding boxes intersect (MEP passes through wall)
-    2. Or MEP is within tolerance distance of wall (MEP is near wall surface)
+    An MEP element is related to a wall if their bounding boxes intersect (MEP passes through wall)
 
     Args:
         mep_elements: List of MEP dictionaries (from extract_mep_elements)
@@ -124,7 +122,7 @@ def compute_mep_wall_relationships(mep_elements, walls, logger=None):
 
             # Check for direct intersection
             if bbox_intersects(mep_bbox_min, mep_bbox_max,
-                               wall_bbox_min, wall_bbox_max, tolerance=0):
+                               wall_bbox_min, wall_bbox_max):
                 relationships.append({
                     "mep_id": mep["id"],
                     "wall_id": wall["id"],

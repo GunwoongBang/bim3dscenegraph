@@ -1,7 +1,9 @@
 import os
+import traceback
 from neo4j import GraphDatabase
 from dotenv import load_dotenv
-from bim2graph import generate_graph
+from bim2graph import bim2graph
+from sensor2graph import sensor2graph
 import logger as logger
 
 load_dotenv()
@@ -9,6 +11,7 @@ load_dotenv()
 ARC_PATH = "ifc_models/Example/Example_ARC.ifc"
 STR_PATH = "ifc_models/Example/Example_STR.ifc"
 MEP_PATH = "ifc_models/Example/Example_MEP.ifc"
+PCD_PATH = None  # Placeholder for point cloud data path
 
 NEO4J_URI = os.getenv("NEO4J_URI")
 NEO4J_USER = os.getenv("NEO4J_USER")
@@ -36,19 +39,23 @@ if __name__ == "__main__":
         # BIM2GRAPH
         # ====================================================================
 
-        # Generate a BIM-derived graph from BIM models (ARC + MEP)
-        generate_graph(driver, arc_path=ARC_PATH,
-                       str_path=STR_PATH, mep_path=MEP_PATH, logger=logger)
+        # Generate a BIM-derived graph from BIM models (ARC + STR + MEP)
+        bim2graph(driver, arc_path=ARC_PATH,
+                  str_path=STR_PATH, mep_path=MEP_PATH, logger=logger)
 
         # ====================================================================
         # SENSOR2GRAPH
         # ====================================================================
+
+        # Generate a Sensor-derived graph from BIM models (ARC for now, later replaced by PCD_PATH)
+        sensor2graph(driver, pcd_path=ARC_PATH, logger=logger)
 
         # ====================================================================
         # GRAPH MERGING
         # ====================================================================
     except Exception as e:
         logger.logText("PROJECT", f"Error: {e}")
+        logger.logText("PROJECT", f"Traceback:\n{traceback.format_exc()}")
     finally:
         # Ensure driver is always closed
         driver.close()

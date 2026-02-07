@@ -8,7 +8,7 @@ Main entry point:
     from bim2graph import generate_graph
     
     driver = GraphDatabase.driver(uri, auth=(user, password))
-    bim2graph(driver, "path/to/model.ifc")
+    generate_graph(driver, "path/to/model.ifc")
 
 Package structure:
     - extractor/: IFC data extraction modules
@@ -22,35 +22,35 @@ Package structure:
     - graph_builder.py: Main orchestrator
 """
 
-from .graph_builder import bim2graph
+from .graph_builder import sensor2graph
 from .query_manager import QueryManager
 from .persistence import Neo4jOperations
-from .extractor import (
-    extract_spaces,
-    extract_walls,
-    extract_layers,
-    extract_str_elements,
-    extract_space_wall_edges,
-    get_pset_property,
-    geometry,
-)
+# from .extractor import (
+#     extract_spaces,
+#     extract_walls,
+#     extract_layers,
+#     extract_str_elements,
+#     extract_space_wall_edges,
+#     get_pset_property,
+#     geometry,
+# )
 
 __version__ = "0.1.0"
 
 __all__ = [
     # Main entry point
-    'bim2graph',
+    'sensor2graph',
 
-    # Core classes
+    # # Core classes
     'QueryManager',
     'Neo4jOperations',
 
-    # Extraction functions
-    'extract_spaces',
-    'extract_walls',
-    'extract_layers',
-    'extract_str_elements',
-    'extract_space_wall_edges',
-    'get_pset_property',
-    'geometry',
+    # # Extraction functions
+    # 'extract_spaces',
+    # 'extract_walls',
+    # 'extract_layers',
+    # 'extract_str_elements',
+    # 'extract_space_wall_edges',
+    # 'get_pset_property',
+    # 'geometry',
 ]
