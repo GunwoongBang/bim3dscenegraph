@@ -41,11 +41,10 @@ def bim2graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
     """
     if logger:
         logger.logText(
-            "BIM2GRAPH", f'"ARC"{", STR" if str_path else None}{", MEP" if mep_path else None} IFC models loaded')
+            "BIM2GRAPH", f'ARC{", STR" if str_path else None}{", MEP" if mep_path else None} IFC models loaded')
 
     # Initialize components
     query_manager = QueryManager()
-
     neo4j_ops = Neo4jOperations(query_manager, logger)
 
     # Load IFC models

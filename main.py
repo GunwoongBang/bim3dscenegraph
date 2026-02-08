@@ -73,8 +73,5 @@ TODO - Future works:
         * Scaling up the BIM2GRAPH pipeline with a bigger IFC model? Or move on to SENSOR2GRAPH and then merging
 
 NOTE - What's been done:
-    1. Sturctural elements are extracted from the STR model and matched with ARC layers
-    2. MEP elements are extracted from the MEP model and connected to wall layers
-        * MEP-Wall relationships are computed based on bounding box intersection
-        * MEP cannot be connected to layers due to lack of geometric information - 
+    1. Point cloud generation from IFC geometry (currently using ARC model as a placeholder for PCD)
 """

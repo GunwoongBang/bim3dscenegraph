@@ -25,15 +25,15 @@ Package structure:
 from .graph_builder import sensor2graph
 from .query_manager import QueryManager
 from .persistence import Neo4jOperations
-# from .extractor import (
-#     extract_spaces,
-#     extract_walls,
-#     extract_layers,
-#     extract_str_elements,
-#     extract_space_wall_edges,
-#     get_pset_property,
-#     geometry,
-# )
+from .extractor import (
+    # extract_spaces,
+    # extract_walls,
+    # extract_layers,
+    # extract_str_elements,
+    # extract_space_wall_edges,
+    # get_pset_property,
+    geometry,
+)
 
 __version__ = "0.1.0"
 
@@ -52,5 +52,5 @@ __all__ = [
     # 'extract_str_elements',
     # 'extract_space_wall_edges',
     # 'get_pset_property',
-    # 'geometry',
+    'geometry',
 ]

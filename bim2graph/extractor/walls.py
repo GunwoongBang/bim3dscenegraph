@@ -280,12 +280,6 @@ def extract_layers(
                 layer_thickness, mat_name, str_elements
             )
 
-            if layer_load_bearing is not None and logger:
-                logger.logText(
-                    "BIM2GRAPH",
-                    f"Layer '{mat_name}' matched with STR element, loadBearing={layer_load_bearing}"
-                )
-
             layer_data = {
                 "id": f"{wall_id}_layer_{layer_index}",
                 "wall_id": wall_id,
