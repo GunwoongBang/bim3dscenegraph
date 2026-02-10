@@ -3,6 +3,7 @@ Point cloud generation from IFC model.
 """
 
 import numpy as np
+import open3d as o3d
 from . import geometry
 
 
@@ -88,6 +89,13 @@ def generate_point_cloud(model, element_types=None, points_per_m2=100, logger=No
                 # Sample points on mesh surface
                 points = sample_points_on_mesh(vertices, faces, points_per_m2)
 
+                mesh = o3d.geometry.TriangleMesh()
+                mesh.vertices = o3d.utility.Vector3dVector(vertices)
+                mesh.triangles = o3d.utility.Vector3iVector(faces)
+
+                pcd = mesh.sample_points_uniformly(
+                    number_of_points=points.shape[0])
+
                 point_clouds[element.GlobalId] = {
                     'points': points,
                     'element_type': element_type,
@@ -112,4 +120,4 @@ def generate_point_cloud(model, element_types=None, points_per_m2=100, logger=No
     if logger:
         logger.logText("SENSOR2GRAPH", "Point cloud generated")
 
-    return point_clouds
+    return point_clouds, pcd
