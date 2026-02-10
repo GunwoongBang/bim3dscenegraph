@@ -127,7 +127,7 @@ def sensor2graph(driver, pcd_path, logger=None):
     # Visualize the point cloud
     visualize_point_cloud(point_clouds[0], color_by_element=True)
 
-    # Export the point cloud data tas .xyz file
+    # Export the point cloud data to a xyz file
     o3d.io.write_point_cloud("pc_models/ifc_point_cloud.xyz", point_clouds[1])
     if logger:
         logger.logText(
