@@ -11,9 +11,10 @@ This package provides functions for extracting data from IFC models:
 """
 
 from . import geometry
-from .pointcloud import generate_point_cloud
+from .pointcloud import generate_point_cloud, transform_point_cloud
 
 __all__ = [
     'geometry',
     'generate_point_cloud',
+    'transform_point_cloud',
 ]

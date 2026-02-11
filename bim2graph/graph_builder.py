@@ -96,10 +96,7 @@ def bim2graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
             session.execute_write(
                 neo4j_ops.create_space_wall_edges, space_wall_edges)
 
-        # Update layer nodes with structural info
-        # if str_elements:
-
-            # Create MEP nodes and relationships
+        # Create MEP nodes and relationships
         if mep_elements:
             session.execute_write(neo4j_ops.upsert_mep_elements, mep_elements)
         if mep_wall_edges:

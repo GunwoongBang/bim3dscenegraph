@@ -40,7 +40,7 @@ if __name__ == "__main__":
                   str_path=STR_PATH, mep_path=MEP_PATH, logger=logger)
 
         # Generate a Sensor-derived graph from BIM models (ARC for now, later replaced by PCD_PATH)
-        sensor2graph(driver, pcd_path=PCD_PATH or ARC_PATH, logger=logger)
+        sensor2graph(driver, pcd_path=PCD_PATH, logger=logger)
 
         # ====================================================================
         # GRAPH MERGING

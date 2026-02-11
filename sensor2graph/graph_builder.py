@@ -5,7 +5,7 @@ This module coordinates the conversion of BIM model geometry into
 a point cloud representation and persistence to Neo4j graph database.
 """
 
-import numpy as np
+import os
 import open3d as o3d
 import ifcopenshell
 
@@ -16,80 +16,7 @@ from .extractor import (
 )
 
 
-def visualize_point_cloud(point_clouds, color_by_element=True):
-    """
-    Visualize point clouds using Open3D.
-
-    Args:
-        point_clouds: dict from generate_point_cloud()
-                      {global_id: {'points': np.array, 'element_type': str}}
-        color_by_element: if True, each element gets a different color
-    """
-    # Color palette for different elements
-    colors_palette = [
-        [0.8, 0.2, 0.2],  # Red
-        [0.2, 0.8, 0.2],  # Green
-        [0.2, 0.2, 0.8],  # Blue
-        [0.8, 0.8, 0.2],  # Yellow
-        [0.8, 0.2, 0.8],  # Magenta
-        [0.2, 0.8, 0.8],  # Cyan
-        [0.9, 0.5, 0.2],  # Orange
-        [0.5, 0.2, 0.9],  # Purple
-    ]
-
-    # Combine all points
-    all_points = []
-    all_colors = []
-
-    for i, (global_id, data) in enumerate(point_clouds.items()):
-        points = data['points']
-        if len(points) == 0:
-            continue
-
-        all_points.append(points)
-
-        if color_by_element:
-            color = colors_palette[i % len(colors_palette)]
-            all_colors.append(np.tile(color, (len(points), 1)))
-        else:
-            # Color by element type
-            if data['element_type'] == 'IfcWall':
-                color = [0.7, 0.7, 0.7]  # Gray for walls
-            elif data['element_type'] == 'IfcSlab':
-                color = [0.5, 0.3, 0.1]  # Brown for slabs
-            else:
-                color = [0.5, 0.5, 0.5]  # Default gray
-            all_colors.append(np.tile(color, (len(points), 1)))
-
-    if not all_points:
-        print("No points to visualize")
-        return
-
-    # Create Open3D point cloud
-    combined_points = np.vstack(all_points)
-    combined_colors = np.vstack(all_colors)
-
-    pcd = o3d.geometry.PointCloud()
-    pcd.points = o3d.utility.Vector3dVector(combined_points)
-    pcd.colors = o3d.utility.Vector3dVector(combined_colors)
-
-    # Add coordinate frame for reference
-    coord_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=1.0)
-
-    # Visualize
-    print(
-        f"Visualizing {len(combined_points)} points from {len(point_clouds)} elements")
-    print("Controls: Left-click + drag to rotate, Scroll to zoom, Middle-click + drag to pan")
-    o3d.visualization.draw_geometries(
-        [pcd, coord_frame],
-        window_name="Point Cloud from IFC",
-        width=1200,
-        height=800,
-        point_show_normal=False
-    )
-
-
-def sensor2graph(driver, pcd_path, logger=None):
+def sensor2graph(driver, pcd_path=None, logger=None):
     """
     Generates a sensor-derived graph from an IFC model and persists to Neo4j.
 
@@ -115,23 +42,47 @@ def sensor2graph(driver, pcd_path, logger=None):
     model = ifcopenshell.open(pcd_path)
 
     # =========================================================================
-    # Generate point cloud from IFC
+    # Generate point cloud from IFC (If XYZ not available)
     # =========================================================================
-    point_clouds = generate_point_cloud(
-        model,
-        element_types=["IfcWall", "IfcSlab"],
-        points_per_m2=100,  # Adjust density as needed
-        logger=logger
-    )
+    # TODO: Need to be refactored to keep the graph_builder clean
 
-    # Visualize the point cloud -- necessary for the final product?
-    visualize_point_cloud(point_clouds[0], color_by_element=True)
+    if (pcd_path is not None):
+        point_cloud = generate_point_cloud(
+            model,
+            element_types=["IfcWall", "IfcSlab"],
+            points_per_m2=100,  # Adjust density as needed
+            translation=(2, 5, 3),  # x: 2m, y: 5m, z: 3m
+            yaw_degrees=25,  # 25 degree rotation around Z-axis
+            logger=logger
+        )
 
-    # Export the point cloud data to a xyz file
-    o3d.io.write_point_cloud("pc_models/ifc_point_cloud.xyz", point_clouds[1])
-    if logger:
-        logger.logText(
-            "SENSOR2GRAPH", "Point cloud exported to pc_models/ifc_point_cloud.xyz")
+        # Visualize the point cloud with colors
+        coord_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(
+            size=1.0)
+
+        o3d.visualization.draw_geometries(
+            [point_cloud, coord_frame],
+            window_name="Point Cloud from IFC (transformed)",
+            width=1200,
+            height=800
+        )
+
+        # Export the point cloud data to a xyz file
+        model_name = os.path.splitext(os.path.basename(pcd_path))[0]
+        o3d.io.write_point_cloud(f"pc_models/{model_name}.xyz", point_cloud)
+        print(model_name)
+
+        if logger:
+            logger.logText(
+                "SENSOR2GRAPH", f"Point cloud exported to pc_models/{model_name}.xyz")
+
+    # =========================================================================
+    # Extract data from XYZ
+    # =========================================================================
+
+    # =========================================================================
+    # Persist to Neo4j
+    # =========================================================================
 
     if logger:
         logger.logText("SENSOR2GRAPH", "SENSOR2GRAPH under construction")
