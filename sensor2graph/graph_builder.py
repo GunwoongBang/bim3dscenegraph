@@ -124,7 +124,7 @@ def sensor2graph(driver, pcd_path, logger=None):
         logger=logger
     )
 
-    # Visualize the point cloud
+    # Visualize the point cloud -- necessary for the final product?
     visualize_point_cloud(point_clouds[0], color_by_element=True)
 
     # Export the point cloud data to a xyz file

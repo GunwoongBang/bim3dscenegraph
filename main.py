@@ -11,7 +11,7 @@ load_dotenv()
 ARC_PATH = "ifc_models/Example/Example_ARC.ifc"
 STR_PATH = "ifc_models/Example/Example_STR.ifc"
 MEP_PATH = "ifc_models/Example/Example_MEP.ifc"
-PCD_PATH = None  # Placeholder for point cloud data path
+PCD_PATH = "ifc_models/Example/Example_PCD.ifc"
 
 NEO4J_URI = os.getenv("NEO4J_URI")
 NEO4J_USER = os.getenv("NEO4J_USER")
@@ -35,24 +35,17 @@ if __name__ == "__main__":
     driver = graph_initiate()
 
     try:
-        # ====================================================================
-        # BIM2GRAPH
-        # ====================================================================
-
         # Generate a BIM-derived graph from BIM models (ARC + STR + MEP)
         bim2graph(driver, arc_path=ARC_PATH,
                   str_path=STR_PATH, mep_path=MEP_PATH, logger=logger)
 
-        # ====================================================================
-        # SENSOR2GRAPH
-        # ====================================================================
-
         # Generate a Sensor-derived graph from BIM models (ARC for now, later replaced by PCD_PATH)
-        sensor2graph(driver, pcd_path=ARC_PATH, logger=logger)
+        sensor2graph(driver, pcd_path=PCD_PATH or ARC_PATH, logger=logger)
 
         # ====================================================================
         # GRAPH MERGING
         # ====================================================================
+
     except Exception as e:
         logger.logText("PROJECT", f"Error: {e}")
         logger.logText("PROJECT", f"Traceback:\n{traceback.format_exc()}")
@@ -67,11 +60,13 @@ if __name__ == "__main__":
 
 """
 TODO - Future works:
-    1. Extract MEP systems' geometry - bounding box or center point
+    1. Extract MEP systems' geometry with bounding box -- then do we need just depth values?
     2. Visual improvement - 3D coordinates (what would be its pros and cons?)
     3. What should be the next step? 
         * Scaling up the BIM2GRAPH pipeline with a bigger IFC model? Or move on to SENSOR2GRAPH and then merging
+    4. Also think about how to match two different graphs and 3D representations
 
 NOTE - What's been done:
-    1. Point cloud generation from IFC geometry (currently using ARC model as a placeholder for PCD)
+    1. BIM2GRAPH pipeline for ARC and STR models (MEP model is still pending)
+    2. SENSOR2GRAPH pipeline set up for ARC model (later replaced by PCD_PATH)
 """
