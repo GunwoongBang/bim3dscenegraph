@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from bim2graph import bim2graph
 from sensor2graph import sensor2graph
 import logger as logger
-
+5
 load_dotenv()
 
 ARC_PATH = "ifc_models/Example/Example_ARC.ifc"
@@ -60,11 +60,19 @@ if __name__ == "__main__":
 
 """
 TODO - Future works:
-    1. Extract MEP systems' geometry with bounding box -- then do we need just depth values?
-    2. Visual improvement - 3D coordinates (what would be its pros and cons?)
-    3. What should be the next step? 
+    1. MEP node representation - the whole MEP element is connected with a space node and segmented elements are connected with wall nodes
+    2. Considering opening, void, window, etc.
+    3. Documentation - Claude code with Obsidian
+        * What IFC element types are we extracting and how are they represented in the graph?
+        * What properties are we extracting and how are they stored in the graph?
+        * What relationships are we creating between nodes in the graph?
+        * What are grounds for selecting specific approaches for node enrichment and relationship creation?
+
+    + Extract MEP systems' geometry with bounding box -- then do we need just depth values?
+    + Visual improvement - 3D coordinates (what would be its pros and cons?)
+    + What should be the next step? 
         * Scaling up the BIM2GRAPH pipeline with a bigger IFC model? Or move on to SENSOR2GRAPH and then merging
-    4. Also think about how to match two different graphs and 3D representations
+    + Also think about how to match two different graphs and 3D representations
 
 NOTE - What's been done:
     1. BIM2GRAPH pipeline for ARC and STR models (MEP model is still pending)
