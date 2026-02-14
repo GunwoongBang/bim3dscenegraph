@@ -83,12 +83,15 @@ WITH s, w, b, l,
 WHERE viewOrder = 0
 RETURN s.name AS space, w.name AS wall, l.name AS surfaceMaterial
 
--- name: ENSURE_SCHEMA_MEP
-CREATE CONSTRAINT mep_id IF NOT EXISTS FOR (m:MEP) REQUIRE m.id IS UNIQUE
+-- name: ENSURE_SCHEMA_MEP_ELEMENT
+CREATE CONSTRAINT mep_element_id IF NOT EXISTS FOR (m:MEPElement) REQUIRE m.id IS UNIQUE
+
+-- name: ENSURE_SCHEMA_MEP_SYSTEM
+CREATE CONSTRAINT mep_system_id IF NOT EXISTS FOR (s:MEPSystem) REQUIRE s.id IS UNIQUE
 
 -- name: UPSERT_MEP_ELEMENTS
 UNWIND $elements AS elem
-MERGE (m:MEP { id: elem.id })
+MERGE (m:MEPElement { id: elem.id })
 SET m.name = elem.name,
     m.ifcClass = elem.ifcClass,
     m.objectType = elem.objectType,
@@ -96,9 +99,34 @@ SET m.name = elem.name,
     m.bbox_min = elem.bbox_min,
     m.bbox_max = elem.bbox_max
 
+-- name: UPSERT_MEP_SYSTEMS
+UNWIND $systems AS sys
+MERGE (s:MEPSystem { id: sys.id })
+SET s.name = sys.name,
+    s.ifcClass = sys.ifcClass,
+    s.objectType = sys.objectType
+
+-- name: CREATE_MEP_SYSTEM_MEP_EDGES
+UNWIND $edges AS edge
+MATCH (s:MEPSystem { id: edge.system_id })
+MATCH (m:MEPElement { id: edge.mep_id })
+MERGE (s)-[:CONTAINS]->(m)
+
+-- name: CREATE_MEP_SYSTEM_SPACE_EDGES
+UNWIND $edges AS edge
+MATCH (s:MEPSystem { id: edge.system_id })
+MATCH (sp:Space { id: edge.space_id })
+MERGE (s)-[:VISIBLE_IN]->(sp)
+
+-- name: CREATE_MEP_SYSTEM_WALL_EDGES
+UNWIND $edges AS edge
+MATCH (s:MEPSystem { id: edge.system_id })
+MATCH (w:Wall { id: edge.wall_id })
+MERGE (s)-[:RELATED_TO_WALL]->(w)
+
 -- name: CREATE_MEP_WALL_EDGES
 UNWIND $edges AS edge
-MATCH (m:MEP { id: edge.mep_id })
+MATCH (m:MEPElement { id: edge.mep_id })
 MATCH (w:Wall { id: edge.wall_id })
 CALL (m, w, edge) {
   WITH m, w, edge
@@ -111,8 +139,8 @@ CALL (m, w, edge) {
 }
 
 -- name: GET_MEP_NEAR_WALL
-// Find MEP elements that pass through or are near a specific wall
-MATCH (m:MEP)-[r:PASSES_THROUGH|NEAR]->(w:Wall {name: $wallName})
+// Find MEPElement nodes that pass through or are near a specific wall
+MATCH (m:MEPElement)-[r:PASSES_THROUGH|NEAR]->(w:Wall {name: $wallName})
 RETURN m.name AS mepElement, 
        m.objectType AS type,
        type(r) AS relationship,

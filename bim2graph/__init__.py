@@ -31,6 +31,11 @@ from .extractor import (
     extract_layers,
     extract_str_elements,
     extract_space_wall_edges,
+    extract_mep_elements,
+    extract_mep_systems,
+    extract_mep_system_memberships,
+    compute_mep_wall_relationships,
+    compute_mep_system_parent_edges,
     get_pset_property,
     geometry,
 )
@@ -51,6 +56,11 @@ __all__ = [
     'extract_layers',
     'extract_str_elements',
     'extract_space_wall_edges',
+    'extract_mep_elements',
+    'extract_mep_systems',
+    'extract_mep_system_memberships',
+    'compute_mep_wall_relationships',
+    'compute_mep_system_parent_edges',
     'get_pset_property',
     'geometry',
 ]

@@ -16,7 +16,10 @@ from .extractor import (
     extract_str_elements,
     extract_space_wall_edges,
     extract_mep_elements,
+    extract_mep_systems,
+    extract_mep_system_memberships,
     compute_mep_wall_relationships,
+    compute_mep_system_parent_edges,
 )
 
 
@@ -68,11 +71,29 @@ def bim2graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
 
     # Extract MEP elements if MEP model is provided
     mep_elements = []
+    mep_systems = []
     mep_wall_edges = []
+    mep_system_memberships = []
+    mep_system_space_edges = []
+    mep_system_wall_edges = []
     if mep_model:
         mep_elements = extract_mep_elements(mep_model, logger)
+        mep_systems = extract_mep_systems(mep_model, logger)
+        mep_system_memberships = extract_mep_system_memberships(
+            mep_model, mep_elements, logger)
         mep_wall_edges = compute_mep_wall_relationships(
             mep_elements, walls, logger=logger)
+        if mep_systems and mep_system_memberships:
+            mep_system_space_edges, mep_system_wall_edges = (
+                compute_mep_system_parent_edges(
+                    arc_model,
+                    mep_systems,
+                    mep_system_memberships,
+                    mep_elements,
+                    mep_wall_edges,
+                    logger=logger,
+                )
+            )
 
     # =========================================================================
     # Persist to Neo4j
@@ -99,9 +120,24 @@ def bim2graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
         # Create MEP nodes and relationships
         if mep_elements:
             session.execute_write(neo4j_ops.upsert_mep_elements, mep_elements)
+        if mep_systems:
+            session.execute_write(neo4j_ops.upsert_mep_systems, mep_systems)
+        if mep_system_memberships:
+            session.execute_write(
+                neo4j_ops.create_mep_system_mep_edges, mep_system_memberships)
         if mep_wall_edges:
             session.execute_write(
                 neo4j_ops.create_mep_wall_edges, mep_wall_edges)
+        if mep_system_space_edges:
+            session.execute_write(
+                neo4j_ops.create_mep_system_space_edges,
+                mep_system_space_edges,
+            )
+        if mep_system_wall_edges:
+            session.execute_write(
+                neo4j_ops.create_mep_system_wall_edges,
+                mep_system_wall_edges,
+            )
 
     if logger:
         logger.logText("BIM2GRAPH", "Graph generation completed\n")

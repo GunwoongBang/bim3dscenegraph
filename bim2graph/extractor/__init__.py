@@ -7,7 +7,7 @@ This package provides functions for extracting data from IFC models:
     - spaces: Space element extraction
     - walls: Wall and material layer extraction
     - relationships: Topological relationships (space-wall boundaries)
-    - mep: MEP element extraction and wall relationships
+    - mep: MEP node extraction and relationships
 """
 
 from . import geometry
@@ -15,7 +15,13 @@ from .ifc_utils import get_pset_property, get_material_association
 from .spaces import extract_spaces
 from .walls import extract_walls, extract_layers, extract_str_elements
 from .relationships import extract_space_wall_edges
-from .mep import extract_mep_elements, compute_mep_wall_relationships
+from .mep import (
+    extract_mep_elements,
+    extract_mep_systems,
+    extract_mep_system_memberships,
+    compute_mep_wall_relationships,
+    compute_mep_system_parent_edges,
+)
 
 __all__ = [
     'geometry',
@@ -27,5 +33,8 @@ __all__ = [
     'extract_str_elements',
     'extract_space_wall_edges',
     'extract_mep_elements',
+    'extract_mep_systems',
+    'extract_mep_system_memberships',
     'compute_mep_wall_relationships',
+    'compute_mep_system_parent_edges',
 ]

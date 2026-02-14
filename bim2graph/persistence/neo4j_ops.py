@@ -35,7 +35,8 @@ class Neo4jOperations:
             "ENSURE_SCHEMA_SPACES",
             "ENSURE_SCHEMA_WALLS",
             "ENSURE_SCHEMA_LAYERS",
-            "ENSURE_SCHEMA_MEP",
+            "ENSURE_SCHEMA_MEP_ELEMENT",
+            "ENSURE_SCHEMA_MEP_SYSTEM",
         ]
         for query_name in schema_queries:
             q = self.qm.get(query_name)
@@ -83,11 +84,39 @@ class Neo4jOperations:
         q = self.qm.get("UPSERT_MEP_ELEMENTS")
         if q:
             tx.run(q, elements=mep_elements)
-        self._log(f"Upserted {len(mep_elements)} MEP nodes")
+        self._log(f"Upserted {len(mep_elements)} MEPElement nodes")
+
+    def upsert_mep_systems(self, tx, systems):
+        """Create or update MEP system nodes in Neo4j."""
+        q = self.qm.get("UPSERT_MEP_SYSTEMS")
+        if q:
+            tx.run(q, systems=systems)
+        self._log(f"Upserted {len(systems)} MEP system nodes")
 
     def create_mep_wall_edges(self, tx, edges):
-        """Create MEP-Wall relationships."""
+        """Create MEPElement-Wall relationships."""
         q = self.qm.get("CREATE_MEP_WALL_EDGES")
         if q:
             tx.run(q, edges=edges)
-        self._log(f"Created {len(edges)} MEP-Wall relationships")
+        self._log(f"Created {len(edges)} MEPElement-Wall relationships")
+
+    def create_mep_system_mep_edges(self, tx, edges):
+        """Create MEPSystem-MEPElement relationships."""
+        q = self.qm.get("CREATE_MEP_SYSTEM_MEP_EDGES")
+        if q:
+            tx.run(q, edges=edges)
+        self._log(f"Created {len(edges)} MEPSystem-MEPElement relationships")
+
+    def create_mep_system_space_edges(self, tx, edges):
+        """Create MEPSystem-Space relationships."""
+        q = self.qm.get("CREATE_MEP_SYSTEM_SPACE_EDGES")
+        if q:
+            tx.run(q, edges=edges)
+        self._log(f"Created {len(edges)} MEPSystem-Space relationships")
+
+    def create_mep_system_wall_edges(self, tx, edges):
+        """Create MEPSystem-Wall relationships."""
+        q = self.qm.get("CREATE_MEP_SYSTEM_WALL_EDGES")
+        if q:
+            tx.run(q, edges=edges)
+        self._log(f"Created {len(edges)} MEPSystem-Wall relationships")

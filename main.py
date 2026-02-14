@@ -60,9 +60,11 @@ if __name__ == "__main__":
 
 """
 TODO - Future works:
-    1. MEP node representation - the whole MEP element is connected with a space node and segmented elements are connected with wall nodes
-    2. Considering opening, void, window, etc.
-    3. Documentation - Claude code with Obsidian
+    1. MEP node representation
+        * But the model needs to be improved to create MEPSystem nodes that embraces all the MEP elements which are physically connected
+    2. Create a more complicated BIM model that has two rooms with a space that contains MEP system and a wall with a window opening
+    3. Considering opening, void, window, etc.
+    4. Documentation - Claude code with Obsidian
         * What IFC element types are we extracting and how are they represented in the graph?
         * What properties are we extracting and how are they stored in the graph?
         * What relationships are we creating between nodes in the graph?
@@ -75,6 +77,8 @@ TODO - Future works:
     + Also think about how to match two different graphs and 3D representations
 
 NOTE - What's been done:
-    1. BIM2GRAPH pipeline for ARC and STR models (MEP model is still pending)
-    2. SENSOR2GRAPH pipeline set up for ARC model (later replaced by PCD_PATH)
+    1. MEP node representation 
+        * The MEPSystem (parent node) is connected with space nodes if the system is visible in the space
+        * Otherwise, the MEPSystem is connected with wall nodes
+        * Each MEPSystem node consists of all the MEPElement nodes and they are all physically connected
 """
