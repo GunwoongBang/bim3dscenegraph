@@ -5,12 +5,13 @@ from dotenv import load_dotenv
 from bim2graph import bim2graph
 from sensor2graph import sensor2graph
 import logger as logger
-5
+
 load_dotenv()
 
 ARC_PATH = "ifc_models/Example/Example_ARC.ifc"
 STR_PATH = "ifc_models/Example/Example_STR.ifc"
 MEP_PATH = "ifc_models/Example/Example_MEP.ifc"
+# Old file - need to be replaced with the current model
 PCD_PATH = "ifc_models/Example/Example_PCD.ifc"
 
 NEO4J_URI = os.getenv("NEO4J_URI")
@@ -60,11 +61,9 @@ if __name__ == "__main__":
 
 """
 TODO - Future works:
-    1. MEP node representation
-        * But the model needs to be improved to create MEPSystem nodes that embraces all the MEP elements which are physically connected
-    2. Create a more complicated BIM model that has two rooms with a space that contains MEP system and a wall with a window opening
-    3. Considering opening, void, window, etc.
-    4. Documentation - Claude code with Obsidian
+    1. Electric conduit connects all the electrical MEP elements in a system
+    2. Create a more complicated BIM model that has a wall with a window opening
+    3. Documentation - Claude code with Obsidian
         * What IFC element types are we extracting and how are they represented in the graph?
         * What properties are we extracting and how are they stored in the graph?
         * What relationships are we creating between nodes in the graph?
@@ -77,8 +76,9 @@ TODO - Future works:
     + Also think about how to match two different graphs and 3D representations
 
 NOTE - What's been done:
-    1. MEP node representation 
+    1. New IFC model uploaded with more complicated geometry and MEP systems (Example_ARC.ifc, Example_STR.ifc, Example_MEP.ifc)
+    2. MEP node representation 
         * The MEPSystem (parent node) is connected with space nodes if the system is visible in the space
-        * Otherwise, the MEPSystem is connected with wall nodes
+        * Otherwise, the MEPElement is connected with wall nodes or just to their system node
         * Each MEPSystem node consists of all the MEPElement nodes and they are all physically connected
 """
