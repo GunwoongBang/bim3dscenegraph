@@ -85,4 +85,4 @@ def sensor2graph(driver, pcd_path=None, logger=None):
     # =========================================================================
 
     if logger:
-        logger.logText("SENSOR2GRAPH", "SENSOR2GRAPH under construction\n")
+        logger.logText("SENSOR2GRAPH", "SENSOR2GRAPH under construction")

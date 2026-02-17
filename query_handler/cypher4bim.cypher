@@ -132,15 +132,11 @@ CALL (m, w, edge) {
   WITH m, w, edge
   WHERE edge.relationship = 'PASSES_THROUGH'
   MERGE (m)-[:PASSES_THROUGH]->(w)
-  UNION
-  WITH m, w, edge
-  WHERE edge.relationship = 'NEAR'
-  MERGE (m)-[:NEAR]->(w)
 }
 
--- name: GET_MEP_NEAR_WALL
-// Find MEPElement nodes that pass through or are near a specific wall
-MATCH (m:MEPElement)-[r:PASSES_THROUGH|NEAR]->(w:Wall {name: $wallName})
+-- name: GET_MEP_PASSING_THROUGH_WALL
+// Find MEPElement nodes that pass through a specific wall
+MATCH (m:MEPElement)-[r:PASSES_THROUGH]->(w:Wall {name: $wallName})
 RETURN m.name AS mepElement, 
        m.objectType AS type,
        type(r) AS relationship,

@@ -7,8 +7,9 @@ from . import geometry
 
 # MEP element types to extract
 MEP_TYPES = [
-    "IfcFlowSegment",       # Pipes
-    "IfcBuildingElementProxy",  # Light fixtures (receptacles, switches)
+    "IfcFlowSegment",           # Pipes
+    "IfcFlowFitting",            # Elbows, tees, etc.
+    "IfcBuildingElementProxy",  # Light fixtures and panelboards
 ]
 
 
@@ -256,7 +257,6 @@ def compute_mep_system_parent_edges(
         mep_to_walls.setdefault(edge["mep_id"], set()).add(edge["wall_id"])
 
     system_space_edges = []
-    system_wall_edges = []
 
     for system in systems:
         system_id = system["id"]
@@ -272,22 +272,11 @@ def compute_mep_system_parent_edges(
                     "system_id": system_id,
                     "space_id": space_id,
                 })
-        else:
-            wall_ids = set()
-            for mep_id in mep_ids:
-                wall_ids.update(mep_to_walls.get(mep_id, set()))
-
-            for wall_id in sorted(wall_ids):
-                system_wall_edges.append({
-                    "system_id": system_id,
-                    "wall_id": wall_id,
-                })
 
     if logger:
         logger.logText(
             "BIM2GRAPH",
-            f"{len(system_space_edges)} MEP system-space edges, "
-            f"{len(system_wall_edges)} MEP system-wall edges created",
+            f"{len(system_space_edges)} MEP system-space edges"
         )
 
-    return system_space_edges, system_wall_edges
+    return system_space_edges

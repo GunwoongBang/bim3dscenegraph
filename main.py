@@ -61,9 +61,7 @@ if __name__ == "__main__":
 
 """
 TODO - Future works:
-    1. Electric conduit connects electrical MEP elements in a system
-    2. Create a more complicated BIM model that has a wall with a window and a door
-    3. Documentation - Claude code with Obsidian
+    1. Documentation - Claude code with Obsidian
         * What IFC element types are we extracting and how are they represented in the graph?
         * What properties are we extracting and how are they stored in the graph?
         * What relationships are we creating between nodes in the graph?

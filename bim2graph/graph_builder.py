@@ -84,7 +84,7 @@ def bim2graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
         mep_wall_edges = compute_mep_wall_relationships(
             mep_elements, walls, logger=logger)
         if mep_systems and mep_system_memberships:
-            mep_system_space_edges, mep_system_wall_edges = (
+            mep_system_space_edges = (
                 compute_mep_system_parent_edges(
                     arc_model,
                     mep_systems,
@@ -140,4 +140,4 @@ def bim2graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
             )
 
     if logger:
-        logger.logText("BIM2GRAPH", "Graph generation completed\n")
+        logger.logText("BIM2GRAPH", "Graph generation completed")
