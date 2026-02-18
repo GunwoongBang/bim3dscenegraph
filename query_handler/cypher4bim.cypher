@@ -120,14 +120,6 @@ MERGE (s)-[r:VISIBLE_IN]->(sp)
 SET r.source = edge.source,
     r.confidence = edge.confidence
 
--- name: CREATE_MEP_SYSTEM_WALL_EDGES
-UNWIND $edges AS edge
-MATCH (s:MEPSystem { id: edge.system_id })
-MATCH (w:Wall { id: edge.wall_id })
-MERGE (s)-[r:RELATED_TO_WALL]->(w)
-SET r.source = edge.source,
-    r.confidence = edge.confidence
-
 -- name: CREATE_MEP_WALL_EDGES
 UNWIND $edges AS edge
 MATCH (m:MEPElement { id: edge.mep_id })

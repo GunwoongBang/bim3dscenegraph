@@ -329,17 +329,38 @@ def compute_mep_system_parent_edges(
         logger: Optional logger for output messages
 
     Returns:
-        List of system-space edge dictionaries
+        List of system-space edge dictionaries with keys:
+            - system_id
+            - space_id
+            - source
+            - confidence
     """
     mep_by_id = {elem["id"]: elem for elem in mep_elements}
     system_to_meps = {}
     for edge in memberships:
         system_to_meps.setdefault(edge["system_id"], set()).add(edge["mep_id"])
 
-    # ---------------------------------------------------------------------
-    # 1) IFC topology-based MEP->Space mapping
-    # ---------------------------------------------------------------------
+    # mep_id -> {space_id: {"source": ..., "confidence": ...}}
     mep_to_spaces = {}
+    topology_count = 0
+    geometry_count = 0
+
+    def _add_mep_space(mep_id, space_id, source, confidence):
+        nonlocal topology_count, geometry_count
+        current = mep_to_spaces.setdefault(mep_id, {}).get(space_id)
+        if current is not None and current["confidence"] >= confidence:
+            return
+
+        if current is None:
+            if source == "ifc_topology":
+                topology_count += 1
+            elif source == "geom_bbox_overlap":
+                geometry_count += 1
+
+        mep_to_spaces.setdefault(mep_id, {})[space_id] = {
+            "source": source,
+            "confidence": confidence,
+        }
 
     def _collect_space_relation(relating_structure, related_elements):
         if not relating_structure or not relating_structure.is_a("IfcSpace"):
@@ -348,31 +369,24 @@ def compute_mep_system_parent_edges(
         for obj in related_elements or []:
             obj_id = getattr(obj, "GlobalId", None)
             if obj_id in mep_by_id:
-                mep_to_spaces.setdefault(obj_id, set()).add(space_id)
+                _add_mep_space(obj_id, space_id, "ifc_topology", 1.0)
 
-    # IFC4+ explicit containment
-    for rel in arc_model.by_type("IfcRelContainedInSpatialStructure"):
-        _collect_space_relation(
-            getattr(rel, "RelatingStructure", None),
-            getattr(rel, "RelatedElements", []),
-        )
+    # Read topology from both files so split ARC/MEP exports are covered.
+    for model in (arc_model, mep_model):
+        if model is None:
+            continue
+        for rel in model.by_type("IfcRelContainedInSpatialStructure"):
+            _collect_space_relation(
+                getattr(rel, "RelatingStructure", None),
+                getattr(rel, "RelatedElements", []),
+            )
+        for rel in model.by_type("IfcRelReferencedInSpatialStructure"):
+            _collect_space_relation(
+                getattr(rel, "RelatingStructure", None),
+                getattr(rel, "RelatedElements", []),
+            )
 
-    # IFC4+ references to spatial structure
-    for rel in arc_model.by_type("IfcRelReferencedInSpatialStructure"):
-        _collect_space_relation(
-            getattr(rel, "RelatingStructure", None),
-            getattr(rel, "RelatedElements", []),
-        )
-
-    if logger:
-        logger.logText(
-            "BIM2GRAPH",
-            f"Topology mapping: {sum(len(v) for v in mep_to_spaces.values())} MEP-space links"
-        )
-
-    # ---------------------------------------------------------------------
-    # 2) Geometry fallback for MEP elements not captured by topology
-    # ---------------------------------------------------------------------
+    # Geometry fallback for MEP elements not mapped by topology.
     space_bboxes = {}
     for space in arc_model.by_type("IfcSpace"):
         bbox = geometry.extract_bbox(space)
@@ -381,7 +395,6 @@ def compute_mep_system_parent_edges(
 
     for mep_id, mep in mep_by_id.items():
         if mep_id in mep_to_spaces:
-            # Already mapped through topology, skip geometry fallback
             continue
 
         mep_bbox_min = mep.get("bbox_min")
@@ -389,49 +402,29 @@ def compute_mep_system_parent_edges(
         if not mep_bbox_min or not mep_bbox_max:
             continue
 
-            for space_id, (space_bbox_min, space_bbox_max) in space_bboxes.items():
-                if bbox_intersects(
-                    mep_bbox_min, mep_bbox_max, space_bbox_min, space_bbox_max
-                ):
-                    _add_mep_space(mep_id, space_id, "geom_bbox_overlap", 0.4)
+        for space_id, (space_bbox_min, space_bbox_max) in space_bboxes.items():
+            if bbox_intersects(
+                mep_bbox_min, mep_bbox_max, space_bbox_min, space_bbox_max
+            ):
+                _add_mep_space(mep_id, space_id, "geom_bbox_overlap", 0.4)
 
     system_space_edges = []
-    system_wall_edges = []
-
     for system in systems:
         system_id = system["id"]
         mep_ids = system_to_meps.get(system_id, set())
-
         space_edges_by_id = {}
+
         for mep_id in mep_ids:
             for space_id, meta in mep_to_spaces.get(mep_id, {}).items():
                 current = space_edges_by_id.get(space_id)
                 if current is None or meta["confidence"] > current["confidence"]:
                     space_edges_by_id[space_id] = meta
 
-        if space_edges_by_id:
-            for space_id in sorted(space_edges_by_id.keys()):
-                meta = space_edges_by_id[space_id]
-                system_space_edges.append({
-                    "system_id": system_id,
-                    "space_id": space_id,
-                    "source": meta["source"],
-                    "confidence": meta["confidence"],
-                })
-            continue
-
-        wall_edges_by_id = {}
-        for mep_id in mep_ids:
-            for wall_id, meta in mep_to_walls.get(mep_id, {}).items():
-                current = wall_edges_by_id.get(wall_id)
-                if current is None or meta["confidence"] > current["confidence"]:
-                    wall_edges_by_id[wall_id] = meta
-
-        for wall_id in sorted(wall_edges_by_id.keys()):
-            meta = wall_edges_by_id[wall_id]
-            system_wall_edges.append({
+        for space_id in sorted(space_edges_by_id.keys()):
+            meta = space_edges_by_id[space_id]
+            system_space_edges.append({
                 "system_id": system_id,
-                "wall_id": wall_id,
+                "space_id": space_id,
                 "source": meta["source"],
                 "confidence": meta["confidence"],
             })
@@ -439,8 +432,8 @@ def compute_mep_system_parent_edges(
     if logger:
         logger.logText(
             "BIM2GRAPH",
-            f"{len(system_space_edges)} MEP system-space edges, "
-            f"{len(system_wall_edges)} MEP system-wall edges"
+            f"{len(system_space_edges)} MEP system-space edges "
+            f"(topology={topology_count}, geometry_fallback={geometry_count})"
         )
 
-    return system_space_edges, system_wall_edges
+    return system_space_edges
