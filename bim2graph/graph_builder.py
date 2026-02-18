@@ -75,7 +75,6 @@ def bim2graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
     mep_wall_edges = []
     mep_system_memberships = []
     mep_system_space_edges = []
-    mep_system_wall_edges = []
     if mep_model:
         mep_elements = extract_mep_elements(mep_model, logger)
         mep_systems = extract_mep_systems(mep_model, logger)
@@ -91,7 +90,6 @@ def bim2graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
                     mep_systems,
                     mep_system_memberships,
                     mep_elements,
-                    mep_wall_edges,
                     logger=logger,
                 )
             )
@@ -133,11 +131,6 @@ def bim2graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
             session.execute_write(
                 neo4j_ops.create_mep_system_space_edges,
                 mep_system_space_edges,
-            )
-        if mep_system_wall_edges:
-            session.execute_write(
-                neo4j_ops.create_mep_system_wall_edges,
-                mep_system_wall_edges,
             )
 
     if logger:

@@ -309,19 +309,16 @@ def compute_mep_system_parent_edges(
     systems,
     memberships,
     mep_elements,
-    mep_wall_edges,
-    allow_geometry_fallback=True,
     logger=None,
 ):
     """
-    Compute parent MEP system edges to spaces (preferred) or to walls.
+    Compute parent MEP system edges to spaces.
 
-    Priority for system-space visibility:
-        1. IFC topology in MEP model (containment/reference to IfcSpace)
-        2. Geometry fallback to ARC spaces (AABB overlap), only if enabled
+    Methodology (priority order):
+      1. IFC topology through IfcRelContainedInSpatialStructure / IfcRelReferencedInSpatialStructure
+      2. Geometry fallback using MEP-space bounding-box intersection
 
-    If a system has no space associations, it is connected to walls via
-    member MEP-wall edges.
+    System-to-wall parent edges are intentionally not produced.
 
     Args:
         arc_model: ifcopenshell model instance for the ARC file
@@ -329,95 +326,74 @@ def compute_mep_system_parent_edges(
         systems: List of system dictionaries (from extract_mep_systems)
         memberships: List of system membership dicts (from extract_mep_system_memberships)
         mep_elements: List of MEP dictionaries (from extract_mep_elements)
-        mep_wall_edges: List of MEP-Wall relationships (from compute_mep_wall_relationships)
-        allow_geometry_fallback: Use bbox overlap only when topology did not produce spaces
         logger: Optional logger for output messages
 
     Returns:
-        Tuple (system_space_edges, system_wall_edges)
+        List of system-space edge dictionaries
     """
     mep_by_id = {elem["id"]: elem for elem in mep_elements}
     system_to_meps = {}
     for edge in memberships:
         system_to_meps.setdefault(edge["system_id"], set()).add(edge["mep_id"])
 
-    graph_space_ids = {
-        space.GlobalId for space in arc_model.by_type("IfcSpace")}
-
-    # mep_to_spaces[mep_id][space_id] = {"source": ..., "confidence": ...}
+    # ---------------------------------------------------------------------
+    # 1) IFC topology-based MEP->Space mapping
+    # ---------------------------------------------------------------------
     mep_to_spaces = {}
 
-    def _add_mep_space(mep_id, space_id, source, confidence):
-        by_space = mep_to_spaces.setdefault(mep_id, {})
-        current = by_space.get(space_id)
-        if current is None or confidence > current["confidence"]:
-            by_space[space_id] = {"source": source, "confidence": confidence}
+    def _collect_space_relation(relating_structure, related_elements):
+        if not relating_structure or not relating_structure.is_a("IfcSpace"):
+            return
+        space_id = relating_structure.GlobalId
+        for obj in related_elements or []:
+            obj_id = getattr(obj, "GlobalId", None)
+            if obj_id in mep_by_id:
+                mep_to_spaces.setdefault(obj_id, set()).add(space_id)
 
-    # IFC topology: containment
-    for rel in mep_model.by_type("IfcRelContainedInSpatialStructure"):
-        structure = getattr(rel, "RelatingStructure", None)
-        if not structure or not structure.is_a("IfcSpace"):
+    # IFC4+ explicit containment
+    for rel in arc_model.by_type("IfcRelContainedInSpatialStructure"):
+        _collect_space_relation(
+            getattr(rel, "RelatingStructure", None),
+            getattr(rel, "RelatedElements", []),
+        )
+
+    # IFC4+ references to spatial structure
+    for rel in arc_model.by_type("IfcRelReferencedInSpatialStructure"):
+        _collect_space_relation(
+            getattr(rel, "RelatingStructure", None),
+            getattr(rel, "RelatedElements", []),
+        )
+
+    if logger:
+        logger.logText(
+            "BIM2GRAPH",
+            f"Topology mapping: {sum(len(v) for v in mep_to_spaces.values())} MEP-space links"
+        )
+
+    # ---------------------------------------------------------------------
+    # 2) Geometry fallback for MEP elements not captured by topology
+    # ---------------------------------------------------------------------
+    space_bboxes = {}
+    for space in arc_model.by_type("IfcSpace"):
+        bbox = geometry.extract_bbox(space)
+        if bbox:
+            space_bboxes[space.GlobalId] = bbox
+
+    for mep_id, mep in mep_by_id.items():
+        if mep_id in mep_to_spaces:
+            # Already mapped through topology, skip geometry fallback
             continue
-        space_id = getattr(structure, "GlobalId", None)
-        if space_id not in graph_space_ids:
+
+        mep_bbox_min = mep.get("bbox_min")
+        mep_bbox_max = mep.get("bbox_max")
+        if not mep_bbox_min or not mep_bbox_max:
             continue
-        for elem in getattr(rel, "RelatedElements", []):
-            mep_id = getattr(elem, "GlobalId", None)
-            if mep_id in mep_by_id:
-                _add_mep_space(mep_id, space_id,
-                               "ifc_spatial_containment", 1.0)
-
-    # IFC topology: referenced-in spatial structure (lower confidence than containment)
-    try:
-        rel_refs = mep_model.by_type("IfcRelReferencedInSpatialStructure")
-    except RuntimeError:
-        rel_refs = []
-    for rel in rel_refs:
-        structure = getattr(rel, "RelatingStructure", None)
-        if not structure or not structure.is_a("IfcSpace"):
-            continue
-        space_id = getattr(structure, "GlobalId", None)
-        if space_id not in graph_space_ids:
-            continue
-        for elem in getattr(rel, "RelatedElements", []):
-            mep_id = getattr(elem, "GlobalId", None)
-            if mep_id in mep_by_id:
-                _add_mep_space(mep_id, space_id, "ifc_spatial_reference", 0.95)
-
-    if allow_geometry_fallback:
-        space_bboxes = {}
-        for space in arc_model.by_type("IfcSpace"):
-            bbox = geometry.extract_bbox(space)
-            if bbox:
-                space_bboxes[space.GlobalId] = bbox
-
-        for mep_id, mep in mep_by_id.items():
-            # Do not use geometry if IFC topology already linked this MEP to a space.
-            if mep_to_spaces.get(mep_id):
-                continue
-
-            mep_bbox_min = mep.get("bbox_min")
-            mep_bbox_max = mep.get("bbox_max")
-            if not mep_bbox_min or not mep_bbox_max:
-                continue
 
             for space_id, (space_bbox_min, space_bbox_max) in space_bboxes.items():
                 if bbox_intersects(
                     mep_bbox_min, mep_bbox_max, space_bbox_min, space_bbox_max
                 ):
                     _add_mep_space(mep_id, space_id, "geom_bbox_overlap", 0.4)
-
-    mep_to_walls = {}
-    for edge in mep_wall_edges:
-        mep_id = edge["mep_id"]
-        wall_id = edge["wall_id"]
-        by_wall = mep_to_walls.setdefault(mep_id, {})
-        current = by_wall.get(wall_id)
-        if current is None or edge["confidence"] > current["confidence"]:
-            by_wall[wall_id] = {
-                "source": edge["source"],
-                "confidence": edge["confidence"],
-            }
 
     system_space_edges = []
     system_wall_edges = []
