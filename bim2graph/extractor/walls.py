@@ -202,8 +202,8 @@ def extract_walls(model, logger=None) -> list[dict]:
             )
 
         # Extract properties
-        load_bearing = get_pset_property(wall, "LoadBearing")
-        is_external = get_pset_property(wall, "IsExternal")
+        # load_bearing = get_pset_property(wall, "LoadBearing")
+        # is_external = get_pset_property(wall, "IsExternal")
 
         # Extract material info
         direction_sense, layer_count, _ = get_material_info(wall)

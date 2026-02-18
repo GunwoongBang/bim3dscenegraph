@@ -116,23 +116,27 @@ MERGE (s)-[:CONTAINS]->(m)
 UNWIND $edges AS edge
 MATCH (s:MEPSystem { id: edge.system_id })
 MATCH (sp:Space { id: edge.space_id })
-MERGE (s)-[:VISIBLE_IN]->(sp)
+MERGE (s)-[r:VISIBLE_IN]->(sp)
+SET r.source = edge.source,
+    r.confidence = edge.confidence
 
 -- name: CREATE_MEP_SYSTEM_WALL_EDGES
 UNWIND $edges AS edge
 MATCH (s:MEPSystem { id: edge.system_id })
 MATCH (w:Wall { id: edge.wall_id })
-MERGE (s)-[:RELATED_TO_WALL]->(w)
+MERGE (s)-[r:RELATED_TO_WALL]->(w)
+SET r.source = edge.source,
+    r.confidence = edge.confidence
 
 -- name: CREATE_MEP_WALL_EDGES
 UNWIND $edges AS edge
 MATCH (m:MEPElement { id: edge.mep_id })
 MATCH (w:Wall { id: edge.wall_id })
-CALL (m, w, edge) {
-  WITH m, w, edge
-  WHERE edge.relationship = 'PASSES_THROUGH'
-  MERGE (m)-[:PASSES_THROUGH]->(w)
-}
+WITH m, w, edge
+WHERE edge.relationship = 'PASSES_THROUGH'
+MERGE (m)-[r:PASSES_THROUGH]->(w)
+SET r.source = edge.source,
+    r.confidence = edge.confidence
 
 -- name: GET_MEP_PASSING_THROUGH_WALL
 // Find MEPElement nodes that pass through a specific wall

@@ -82,11 +82,12 @@ def bim2graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
         mep_system_memberships = extract_mep_system_memberships(
             mep_model, mep_elements, logger)
         mep_wall_edges = compute_mep_wall_relationships(
-            mep_elements, walls, logger=logger)
+            mep_model, mep_elements, walls, logger=logger)
         if mep_systems and mep_system_memberships:
-            mep_system_space_edges = (
+            mep_system_space_edges, mep_system_wall_edges = (
                 compute_mep_system_parent_edges(
                     arc_model,
+                    mep_model,
                     mep_systems,
                     mep_system_memberships,
                     mep_elements,
