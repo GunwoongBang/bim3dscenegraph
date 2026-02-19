@@ -312,13 +312,15 @@ def compute_mep_system_parent_edges(
     logger=None,
 ):
     """
-    Compute parent MEP system edges to spaces.
+    Compute MEP system-to-space relationships based on topology.
+
+    A system is connected to spaces if any of its member elements are in that space.
+    Uses IFC topology (IfcRelContainedInSpatialStructure, IfcRelReferencedInSpatialStructure)
+    with geometry fallback for unmapped elements.
 
     Methodology (priority order):
       1. IFC topology through IfcRelContainedInSpatialStructure / IfcRelReferencedInSpatialStructure
       2. Geometry fallback using MEP-space bounding-box intersection
-
-    System-to-wall parent edges are intentionally not produced.
 
     Args:
         arc_model: ifcopenshell model instance for the ARC file
