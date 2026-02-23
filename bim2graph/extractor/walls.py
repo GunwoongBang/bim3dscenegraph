@@ -219,7 +219,6 @@ def extract_walls(model, logger=None) -> list[dict]:
             "directionSense": direction_sense,
             "layerCount": layer_count,
             "axis2": axis2,
-            "center": center
         }
         walls.append(wall_data)
 

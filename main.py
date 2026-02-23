@@ -61,22 +61,18 @@ if __name__ == "__main__":
 
 """
 TODO - Future works:
-    1. Documentation - Claude code with Obsidian
-        * What IFC element types are we extracting and how are they represented in the graph?
-        * What properties are we extracting and how are they stored in the graph?
-        * What relationships are we creating between nodes in the graph?
-        * What are grounds for selecting specific approaches for node enrichment and relationship creation?
+    0. Documentations
+        * What IFC element types are utilized and how are they represented in the graph?
+        * What properties are extracted and how are they stored in the graph?
+        * What relationships are created between nodes in the graph?
+        * What are the reasons for selecting specific approaches for node enrichment and relationship creation?
+    1. IFC openings - should they be represented in the graph? If so, how?
+    2. Extract MEP element geometry semantically, with bounding box or vertice - then do we need just depth values?
+    3. Visual representation: 3D map from the sensor graph and encoding semantics derived from the BIM graph - how to do it?
 
-    + Extract MEP systems' geometry with bounding box -- then do we need just depth values?
-    + Visual improvement - 3D coordinates (what would be its pros and cons?)
-    + What should be the next step? 
-        * Scaling up the BIM2GRAPH pipeline with a bigger IFC model? Or move on to SENSOR2GRAPH and then merging
-    + Also think about how to match two different graphs and 3D representations
+    + Here, graph merging means to integrate the BIM-derived graph and the Sensor-derived 3D map into a unified graph representation
+    based on 3D scene graph concept, where nodes represent entities
+    + BIM-derived graph should utilize IFC components and their properties as much as possible
 
 NOTE - What's been done:
-    1. New IFC model uploaded with more complicated geometry and MEP systems (Example_ARC.ifc, Example_STR.ifc, Example_MEP.ifc)
-    2. MEP node representation 
-        * The MEPSystem (parent node) is connected with space nodes if the system is visible in the space
-        * Otherwise, the MEPElement is connected with wall nodes or just to their system node
-        * Each MEPSystem node consists of all the MEPElement nodes and they are all physically connected
 """

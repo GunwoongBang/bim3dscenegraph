@@ -26,12 +26,9 @@ SET w.name = wall.name,
     w.ifcClass = wall.ifcClass,
     w.loadBearing = wall.loadBearing,
     w.isExternal = wall.isExternal,
-    w.bbox_min = wall.bbox_min,
-    w.bbox_max = wall.bbox_max,
     w.directionSense = wall.directionSense,
     w.layerCount = wall.layerCount,
-    w.axis2 = wall.axis2,
-    w.center = wall.center
+       w.axis2 = wall.axis2
 
 -- name: UPSERT_LAYERS
 UNWIND $layers AS layer
@@ -84,56 +81,54 @@ WHERE viewOrder = 0
 RETURN s.name AS space, w.name AS wall, l.name AS surfaceMaterial
 
 -- name: ENSURE_SCHEMA_MEP_ELEMENT
-CREATE CONSTRAINT mep_element_id IF NOT EXISTS FOR (m:MEPElement) REQUIRE m.id IS UNIQUE
+CREATE CONSTRAINT mep_element_id IF NOT EXISTS FOR (me:MEPElement) REQUIRE me.id IS UNIQUE
 
 -- name: ENSURE_SCHEMA_MEP_SYSTEM
-CREATE CONSTRAINT mep_system_id IF NOT EXISTS FOR (s:MEPSystem) REQUIRE s.id IS UNIQUE
+CREATE CONSTRAINT mep_system_id IF NOT EXISTS FOR (ms:MEPSystem) REQUIRE ms.id IS UNIQUE
 
 -- name: UPSERT_MEP_ELEMENTS
 UNWIND $elements AS elem
-MERGE (m:MEPElement { id: elem.id })
-SET m.name = elem.name,
-    m.ifcClass = elem.ifcClass,
-    m.objectType = elem.objectType,
-    m.center = elem.center,
-    m.bbox_min = elem.bbox_min,
-    m.bbox_max = elem.bbox_max
+MERGE (me:MEPElement { id: elem.id })
+SET me.name = elem.name,
+    me.ifcClass = elem.ifcClass,
+    me.objectType = elem.objectType,
+    me.center = elem.center
 
 -- name: UPSERT_MEP_SYSTEMS
 UNWIND $systems AS sys
-MERGE (s:MEPSystem { id: sys.id })
-SET s.name = sys.name,
-    s.ifcClass = sys.ifcClass,
-    s.objectType = sys.objectType
+MERGE (ms:MEPSystem { id: sys.id })
+SET ms.name = sys.name,
+    ms.ifcClass = sys.ifcClass,
+    ms.objectType = sys.objectType
 
 -- name: CREATE_MEP_SYSTEM_MEP_EDGES
 UNWIND $edges AS edge
-MATCH (s:MEPSystem { id: edge.system_id })
-MATCH (m:MEPElement { id: edge.mep_id })
-MERGE (s)-[:CONTAINS]->(m)
+MATCH (ms:MEPSystem { id: edge.system_id })
+MATCH (me:MEPElement { id: edge.mep_id })
+MERGE (ms)-[:CONTAINS]->(me)
 
 -- name: CREATE_MEP_SYSTEM_SPACE_EDGES
 UNWIND $edges AS edge
-MATCH (s:MEPSystem { id: edge.system_id })
-MATCH (sp:Space { id: edge.space_id })
-MERGE (s)-[r:VISIBLE_IN]->(sp)
+MATCH (ms:MEPSystem { id: edge.system_id })
+MATCH (s:Space { id: edge.space_id })
+MERGE (ms)-[r:VISIBLE_IN]->(s)
 SET r.source = edge.source,
     r.confidence = edge.confidence
 
 -- name: CREATE_MEP_WALL_EDGES
 UNWIND $edges AS edge
-MATCH (m:MEPElement { id: edge.mep_id })
+MATCH (me:MEPElement { id: edge.mep_id })
 MATCH (w:Wall { id: edge.wall_id })
-WITH m, w, edge
+WITH me, w, edge
 WHERE edge.relationship = 'PASSES_THROUGH'
-MERGE (m)-[r:PASSES_THROUGH]->(w)
+MERGE (me)-[r:PASSES_THROUGH]->(w)
 SET r.source = edge.source,
     r.confidence = edge.confidence
 
 -- name: GET_MEP_PASSING_THROUGH_WALL
 // Find MEPElement nodes that pass through a specific wall
-MATCH (m:MEPElement)-[r:PASSES_THROUGH]->(w:Wall {name: $wallName})
-RETURN m.name AS mepElement, 
-       m.objectType AS type,
+MATCH (me:MEPElement)-[r:PASSES_THROUGH]->(w:Wall {name: $wallName})
+RETURN me.name AS mepElement, 
+       me.objectType AS type,
        type(r) AS relationship,
        w.name AS wall
