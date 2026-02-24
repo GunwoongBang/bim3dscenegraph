@@ -40,7 +40,7 @@ if __name__ == "__main__":
         bim2graph(driver, arc_path=ARC_PATH,
                   str_path=STR_PATH, mep_path=MEP_PATH, logger=logger)
 
-        # Generate a Sensor-derived graph from BIM models (ARC for now, later replaced by PCD_PATH)
+        # Generate a Sensor-derived graph from BIM models (PCD)
         sensor2graph(driver, pcd_path=PCD_PATH, logger=logger)
 
         # ====================================================================
@@ -62,12 +62,9 @@ if __name__ == "__main__":
 """
 TODO - Future works:
     0. Documentations
-        * What IFC element types are utilized and how are they represented in the graph?
-        * What properties are extracted and how are they stored in the graph?
-        * What relationships are created between nodes in the graph?
-        * What are the reasons for selecting specific approaches for node enrichment and relationship creation?
     1. IFC openings - should they be represented in the graph? If so, how?
     2. Extract MEP element geometry semantically, with bounding box or vertice - then do we need just depth values?
+        * IfcLocalPlacement for representing the position and orientation of MEP elements instead of extracting geometry
     3. Visual representation: 3D map from the sensor graph and encoding semantics derived from the BIM graph - how to do it?
 
     + Here, graph merging means to integrate the BIM-derived graph and the Sensor-derived 3D map into a unified graph representation
