@@ -35,6 +35,7 @@ class Neo4jOperations:
             "ENSURE_SCHEMA_SPACES",
             "ENSURE_SCHEMA_WALLS",
             "ENSURE_SCHEMA_LAYERS",
+            "ENSURE_SCHEMA_OPENINGS",
             "ENSURE_SCHEMA_MEP_ELEMENT",
             "ENSURE_SCHEMA_MEP_SYSTEM",
         ]
@@ -65,12 +66,26 @@ class Neo4jOperations:
             tx.run(q, layers=layers)
         self._log(f"Upserted {len(layers)} Layer nodes")
 
+    def upsert_openings(self, tx, openings):
+        """Create or update Opening nodes in Neo4j."""
+        q = self.qm.get("UPSERT_OPENINGS")
+        if q:
+            tx.run(q, openings=openings)
+        self._log(f"Upserted {len(openings)} Opening nodes")
+
     def create_wall_layer_edges(self, tx, layers):
         """Create relationships between walls and their layers."""
         q = self.qm.get("CREATE_WALL_LAYER_EDGES")
         if q:
             tx.run(q, layers=layers)
         self._log(f"Created {len(layers)} Wall-Layer relationships")
+
+    def create_wall_opening_edges(self, tx, edges):
+        """Create relationships between walls and openings."""
+        q = self.qm.get("CREATE_WALL_OPENING_EDGES")
+        if q:
+            tx.run(q, edges=edges)
+        self._log(f"Created {len(edges)} Wall-Opening relationships")
 
     def create_space_wall_edges(self, tx, edges):
         """Create space-wall boundary relationships."""

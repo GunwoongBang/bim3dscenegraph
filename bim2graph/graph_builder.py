@@ -14,6 +14,7 @@ from .extractor import (
     extract_walls,
     extract_layers,
     extract_str_elements,
+    extract_openings_and_edges,
     extract_space_wall_edges,
     extract_mep_elements,
     extract_mep_systems,
@@ -65,6 +66,8 @@ def bim2graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
     str_elements = extract_str_elements(
         str_model, logger) if str_model else None
     layers = extract_layers(arc_model, walls, str_elements, logger)
+    openings, wall_opening_edges = extract_openings_and_edges(
+        arc_model, walls, logger)
 
     space_wall_edges = extract_space_wall_edges(
         arc_model, spaces, walls, logger)
@@ -108,6 +111,13 @@ def bim2graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
         if layers:
             session.execute_write(neo4j_ops.upsert_layers, layers)
             session.execute_write(neo4j_ops.create_wall_layer_edges, layers)
+        if openings:
+            session.execute_write(neo4j_ops.upsert_openings, openings)
+        if wall_opening_edges:
+            session.execute_write(
+                neo4j_ops.create_wall_opening_edges,
+                wall_opening_edges,
+            )
 
         # Create relationships
         if space_wall_edges:

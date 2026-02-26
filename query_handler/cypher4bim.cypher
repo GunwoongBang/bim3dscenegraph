@@ -11,6 +11,9 @@ CREATE CONSTRAINT wall_id IF NOT EXISTS FOR (w:Wall) REQUIRE w.id IS UNIQUE
 -- name: ENSURE_SCHEMA_LAYERS
 CREATE CONSTRAINT layer_id IF NOT EXISTS FOR (l:Layer) REQUIRE l.id IS UNIQUE
 
+-- name: ENSURE_SCHEMA_OPENINGS
+CREATE CONSTRAINT opening_id IF NOT EXISTS FOR (o:Opening) REQUIRE o.id IS UNIQUE
+
 -- name: UPSERT_SPACES
 UNWIND $spaces AS space
 MERGE (s:Space { id: space.id })
@@ -39,11 +42,24 @@ SET l.name = layer.name,
     l.loadBearing = layer.loadBearing,
     l.thickness = layer.thickness
 
+-- name: UPSERT_OPENINGS
+UNWIND $openings AS opening
+MERGE (o:Opening { id: opening.id })
+SET o.name = opening.name,
+    o.ifcClass = opening.ifcClass,
+    o.center = opening.center
+
 -- name: CREATE_WALL_LAYER_EDGES
 UNWIND $layers AS layer
 MATCH (w:Wall { id: layer.wall_id })
 MATCH (l:Layer { id: layer.id })
 MERGE (w)-[:HAS_LAYER]->(l)
+
+-- name: CREATE_WALL_OPENING_EDGES
+UNWIND $edges AS edge
+MATCH (w:Wall { id: edge.wall_id })
+MATCH (o:Opening { id: edge.opening_id })
+MERGE (w)-[:VOIDED_BY]->(o)
 
 -- name: CREATE_SPACE_WALL_EDGES
 UNWIND $edges AS edge
