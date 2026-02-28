@@ -34,8 +34,8 @@ def extract_spaces(model, logger=None):
 
         space_data = {
             "id": space.GlobalId,
-            "name": getattr(space, "Name", None) or "Unknown",
             "longName": getattr(space, "LongName", None),
+            "name": getattr(space, "Name", None),
             "ifcClass": space.is_a(),
             "centroid": centroid
         }

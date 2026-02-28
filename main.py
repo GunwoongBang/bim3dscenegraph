@@ -71,5 +71,7 @@ TODO - Future works:
     based on 3D scene graph concept, where nodes represent entities
     + BIM-derived graph should utilize IFC components and their properties as much as possible
 
-NOTE - What's been done:
+NOTE - Code review:
+    + The current code structure is not so consistent
+    + Wall has bbox but they are not really necessary, but it is used for extracting MEMElement wall relationships
 """

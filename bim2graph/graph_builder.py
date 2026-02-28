@@ -62,11 +62,12 @@ def bim2graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
     # =========================================================================
     spaces = extract_spaces(arc_model, logger)
     walls = extract_walls(arc_model, logger)
+    layers = extract_layers(arc_model, walls, str_elements, logger)
 
     # Extract structural elements if STR model is provided
     str_elements = extract_str_elements(
         str_model, logger) if str_model else None
-    layers = extract_layers(arc_model, walls, str_elements, logger)
+
     openings, wall_opening_edges = extract_openings_and_edges(
         arc_model, walls, logger)
 
@@ -76,7 +77,7 @@ def bim2graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
     # Extract MEP elements if MEP model is provided
     mep_elements = []
     mep_systems = []
-    mep_wall_edges = []
+    mep_element_wall_edges = []
     mep_system_memberships = []
     mep_system_space_edges = []
     if mep_model:
@@ -84,13 +85,13 @@ def bim2graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
         mep_systems = extract_mep_systems(mep_model, logger)
         mep_system_memberships = extract_mep_system_memberships(
             mep_model, mep_elements, logger)
-        mep_wall_edges = compute_mep_wall_relationships(
+        mep_element_wall_edges = compute_mep_wall_relationships(
             mep_model, mep_elements, walls, logger=logger)
-        if mep_wall_edges:
+        if mep_element_wall_edges:
             mep_elements = enrich_mep_geometry_for_wall_penetrations(
                 mep_model,
                 mep_elements,
-                mep_wall_edges,
+                mep_element_wall_edges,
                 walls,
                 logger=logger,
             )
@@ -141,9 +142,9 @@ def bim2graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
         if mep_system_memberships:
             session.execute_write(
                 neo4j_ops.create_mep_system_mep_edges, mep_system_memberships)
-        if mep_wall_edges:
+        if mep_element_wall_edges:
             session.execute_write(
-                neo4j_ops.create_mep_wall_edges, mep_wall_edges)
+                neo4j_ops.create_mep_wall_edges, mep_element_wall_edges)
         if mep_system_space_edges:
             session.execute_write(
                 neo4j_ops.create_mep_system_space_edges,

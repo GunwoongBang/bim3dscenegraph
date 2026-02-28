@@ -22,8 +22,10 @@ class Neo4jOperations:
         if self.logger:
             self.logger.logText("BIM2GRAPH", message)
 
-    # tx: Transaction object passed from the session context
-    #
+    # tx: A transaction object passed from the session context
+    # A transaction ensures that a group of operations is executed as a single unit
+    # If all operations succeed, changes are commited
+    # If any operation fails, everything is rolled back to maintain data integrity
     def reset_database(self, tx):
         """Delete all nodes and relationships from the database."""
         q = self.qm.get("RESET_DATABASE")

@@ -104,7 +104,8 @@ def extract_placement(element):
         element: IFC element with ObjectPlacement
 
     Returns:
-        Tuple (origin, axis2) where:
+        Tuple:
+        (origin, axis2) where:
             - origin: List [x, y, z] in millimeters
             - axis2: List [dx, dy, dz] unit direction vector
         Returns (None, None) if extraction fails
