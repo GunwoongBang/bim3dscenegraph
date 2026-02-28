@@ -22,6 +22,8 @@ class Neo4jOperations:
         if self.logger:
             self.logger.logText("BIM2GRAPH", message)
 
+    # tx: Transaction object passed from the session context
+    #
     def reset_database(self, tx):
         """Delete all nodes and relationships from the database."""
         q = self.qm.get("RESET_DATABASE")
@@ -36,8 +38,8 @@ class Neo4jOperations:
             "ENSURE_SCHEMA_WALLS",
             "ENSURE_SCHEMA_LAYERS",
             "ENSURE_SCHEMA_OPENINGS",
-            "ENSURE_SCHEMA_MEP_ELEMENT",
             "ENSURE_SCHEMA_MEP_SYSTEM",
+            "ENSURE_SCHEMA_MEP_ELEMENT",
         ]
         for query_name in schema_queries:
             q = self.qm.get(query_name)

@@ -14,6 +14,12 @@ CREATE CONSTRAINT layer_id IF NOT EXISTS FOR (l:Layer) REQUIRE l.id IS UNIQUE
 -- name: ENSURE_SCHEMA_OPENINGS
 CREATE CONSTRAINT opening_id IF NOT EXISTS FOR (o:Opening) REQUIRE o.id IS UNIQUE
 
+-- name: ENSURE_SCHEMA_MEP_SYSTEM
+CREATE CONSTRAINT mep_system_id IF NOT EXISTS FOR (ms:MEPSystem) REQUIRE ms.id IS UNIQUE
+
+-- name: ENSURE_SCHEMA_MEP_ELEMENT
+CREATE CONSTRAINT mep_element_id IF NOT EXISTS FOR (me:MEPElement) REQUIRE me.id IS UNIQUE
+
 -- name: UPSERT_SPACES
 UNWIND $spaces AS space
 MERGE (s:Space { id: space.id })
@@ -31,7 +37,10 @@ SET w.name = wall.name,
     w.isExternal = wall.isExternal,
     w.directionSense = wall.directionSense,
     w.layerCount = wall.layerCount,
-       w.axis2 = wall.axis2
+    w.axis2 = wall.axis2,
+    w.center = wall.center,
+    w.bbox_min = wall.bbox_min,
+    w.bbox_max = wall.bbox_max
 
 -- name: UPSERT_LAYERS
 UNWIND $layers AS layer
@@ -48,6 +57,28 @@ MERGE (o:Opening { id: opening.id })
 SET o.name = opening.name,
     o.ifcClass = opening.ifcClass,
     o.center = opening.center
+
+-- name: UPSERT_MEP_ELEMENTS
+UNWIND $elements AS elem
+MERGE (me:MEPElement { id: elem.id })
+SET me.name = elem.name,
+    me.ifcClass = elem.ifcClass,
+    me.objectType = elem.objectType,
+    me.center = elem.center,
+    me.shapeType = elem.shapeType,
+    me.geomAxis = elem.geomAxis,
+    me.radiusMm = elem.radiusMm,
+    me.penetrationCenter = elem.penetrationCenter,
+    me.penetrationSizeXmm = elem.penetrationSizeXmm,
+    me.penetrationSizeYmm = elem.penetrationSizeYmm,
+  me.penetrationSizeZmm = elem.penetrationSizeZmm
+
+-- name: UPSERT_MEP_SYSTEMS
+UNWIND $systems AS sys
+MERGE (ms:MEPSystem { id: sys.id })
+SET ms.name = sys.name,
+    ms.ifcClass = sys.ifcClass,
+    ms.objectType = sys.objectType
 
 -- name: CREATE_WALL_LAYER_EDGES
 UNWIND $layers AS layer
@@ -68,54 +99,6 @@ MATCH (w:Wall { id: edge.wall_id })
 MERGE (s)-[r:BOUNDED_BY]->(w)
 SET r.side = edge.side,
     r.boundaryType = edge.boundaryType
-
--- name: GET_LAYERS_FROM_SPACE
-// Get wall layers in order as seen FROM a specific space
-// Usage: CALL this with spaceName parameter
-MATCH (s:Space {name: $spaceName})-[b:BOUNDED_BY]->(w:Wall)-[:HAS_LAYER]->(l:Layer)
-WITH s, w, b, l,
-     CASE 
-       WHEN b.side = w.directionSense THEN w.layerCount - l.layerIndex - 1
-       ELSE l.layerIndex
-     END AS viewOrder
-RETURN s.name AS space, 
-       w.name AS wall,
-       l.name AS material, 
-       l.thickness AS thickness,
-       viewOrder AS orderFromSpace
-ORDER BY w.name, viewOrder
-
--- name: GET_SURFACE_MATERIAL_FROM_SPACE
-// Get the first layer (surface material) visible from each space
-MATCH (s:Space)-[b:BOUNDED_BY]->(w:Wall)-[:HAS_LAYER]->(l:Layer)
-WITH s, w, b, l,
-     CASE 
-       WHEN b.side = w.directionSense THEN w.layerCount - l.layerIndex - 1
-       ELSE l.layerIndex
-     END AS viewOrder
-WHERE viewOrder = 0
-RETURN s.name AS space, w.name AS wall, l.name AS surfaceMaterial
-
--- name: ENSURE_SCHEMA_MEP_ELEMENT
-CREATE CONSTRAINT mep_element_id IF NOT EXISTS FOR (me:MEPElement) REQUIRE me.id IS UNIQUE
-
--- name: ENSURE_SCHEMA_MEP_SYSTEM
-CREATE CONSTRAINT mep_system_id IF NOT EXISTS FOR (ms:MEPSystem) REQUIRE ms.id IS UNIQUE
-
--- name: UPSERT_MEP_ELEMENTS
-UNWIND $elements AS elem
-MERGE (me:MEPElement { id: elem.id })
-SET me.name = elem.name,
-    me.ifcClass = elem.ifcClass,
-    me.objectType = elem.objectType,
-    me.center = elem.center
-
--- name: UPSERT_MEP_SYSTEMS
-UNWIND $systems AS sys
-MERGE (ms:MEPSystem { id: sys.id })
-SET ms.name = sys.name,
-    ms.ifcClass = sys.ifcClass,
-    ms.objectType = sys.objectType
 
 -- name: CREATE_MEP_SYSTEM_MEP_EDGES
 UNWIND $edges AS edge
@@ -141,10 +124,33 @@ MERGE (me)-[r:PASSES_THROUGH]->(w)
 SET r.source = edge.source,
     r.confidence = edge.confidence
 
+-- name: GET_LAYERS_FROM_SPACE
+MATCH (s:Space {name: $spaceName})-[b:BOUNDED_BY]->(w:Wall)-[:HAS_LAYER]->(l:Layer)
+WITH s, w, b, l,
+     CASE
+       WHEN b.side = w.directionSense THEN w.layerCount - l.layerIndex - 1
+       ELSE l.layerIndex
+     END AS viewOrder
+RETURN s.name AS space,
+       w.name AS wall,
+       l.name AS material,
+       l.thickness AS thickness,
+       viewOrder AS orderFromSpace
+ORDER BY w.name, viewOrder
+
+-- name: GET_SURFACE_MATERIAL_FROM_SPACE
+MATCH (s:Space)-[b:BOUNDED_BY]->(w:Wall)-[:HAS_LAYER]->(l:Layer)
+WITH s, w, b, l,
+     CASE
+       WHEN b.side = w.directionSense THEN w.layerCount - l.layerIndex - 1
+       ELSE l.layerIndex
+     END AS viewOrder
+WHERE viewOrder = 0
+RETURN s.name AS space, w.name AS wall, l.name AS surfaceMaterial
+
 -- name: GET_MEP_PASSING_THROUGH_WALL
-// Find MEPElement nodes that pass through a specific wall
 MATCH (me:MEPElement)-[r:PASSES_THROUGH]->(w:Wall {name: $wallName})
-RETURN me.name AS mepElement, 
+RETURN me.name AS mepElement,
        me.objectType AS type,
        type(r) AS relationship,
        w.name AS wall

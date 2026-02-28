@@ -70,7 +70,6 @@ def sensor2graph(driver, pcd_path=None, logger=None):
         # Export the point cloud data to a xyz file
         model_name = os.path.splitext(os.path.basename(pcd_path))[0]
         o3d.io.write_point_cloud(f"pc_models/{model_name}.xyz", point_cloud)
-        print(model_name)
 
         if logger:
             logger.logText(

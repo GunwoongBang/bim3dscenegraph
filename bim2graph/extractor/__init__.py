@@ -23,6 +23,7 @@ from .mep import (
     extract_mep_system_memberships,
     compute_mep_wall_relationships,
     compute_mep_system_parent_edges,
+    enrich_mep_geometry_for_wall_penetrations,
 )
 
 __all__ = [
@@ -40,4 +41,5 @@ __all__ = [
     'extract_mep_system_memberships',
     'compute_mep_wall_relationships',
     'compute_mep_system_parent_edges',
+    'enrich_mep_geometry_for_wall_penetrations',
 ]

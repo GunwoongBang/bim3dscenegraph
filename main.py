@@ -25,6 +25,7 @@ if not all([NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD]):
 def graph_initiate():
     driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
     logger.logText("PROJECT", "Neo4j driver initiated")
+    print("Neo4j host: http://localhost:7474/browser/")
     logger.logText("Divider")
     return driver
 
@@ -62,10 +63,9 @@ if __name__ == "__main__":
 """
 TODO - Future works:
     0. Documentations
-    1. IFC openings - should they be represented in the graph? If so, how?
-    2. Extract MEP element geometry semantically, with bounding box or vertice - then do we need just depth values?
+    1. Extract MEP element geometry semantically, with bounding box or vertice - then do we need just depth values?
         * IfcLocalPlacement for representing the position and orientation of MEP elements instead of extracting geometry
-    3. Visual representation: 3D map from the sensor graph and encoding semantics derived from the BIM graph - how to do it?
+    2. Visual representation: 3D map from the sensor graph and encoding semantics derived from the BIM graph - how to do it?
 
     + Here, graph merging means to integrate the BIM-derived graph and the Sensor-derived 3D map into a unified graph representation
     based on 3D scene graph concept, where nodes represent entities

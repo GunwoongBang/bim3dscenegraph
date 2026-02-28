@@ -21,6 +21,7 @@ from .extractor import (
     extract_mep_system_memberships,
     compute_mep_wall_relationships,
     compute_mep_system_parent_edges,
+    enrich_mep_geometry_for_wall_penetrations,
 )
 
 
@@ -85,6 +86,14 @@ def bim2graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
             mep_model, mep_elements, logger)
         mep_wall_edges = compute_mep_wall_relationships(
             mep_model, mep_elements, walls, logger=logger)
+        if mep_wall_edges:
+            mep_elements = enrich_mep_geometry_for_wall_penetrations(
+                mep_model,
+                mep_elements,
+                mep_wall_edges,
+                walls,
+                logger=logger,
+            )
         if mep_systems and mep_system_memberships:
             mep_system_space_edges = compute_mep_system_parent_edges(
                 arc_model,
