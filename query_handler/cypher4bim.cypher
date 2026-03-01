@@ -63,12 +63,12 @@ UNWIND $elements AS elem
 MERGE (me:MEPElement { id: elem.id })
 SET me.name = elem.name,
     me.ifcClass = elem.ifcClass,
-    me.objectType = elem.objectType,
     me.center = elem.center,
     me.shapeType = elem.shapeType,
     me.geomAxis = elem.geomAxis,
     me.radiusMm = elem.radiusMm,
     me.penetrationCenter = elem.penetrationCenter,
+    me.penetrationLengthMm = elem.penetrationLengthMm,
     me.penetrationSizeXmm = elem.penetrationSizeXmm,
     me.penetrationSizeYmm = elem.penetrationSizeYmm,
   me.penetrationSizeZmm = elem.penetrationSizeZmm
@@ -77,8 +77,7 @@ SET me.name = elem.name,
 UNWIND $systems AS sys
 MERGE (ms:MEPSystem { id: sys.id })
 SET ms.name = sys.name,
-    ms.ifcClass = sys.ifcClass,
-    ms.objectType = sys.objectType
+  ms.ifcClass = sys.ifcClass
 
 -- name: CREATE_WALL_LAYER_EDGES
 UNWIND $layers AS layer
@@ -151,6 +150,6 @@ RETURN s.name AS space, w.name AS wall, l.name AS surfaceMaterial
 -- name: GET_MEP_PASSING_THROUGH_WALL
 MATCH (me:MEPElement)-[r:PASSES_THROUGH]->(w:Wall {name: $wallName})
 RETURN me.name AS mepElement,
-       me.objectType AS type,
+  me.ifcClass AS type,
        type(r) AS relationship,
        w.name AS wall

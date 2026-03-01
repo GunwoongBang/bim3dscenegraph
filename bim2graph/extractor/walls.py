@@ -2,7 +2,7 @@
 Wall and layer extraction from IFC models.
 """
 
-from typing import Any, Optional
+from typing import Optional
 
 from . import geometry
 from .ifc_utils import get_pset_property, get_material_association
@@ -36,13 +36,13 @@ def get_material_info(element) -> tuple[Optional[str], int, Optional[str]]:
         if material_layers:
             layer_count = len(material_layers)
 
-    elif material_def.is_a("IfcMaterialLayerSet"):
-        if material_layers:
-            layer_count = len(material_layers)
+    # elif material_def.is_a("IfcMaterialLayerSet"):
+    #     if material_layers:
+    #         layer_count = len(material_layers)
 
-    elif material_def.is_a("IfcMaterialList"):
-        if hasattr(material_def, "Materials"):
-            layer_count = len(material_def.Materials)
+    # elif material_def.is_a("IfcMaterialList"):
+    #     if hasattr(material_def, "Materials"):
+    #         layer_count = len(material_def.Materials)
 
     elif material_def.is_a("IfcMaterial"):
         layer_count = 1
@@ -100,6 +100,7 @@ def extract_walls(model, logger=None) -> list[dict]:
             "directionSense": direction_sense,
             "layerCount": layer_count,
             "axis2": axis2,
+            "center": center,
         }
         walls.append(wall_data)
 
@@ -149,7 +150,8 @@ def get_layer_info(element) -> tuple[Optional[float], Optional[list[str]]]:
         element: IFC wall element
 
     Returns:
-        Tuple (total_thickness, material_names_list) or (None, None) if not available
+        Tuple:
+        (total_thickness, material_names_list) or (None, None) if not available
     """
     layers = get_material_layers(element)
     if not layers:

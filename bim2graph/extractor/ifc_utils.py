@@ -47,7 +47,8 @@ def get_material_association(element):
         element: IFC element with HasAssociations
 
     Returns:
-        Tuple (material_def, material_layers) where:
+        Tuple:
+        (material_def, material_layers) where:
             - material_def: The IfcMaterialLayerSetUsage, IfcMaterialLayerSet, etc.
             - material_layers: List of IfcMaterialLayer objects, or None
         Returns (None, None) if no material association found.
@@ -65,14 +66,14 @@ def get_material_association(element):
                 material_layers = getattr(layer_set, "MaterialLayers", [])
             return material, material_layers
 
-        elif material.is_a("IfcMaterialLayerSet"):
-            material_layers = getattr(material, "MaterialLayers", [])
-            return material, material_layers
+        # elif material.is_a("IfcMaterialLayerSet"):
+        #     material_layers = getattr(material, "MaterialLayers", [])
+        #     return material, material_layers
 
         # elif material.is_a("IfcMaterialList"):
         #     return material, None
 
-        # elif material.is_a("IfcMaterial"):
-        #     return material, None
+        elif material.is_a("IfcMaterial"):
+            return material, None
 
     return None, None

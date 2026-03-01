@@ -29,7 +29,6 @@ def extract_mep_systems(model, logger=None):
             - id: GlobalId
             - name: System name
             - ifcClass: IFC class type
-            - objectType: Object type description
     """
     systems = []
 
@@ -38,7 +37,6 @@ def extract_mep_systems(model, logger=None):
             "id": system.GlobalId,
             "name": getattr(system, "Name", None) or "Unknown",
             "ifcClass": system.is_a(),
-            "objectType": getattr(system, "ObjectType", None),
         })
 
     if logger:
@@ -100,7 +98,6 @@ def extract_mep_elements(model, logger=None):
             - id: GlobalId
             - name: Element name
             - ifcClass: IFC class type
-            - objectType: Object type description
             - center: [x, y, z] geometric center in mm
             - bbox_min, bbox_max: Bounding box in mm
             - selective geometry fields (populated only for wall-related elements)
@@ -130,7 +127,6 @@ def extract_mep_elements(model, logger=None):
                 "id": elem.GlobalId,
                 "name": getattr(elem, "Name", None) or "Unknown",
                 "ifcClass": elem.is_a(),
-                "objectType": getattr(elem, "ObjectType", None),
                 "center": center,
                 "bbox_min": bbox[0] if bbox else None,
                 "bbox_max": bbox[1] if bbox else None,
@@ -138,6 +134,7 @@ def extract_mep_elements(model, logger=None):
                 "geomAxis": None,
                 "radiusMm": None,
                 "penetrationCenter": None,
+                "penetrationLengthMm": None,
                 "penetrationSizeXmm": None,
                 "penetrationSizeYmm": None,
                 "penetrationSizeZmm": None,
@@ -277,6 +274,24 @@ def _bbox_overlap_with_axis(mep_bbox_min, mep_bbox_max, wall_bbox_min, wall_bbox
     }
 
 
+def _estimate_wall_thickness_mm(wall):
+    wall_bbox_min = wall.get("bbox_min") if wall else None
+    wall_bbox_max = wall.get("bbox_max") if wall else None
+    if not wall_bbox_min or not wall_bbox_max:
+        return None
+
+    wall_extents = np.array([
+        wall_bbox_max[i] - wall_bbox_min[i] for i in range(3)
+    ], dtype=float)
+
+    wall_axis2 = _normalize_vector(wall.get("axis2")) if wall else None
+    if wall_axis2:
+        thickness = float(np.dot(np.abs(np.array(wall_axis2)), wall_extents))
+        return round(thickness, 5)
+
+    return round(float(min(wall_extents)), 5)
+
+
 def enrich_mep_geometry_for_wall_penetrations(
     mep_model,
     mep_elements,
@@ -347,11 +362,15 @@ def enrich_mep_geometry_for_wall_penetrations(
             )
             if overlap is None:
                 continue
+            wall_thickness = _estimate_wall_thickness_mm(wall)
+            if wall_thickness is not None:
+                overlap["penetrationLengthMm"] = wall_thickness
             if best_overlap is None or overlap["penetrationLengthMm"] > best_overlap["penetrationLengthMm"]:
                 best_overlap = overlap
 
         if best_overlap:
             mep_data["penetrationCenter"] = best_overlap["penetrationCenter"]
+            mep_data["penetrationLengthMm"] = best_overlap["penetrationLengthMm"]
 
             if signature["shapeType"] == "cylindrical":
                 mep_data["radiusMm"] = signature["radiusMm"]
@@ -371,6 +390,7 @@ def enrich_mep_geometry_for_wall_penetrations(
         else:
             mep_data["radiusMm"] = None
             mep_data["penetrationCenter"] = None
+            mep_data["penetrationLengthMm"] = None
             mep_data["penetrationSizeXmm"] = None
             mep_data["penetrationSizeYmm"] = None
             mep_data["penetrationSizeZmm"] = None

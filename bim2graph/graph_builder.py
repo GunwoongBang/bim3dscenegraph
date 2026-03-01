@@ -62,11 +62,12 @@ def bim2graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
     # =========================================================================
     spaces = extract_spaces(arc_model, logger)
     walls = extract_walls(arc_model, logger)
-    layers = extract_layers(arc_model, walls, str_elements, logger)
 
     # Extract structural elements if STR model is provided
     str_elements = extract_str_elements(
         str_model, logger) if str_model else None
+
+    layers = extract_layers(arc_model, walls, str_elements, logger)
 
     openings, wall_opening_edges = extract_openings_and_edges(
         arc_model, walls, logger)
