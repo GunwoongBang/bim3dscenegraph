@@ -4,50 +4,8 @@ Wall and layer extraction from IFC models.
 
 from typing import Optional
 
-from . import geometry
-from .ifc_utils import get_pset_property, get_material_association
-
-
-def get_material_info(element) -> tuple[Optional[str], int, Optional[str]]:
-    """
-    Extract material layer set information from an element.
-
-    Args:
-        element: IFC element with HasAssociations
-
-    Returns:
-        Tuple:
-        (direction_sense, layer_count, material_type) where:
-            - direction_sense: "POSITIVE" or "NEGATIVE" (from IfcMaterialLayerSetUsage)
-            - layer_count: Number of material layers
-            - material_type: Type of material definition found
-    """
-    material_def, material_layers = get_material_association(element)
-
-    if material_def is None:
-        return None, 0, None
-
-    direction_sense = None
-    layer_count = 0
-    material_type = material_def.is_a()
-
-    if material_def.is_a("IfcMaterialLayerSetUsage"):
-        direction_sense = getattr(material_def, "DirectionSense", None)
-        if material_layers:
-            layer_count = len(material_layers)
-
-    # elif material_def.is_a("IfcMaterialLayerSet"):
-    #     if material_layers:
-    #         layer_count = len(material_layers)
-
-    # elif material_def.is_a("IfcMaterialList"):
-    #     if hasattr(material_def, "Materials"):
-    #         layer_count = len(material_def.Materials)
-
-    elif material_def.is_a("IfcMaterial"):
-        layer_count = 1
-
-    return direction_sense, layer_count, material_type
+from .utils.wall_utils import get_material_info, get_pset_property, get_layer_info, get_material_layers, match_layer_to_str
+from .geometry import extract_bbox, extract_centroid, extract_placement
 
 
 def extract_walls(model, logger=None) -> list[dict]:
@@ -67,26 +25,24 @@ def extract_walls(model, logger=None) -> list[dict]:
             - loadBearing: Boolean or None
             - isExternal: Boolean or None
             - bbox_min, bbox_max: Bounding box in millimeters
+            - center: Wall geometric center in millimeters
             - directionSense: Layer direction from material usage
             - layerCount: Number of material layers
             - axis2: Layer stratification direction vector
-            - center: Wall geometric center in millimeters
     """
     walls = []
 
     for wall in model.by_type("IfcWall"):
         # Extract geometry
-        bbox = geometry.extract_bbox(wall)
-        center = geometry.extract_centroid(wall)
+        bbox = extract_bbox(wall)
+        center = extract_centroid(wall)
 
         # Only need axis2 for layer direction
-        _, axis2 = geometry.extract_placement(wall)
+        _, axis2 = extract_placement(wall)
 
         if bbox is None and logger:
             logger.logText(
-                "BIM2GRAPH",
-                f"Geometry extraction failed for wall {wall.GlobalId}"
-            )
+                "BIM2GRAPH", f"Geometry extraction failed for wall {wall.GlobalId}")
 
         # Extract material info
         direction_sense, layer_count, _ = get_material_info(wall)
@@ -97,10 +53,10 @@ def extract_walls(model, logger=None) -> list[dict]:
             "ifcClass": wall.is_a(),
             "bbox_min": bbox[0] if bbox else None,
             "bbox_max": bbox[1] if bbox else None,
+            "center": center,
             "directionSense": direction_sense,
             "layerCount": layer_count,
             "axis2": axis2,
-            "center": center,
         }
         walls.append(wall_data)
 
@@ -110,83 +66,43 @@ def extract_walls(model, logger=None) -> list[dict]:
     return walls
 
 
-def get_material_layers(element) -> list[dict]:
+def extract_str_elements(str_model, logger=None) -> list[dict]:
     """
-    Extract individual material layer details from an element.
+    Extract structural elements from the STR model and return a list of updates.
 
     Args:
-        element: IFC element with HasAssociations (typically IfcWall)
+        str_model: ifcopenshell model instance of the STR file
+        logger: Optional logger for output messages
 
     Returns:
-        List of dicts with keys:
-            - thickness: Layer thickness in model units
-            - name: Material name
-            - index: Layer position (0-based)
-        Returns empty list if no layers found.
+        str_elements:
+        List of structural elements with properties relevant for updating layer nodes in the graph.
     """
-    _, material_layers = get_material_association(element)
-
-    if not material_layers:
+    if str_model is None:
         return []
 
-    layers = []
-    for i, mat_layer in enumerate(material_layers):
-        mat_name = None
-        if mat_layer.Material:
-            mat_name = getattr(mat_layer.Material, "Name", None)
-        layers.append({
-            "thickness": getattr(mat_layer, "LayerThickness", None),
-            "name": mat_name,
-            "index": i
+    str_elements = []
+
+    for elem in str_model.by_type("IfcWall"):
+        # Extract load bearing info for walls
+        load_bearing = get_pset_property(elem, "LoadBearing")
+        # bbox = extract_bbox(elem)
+        thickness, mat_names = get_layer_info(elem)
+
+        str_elements.append({
+            "id": elem.GlobalId,
+            "loadBearing": load_bearing,
+            "thickness": thickness,
+            "materials": mat_names or [],
+            # "bbox_min": bbox[0] if bbox else None,
+            # "bbox_max": bbox[1] if bbox else None,
         })
-    return layers
 
+    if logger:
+        logger.logText(
+            "BIM2GRAPH", f"{len(str_elements)} structural wall elements extracted")
 
-def get_layer_info(element) -> tuple[Optional[float], Optional[list[str]]]:
-    """
-    Extract aggregated layer info from a wall element.
-
-    Args:
-        element: IFC wall element
-
-    Returns:
-        Tuple:
-        (total_thickness, material_names_list) or (None, None) if not available
-    """
-    layers = get_material_layers(element)
-    if not layers:
-        return None, None
-
-    thickness = sum(layer["thickness"] or 0 for layer in layers)
-    mat_names = [layer["name"] for layer in layers if layer["name"]]
-    return thickness, mat_names
-
-
-def match_layer_to_str(
-    layer_thickness: Optional[float],
-    mat_name: Optional[str],
-    str_elements: list[dict]
-) -> Optional[bool]:
-    """
-    Match a layer to structural elements by thickness and material name.
-
-    Args:
-        layer_thickness: Layer thickness in model units
-        mat_name: Material name
-        str_elements: List of structural element dicts from extract_str_elements
-
-    Returns:
-        loadBearing value (True/False) if matched, None otherwise
-    """
-    if not str_elements or layer_thickness is None:
-        return None
-
-    for str_elem in str_elements:
-        if (str_elem["thickness"] == layer_thickness and
-                mat_name in str_elem["materials"]):
-            return str_elem["loadBearing"]
-
-    return None
+    return str_elements
 
 
 def extract_layers(
@@ -221,10 +137,10 @@ def extract_layers(
 
     # Build lookup of IFC wall objects
     ifc_walls = {
-        wall.GlobalId: wall
-        for wall in model.by_type("IfcWall")
+        wall.GlobalId: wall for wall in model.by_type("IfcWall")
     }
 
+    # items() returns key-value pairs of (GlobalId, wall object) according to ifc_walls (line: 142)
     for wall_id, ifc_wall in ifc_walls.items():
         if wall_id not in wall_ids:
             continue
@@ -254,45 +170,6 @@ def extract_layers(
 
     if logger:
         logger.logText(
-            "BIM2GRAPH", f"{len(layers)} Wall-Layer elements extracted")
+            "BIM2GRAPH", f"{len(layers)} Layer elements extracted")
 
     return layers
-
-
-def extract_str_elements(str_model, logger=None) -> list[dict]:
-    """
-    Extract structural elements from the STR model and return a list of updates.
-
-    Args:
-        str_model: ifcopenshell model instance of the STR file
-        logger: Optional logger for output messages
-
-    Returns:
-        str_elements:
-        List of structural elements with properties relevant for updating layer nodes in the graph.
-    """
-    if str_model is None:
-        return []
-
-    str_elements = []
-
-    for elem in str_model.by_type("IfcWall"):
-        # Extract load bearing info for walls
-        load_bearing = get_pset_property(elem, "LoadBearing")
-        bbox = geometry.extract_bbox(elem)
-        thickness, mat_names = get_layer_info(elem)
-
-        str_elements.append({
-            "id": elem.GlobalId,
-            "loadBearing": load_bearing,
-            "thickness": thickness,
-            "materials": mat_names or [],
-            "bbox_min": bbox[0] if bbox else None,
-            "bbox_max": bbox[1] if bbox else None,
-        })
-
-    if logger:
-        logger.logText(
-            "BIM2GRAPH", f"{len(str_elements)} structural wall elements extracted")
-
-    return str_elements

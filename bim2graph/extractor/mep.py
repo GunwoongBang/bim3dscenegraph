@@ -11,8 +11,8 @@ from . import geometry
 # MEP element types to extract
 MEP_TYPES = [
     "IfcFlowSegment",           # Pipes
-    "IfcFlowFitting",            # Elbows, tees, etc.
-    "IfcBuildingElementProxy",  # Light fixtures and panelboards
+    "IfcFlowFitting",           # Elbows, tees, etc.
+    "IfcBuildingElementProxy",  # Light fixtures, electric receptacles, panelboards
 ]
 
 
@@ -25,6 +25,7 @@ def extract_mep_systems(model, logger=None):
         logger: Optional logger for output messages
 
     Returns:
+        systems:
         List of system dictionaries with keys:
             - id: GlobalId
             - name: System name
@@ -46,9 +47,9 @@ def extract_mep_systems(model, logger=None):
     return systems
 
 
-def extract_mep_system_memberships(model, mep_elements, logger=None):
+def extract_mep_memberships(model, mep_elements, logger=None):
     """
-    Extract MEP system memberships from IfcRelAssignsToGroup.
+    Extract MEP memberships (MEPSystem-MEPElement) from IfcRelAssignsToGroup.
 
     Args:
         model: ifcopenshell model instance
@@ -56,6 +57,7 @@ def extract_mep_system_memberships(model, mep_elements, logger=None):
         logger: Optional logger for output messages
 
     Returns:
+        edges:
         List of membership dictionaries with keys:
             - system_id: System GlobalId
             - mep_id: MEP element GlobalId
@@ -94,6 +96,7 @@ def extract_mep_elements(model, logger=None):
         logger: Optional logger for output messages
 
     Returns:
+        mep_elements:
         List of MEP element dictionaries with keys:
             - id: GlobalId
             - name: Element name
@@ -157,6 +160,7 @@ def bbox_intersects(bbox1_min, bbox1_max, bbox2_min, bbox2_max):
         bbox2_min, bbox2_max: Second bounding box corners [x, y, z]
 
     Returns:
+        bool:
         True if boxes intersect
     """
     for i in range(3):

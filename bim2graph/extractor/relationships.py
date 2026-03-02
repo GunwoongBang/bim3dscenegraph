@@ -2,36 +2,8 @@
 Relationship extraction from IFC models (space-wall boundaries, etc.).
 """
 
-import numpy as np
 
-
-def compute_space_side_of_wall(space_centroid, wall_center, wall_axis2):
-    """
-    Determine which side of the wall's AXIS2 the space is on.
-
-    Uses dot product of the vector from wall center to space centroid
-    with the wall's AXIS2 direction to determine the side.
-
-    Args:
-        space_centroid: [x, y, z] coordinates of space centroid in mm
-        wall_center: [x, y, z] coordinates of wall geometric center in mm
-        wall_axis2: [dx, dy, dz] direction vector of wall's AXIS2
-
-    Returns:
-        "POSITIVE" if space is on positive side of AXIS2
-        "NEGATIVE" if space is on negative side of AXIS2
-        None if any input is missing
-    """
-    if not space_centroid or not wall_center or not wall_axis2:
-        return None
-
-    # Vector from wall center to space centroid
-    v = np.array(space_centroid) - np.array(wall_center)
-
-    # Dot product determines which side
-    dot = np.dot(v, np.array(wall_axis2))
-
-    return "POSITIVE" if dot > 0 else "NEGATIVE"
+from .utils.rel_utils import compute_space_side_of_wall
 
 
 def extract_space_wall_edges(model, spaces, walls, logger=None):
@@ -61,10 +33,11 @@ def extract_space_wall_edges(model, spaces, walls, logger=None):
     edges = []
 
     # Build lookup dicts
-    space_centroids = {s["id"]: s.get("centroid") for s in spaces}
+    space_centroids = {
+        s["id"]: s.get("centroid") for s in spaces
+    }
     wall_geometry = {
-        w["id"]: (w.get("center"), w.get("axis2"))
-        for w in walls
+        w["id"]: (w.get("center"), w.get("axis2")) for w in walls
     }
 
     for rel in model.by_type("IfcRelSpaceBoundary"):
@@ -82,7 +55,8 @@ def extract_space_wall_edges(model, spaces, walls, logger=None):
 
         # Compute which side of the wall this space is on
         space_centroid = space_centroids.get(space_id)
-        wall_center, wall_axis2 = wall_geometry.get(wall_id, (None, None))
+        wall_center, wall_axis2 = wall_geometry.get(wall_id)
+
         side = compute_space_side_of_wall(
             space_centroid, wall_center, wall_axis2)
 
@@ -96,4 +70,57 @@ def extract_space_wall_edges(model, spaces, walls, logger=None):
             "boundaryType": str(boundary_type) if boundary_type else None
         })
 
+    if logger:
+        logger.logText(
+            "BIM2GRAPH", f"{len(edges)} Space-Wall relationships extracted")
+
     return edges
+
+
+def extract_wall_opening_edges(model, walls, logger=None):
+    """
+    Extract Wall-Opening edges from IfcRelVoidsElement.
+
+    Args:
+        model: ifcopenshell model instance
+        walls: List of wall dictionaries (from extract_walls)
+        logger: Optional logger for output messages
+
+    Returns:
+        wall_opening_edges:
+        List of dictionaries with keys:
+            - wall_id: Wall GlobalId
+            - opening_id: Opening GlobalId
+    """
+    wall_ids = {wall["id"] for wall in walls}
+    wall_opening_pairs = set()
+
+    for rel in model.by_type("IfcRelVoidsElement"):
+        wall = getattr(rel, "RelatingBuildingElement", None)
+        opening = getattr(rel, "RelatedOpeningElement", None)
+
+        if not wall or not opening:
+            continue
+        if not wall.is_a("IfcWall"):
+            continue
+
+        wall_id = getattr(wall, "GlobalId", None)
+        opening_id = getattr(opening, "GlobalId", None)
+        if not wall_id or not opening_id:
+            continue
+        if wall_id not in wall_ids:
+            continue
+
+        wall_opening_pairs.add((wall_id, opening_id))
+
+    wall_opening_edges = sorted(wall_opening_pairs)
+    wall_opening_edges = [
+        {"wall_id": wall_id, "opening_id": opening_id}
+        for wall_id, opening_id in wall_opening_edges
+    ]
+
+    if logger:
+        logger.logText(
+            "BIM2GRAPH", f"{len(wall_opening_edges)} Wall-Opening relationships extracted")
+
+    return wall_opening_edges

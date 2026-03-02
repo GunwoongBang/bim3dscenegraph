@@ -63,9 +63,6 @@ if __name__ == "__main__":
 """
 TODO - Future works:
     0. Documentations
-    1. Extract MEP element geometry semantically, with bounding box or vertice - then do we need just depth values?
-        * IfcLocalPlacement for representing the position and orientation of MEP elements instead of extracting geometry
-    2. Visual representation: 3D map from the sensor graph and encoding semantics derived from the BIM graph - how to do it?
 
     + Here, graph merging means to integrate the BIM-derived graph and the Sensor-derived 3D map into a unified graph representation
     based on 3D scene graph concept, where nodes represent entities
@@ -74,4 +71,5 @@ TODO - Future works:
 NOTE - Code review:
     + The current code structure is not so consistent
     + Wall has bbox but they are not really necessary, but it is used for extracting MEMElement wall relationships
+        + MEPElement-wall relationships should be created topologically, not based on bounding box intersection
 """

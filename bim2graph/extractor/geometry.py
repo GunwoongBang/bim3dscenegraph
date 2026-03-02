@@ -54,24 +54,6 @@ def extract_vertices(element):
     return np.array(shape.geometry.verts).reshape(-1, 3)
 
 
-def extract_centroid(element):
-    """
-    Calculate the centroid of an element's geometry in world coordinates.
-
-    Args:
-        element: IFC element with geometry
-
-    Returns:
-        List [x, y, z] centroid in millimeters, or None if extraction fails
-    """
-    try:
-        verts = extract_vertices(element)
-        centroid_m = verts.mean(axis=0)
-        return m_to_mm(centroid_m)
-    except Exception:
-        return None
-
-
 def extract_bbox(element):
     """
     Extract axis-aligned bounding box (AABB) of an IFC element.
@@ -88,6 +70,24 @@ def extract_bbox(element):
         bbox_min = m_to_mm(verts.min(axis=0))
         bbox_max = m_to_mm(verts.max(axis=0))
         return bbox_min, bbox_max
+    except Exception:
+        return None
+
+
+def extract_centroid(element):
+    """
+    Calculate the centroid of an element's geometry in world coordinates.
+
+    Args:
+        element: IFC element with geometry
+
+    Returns:
+        List [x, y, z] centroid in millimeters, or None if extraction fails
+    """
+    try:
+        verts = extract_vertices(element)
+        centroid_m = verts.mean(axis=0)
+        return m_to_mm(centroid_m)
     except Exception:
         return None
 

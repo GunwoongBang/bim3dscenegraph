@@ -99,7 +99,7 @@ MERGE (s)-[r:BOUNDED_BY]->(w)
 SET r.side = edge.side,
     r.boundaryType = edge.boundaryType
 
--- name: CREATE_MEP_SYSTEM_MEP_EDGES
+-- name: CREATE_MEP_SYSTEM_MEP_ELEMENT_EDGES
 UNWIND $edges AS edge
 MATCH (ms:MEPSystem { id: edge.system_id })
 MATCH (me:MEPElement { id: edge.mep_id })
