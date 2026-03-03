@@ -58,6 +58,12 @@ SET o.name = opening.name,
     o.ifcClass = opening.ifcClass,
     o.center = opening.center
 
+-- name: UPSERT_MEP_SYSTEMS
+UNWIND $systems AS sys
+MERGE (ms:MEPSystem { id: sys.id })
+SET ms.name = sys.name,
+    ms.ifcClass = sys.ifcClass
+
 -- name: UPSERT_MEP_ELEMENTS
 UNWIND $elements AS elem
 MERGE (me:MEPElement { id: elem.id })
@@ -71,13 +77,15 @@ SET me.name = elem.name,
     me.penetrationLengthMm = elem.penetrationLengthMm,
     me.penetrationSizeXmm = elem.penetrationSizeXmm,
     me.penetrationSizeYmm = elem.penetrationSizeYmm,
-  me.penetrationSizeZmm = elem.penetrationSizeZmm
+    me.penetrationSizeZmm = elem.penetrationSizeZmm
 
--- name: UPSERT_MEP_SYSTEMS
-UNWIND $systems AS sys
-MERGE (ms:MEPSystem { id: sys.id })
-SET ms.name = sys.name,
-  ms.ifcClass = sys.ifcClass
+-- name: CREATE_SPACE_WALL_EDGES
+UNWIND $edges AS edge
+MATCH (s:Space { id: edge.space_id })
+MATCH (w:Wall { id: edge.wall_id })
+MERGE (s)-[r:BOUNDED_BY]->(w)
+SET r.side = edge.side,
+    r.boundaryType = edge.boundaryType
 
 -- name: CREATE_WALL_LAYER_EDGES
 UNWIND $layers AS layer
@@ -90,14 +98,6 @@ UNWIND $edges AS edge
 MATCH (w:Wall { id: edge.wall_id })
 MATCH (o:Opening { id: edge.opening_id })
 MERGE (w)-[:VOIDED_BY]->(o)
-
--- name: CREATE_SPACE_WALL_EDGES
-UNWIND $edges AS edge
-MATCH (s:Space { id: edge.space_id })
-MATCH (w:Wall { id: edge.wall_id })
-MERGE (s)-[r:BOUNDED_BY]->(w)
-SET r.side = edge.side,
-    r.boundaryType = edge.boundaryType
 
 -- name: CREATE_MEP_SYSTEM_MEP_ELEMENT_EDGES
 UNWIND $edges AS edge
@@ -113,7 +113,7 @@ MERGE (ms)-[r:VISIBLE_IN]->(s)
 SET r.source = edge.source,
     r.confidence = edge.confidence
 
--- name: CREATE_MEP_WALL_EDGES
+-- name: CREATE_MEP_ELEMENT_WALL_EDGES
 UNWIND $edges AS edge
 MATCH (me:MEPElement { id: edge.mep_id })
 MATCH (w:Wall { id: edge.wall_id })
@@ -122,34 +122,3 @@ WHERE edge.relationship = 'PASSES_THROUGH'
 MERGE (me)-[r:PASSES_THROUGH]->(w)
 SET r.source = edge.source,
     r.confidence = edge.confidence
-
--- name: GET_LAYERS_FROM_SPACE
-MATCH (s:Space {name: $spaceName})-[b:BOUNDED_BY]->(w:Wall)-[:HAS_LAYER]->(l:Layer)
-WITH s, w, b, l,
-     CASE
-       WHEN b.side = w.directionSense THEN w.layerCount - l.layerIndex - 1
-       ELSE l.layerIndex
-     END AS viewOrder
-RETURN s.name AS space,
-       w.name AS wall,
-       l.name AS material,
-       l.thickness AS thickness,
-       viewOrder AS orderFromSpace
-ORDER BY w.name, viewOrder
-
--- name: GET_SURFACE_MATERIAL_FROM_SPACE
-MATCH (s:Space)-[b:BOUNDED_BY]->(w:Wall)-[:HAS_LAYER]->(l:Layer)
-WITH s, w, b, l,
-     CASE
-       WHEN b.side = w.directionSense THEN w.layerCount - l.layerIndex - 1
-       ELSE l.layerIndex
-     END AS viewOrder
-WHERE viewOrder = 0
-RETURN s.name AS space, w.name AS wall, l.name AS surfaceMaterial
-
--- name: GET_MEP_PASSING_THROUGH_WALL
-MATCH (me:MEPElement)-[r:PASSES_THROUGH]->(w:Wall {name: $wallName})
-RETURN me.name AS mepElement,
-  me.ifcClass AS type,
-       type(r) AS relationship,
-       w.name AS wall

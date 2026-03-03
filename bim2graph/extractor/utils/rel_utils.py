@@ -14,6 +14,7 @@ def compute_space_side_of_wall(space_centroid, wall_center, wall_axis2):
         wall_axis2: [dx, dy, dz] direction vector of wall's AXIS2
 
     Returns:
+        side:
         "POSITIVE" if space is on positive side of AXIS2
         "NEGATIVE" if space is on negative side of AXIS2
         None if any input is missing
@@ -27,4 +28,6 @@ def compute_space_side_of_wall(space_centroid, wall_center, wall_axis2):
     # Dot product determines which side
     dot = np.dot(v, np.array(wall_axis2))
 
-    return "POSITIVE" if dot > 0 else "NEGATIVE"
+    side = "POSITIVE" if dot > 0 else "NEGATIVE"
+
+    return side

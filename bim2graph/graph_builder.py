@@ -7,6 +7,8 @@ and persistence to Neo4j graph database.
 
 import ifcopenshell
 
+from .extractor.relationships import compute_mep_memberships
+
 from .query_manager import QueryManager
 from .persistence import Neo4jOperations
 from .extractor import (
@@ -15,14 +17,12 @@ from .extractor import (
     extract_layers,
     extract_str_elements,
     extract_openings,
-    extract_wall_opening_edges,
-    extract_space_wall_edges,
+    compute_wall_opening_edges,
+    ccompute_space_wall_edges,
     extract_mep_elements,
     extract_mep_systems,
-    extract_mep_memberships,
     compute_mep_wall_relationships,
-    compute_mep_system_parent_edges,
-    enrich_mep_geometry_for_wall_penetrations,
+    compute_mep_system_space_edges,
 )
 
 
@@ -71,39 +71,26 @@ def bim2graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
     layers = extract_layers(arc_model, walls, str_elements, logger)
     openings = extract_openings(arc_model, logger)
 
-    space_wall_edges = extract_space_wall_edges(
+    space_wall_edges = ccompute_space_wall_edges(
         arc_model, spaces, walls, logger)
-    wall_opening_edges = extract_wall_opening_edges(arc_model, walls, logger)
+    wall_opening_edges = compute_wall_opening_edges(arc_model, walls, logger)
 
     # Extract MEP elements if MEP model is provided
-    mep_elements = []
-    mep_systems = []
-    mep_element_wall_edges = []
-    mep_memberships = []
-    mep_system_space_edges = []
     if mep_model:
-        mep_elements = extract_mep_elements(mep_model, logger)
         mep_systems = extract_mep_systems(mep_model, logger)
-        mep_memberships = extract_mep_memberships(
-            mep_model, mep_elements, logger)
+        mep_elements = extract_mep_elements(arc_model, mep_model, logger)
+        mep_memberships = compute_mep_memberships(mep_model, logger)
         mep_element_wall_edges = compute_mep_wall_relationships(
-            mep_model, mep_elements, walls, logger=logger)
-        if mep_element_wall_edges:
-            mep_elements = enrich_mep_geometry_for_wall_penetrations(
-                mep_model,
-                mep_elements,
-                mep_element_wall_edges,
-                walls,
-                logger=logger,
-            )
+            mep_elements, walls, logger)
+
         if mep_systems and mep_memberships:
-            mep_system_space_edges = compute_mep_system_parent_edges(
+            mep_system_space_edges = compute_mep_system_space_edges(
                 arc_model,
                 mep_model,
                 mep_systems,
                 mep_memberships,
                 mep_elements,
-                logger=logger,
+                logger,
             )
 
     # =========================================================================
@@ -145,7 +132,7 @@ def bim2graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
                 neo4j_ops.create_mep_system_mep_element_edges, mep_memberships)
         if mep_element_wall_edges:
             session.execute_write(
-                neo4j_ops.create_mep_wall_edges, mep_element_wall_edges)
+                neo4j_ops.create_mep_element_wall_edges, mep_element_wall_edges)
         if mep_system_space_edges:
             session.execute_write(
                 neo4j_ops.create_mep_system_space_edges,

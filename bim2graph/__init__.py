@@ -22,6 +22,8 @@ Package structure:
     - graph_builder.py: Main orchestrator
 """
 
+from .extractor.relationships import compute_mep_memberships
+
 from .graph_builder import bim2graph
 from .query_manager import QueryManager
 from .persistence import Neo4jOperations
@@ -30,12 +32,11 @@ from .extractor import (
     extract_walls,
     extract_layers,
     extract_str_elements,
-    extract_space_wall_edges,
+    ccompute_space_wall_edges,
     extract_mep_elements,
     extract_mep_systems,
-    extract_mep_memberships,
     compute_mep_wall_relationships,
-    compute_mep_system_parent_edges,
+    compute_mep_system_space_edges,
     get_pset_property,
     geometry,
 )
@@ -55,12 +56,12 @@ __all__ = [
     'extract_walls',
     'extract_layers',
     'extract_str_elements',
-    'extract_space_wall_edges',
+    'ccompute_space_wall_edges',
     'extract_mep_elements',
     'extract_mep_systems',
-    'extract_mep_memberships',
+    'compute_mep_memberships',
     'compute_mep_wall_relationships',
-    'compute_mep_system_parent_edges',
+    'compute_mep_system_space_edges',
     'get_pset_property',
     'geometry',
 ]

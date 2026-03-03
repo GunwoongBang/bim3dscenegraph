@@ -5,7 +5,7 @@ Space extraction from IFC models.
 from . import geometry
 
 
-def extract_spaces(model, logger=None):
+def extract_spaces(model, logger=None) -> list[dict]:
     """
     Extract all spaces from the IFC model.
 
@@ -14,6 +14,7 @@ def extract_spaces(model, logger=None):
         logger: Optional logger for output messages
 
     Returns:
+        spaces:
         List of space dictionaries with keys:
             - id: GlobalId
             - name: Space name

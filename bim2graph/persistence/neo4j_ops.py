@@ -112,9 +112,9 @@ class Neo4jOperations:
             tx.run(q, systems=systems)
         self._log(f"Upserted {len(systems)} MEP system nodes")
 
-    def create_mep_wall_edges(self, tx, edges):
+    def create_mep_element_wall_edges(self, tx, edges):
         """Create MEPElement-Wall relationships."""
-        q = self.qm.get("CREATE_MEP_WALL_EDGES")
+        q = self.qm.get("CREATE_MEP_ELEMENT_WALL_EDGES")
         if q:
             tx.run(q, edges=edges)
         self._log(f"Created {len(edges)} MEPElement-Wall relationships")

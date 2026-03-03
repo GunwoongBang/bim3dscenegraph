@@ -6,7 +6,7 @@ Relationship extraction from IFC models (space-wall boundaries, etc.).
 from .utils.rel_utils import compute_space_side_of_wall
 
 
-def extract_space_wall_edges(model, spaces, walls, logger=None):
+def ccompute_space_wall_edges(model, spaces, walls, logger=None):
     """
     Extract space-wall topological relationships with side information.
 
@@ -46,7 +46,8 @@ def extract_space_wall_edges(model, spaces, walls, logger=None):
 
         if not space or not element:
             continue
-
+        if not space.is_a("IfcSpace"):
+            continue
         if not element.is_a("IfcWall"):
             continue
 
@@ -61,13 +62,13 @@ def extract_space_wall_edges(model, spaces, walls, logger=None):
             space_centroid, wall_center, wall_axis2)
 
         # Get boundary type (internal/external)
-        boundary_type = getattr(rel, "InternalOrExternalBoundary", None)
+        # boundary_type = getattr(rel, "InternalOrExternalBoundary", None)
 
         edges.append({
             "space_id": space_id,
             "wall_id": wall_id,
             "side": side,
-            "boundaryType": str(boundary_type) if boundary_type else None
+            # "boundaryType": str(boundary_type) if boundary_type else None
         })
 
     if logger:
@@ -77,7 +78,7 @@ def extract_space_wall_edges(model, spaces, walls, logger=None):
     return edges
 
 
-def extract_wall_opening_edges(model, walls, logger=None):
+def compute_wall_opening_edges(model, walls, logger=None):
     """
     Extract Wall-Opening edges from IfcRelVoidsElement.
 
@@ -92,8 +93,7 @@ def extract_wall_opening_edges(model, walls, logger=None):
             - wall_id: Wall GlobalId
             - opening_id: Opening GlobalId
     """
-    wall_ids = {wall["id"] for wall in walls}
-    wall_opening_pairs = set()
+    edges = []
 
     for rel in model.by_type("IfcRelVoidsElement"):
         wall = getattr(rel, "RelatingBuildingElement", None)
@@ -103,24 +103,61 @@ def extract_wall_opening_edges(model, walls, logger=None):
             continue
         if not wall.is_a("IfcWall"):
             continue
+        if not opening.is_a("IfcOpeningElement"):
+            continue
 
         wall_id = getattr(wall, "GlobalId", None)
         opening_id = getattr(opening, "GlobalId", None)
         if not wall_id or not opening_id:
             continue
-        if wall_id not in wall_ids:
-            continue
 
-        wall_opening_pairs.add((wall_id, opening_id))
-
-    wall_opening_edges = sorted(wall_opening_pairs)
-    wall_opening_edges = [
-        {"wall_id": wall_id, "opening_id": opening_id}
-        for wall_id, opening_id in wall_opening_edges
-    ]
+        edges.append({
+            "wall_id": wall_id,
+            "opening_id": opening_id
+        })
 
     if logger:
         logger.logText(
-            "BIM2GRAPH", f"{len(wall_opening_edges)} Wall-Opening relationships extracted")
+            "BIM2GRAPH", f"{len(edges)} Wall-Opening relationships extracted")
+    return edges
 
-    return wall_opening_edges
+
+def compute_mep_memberships(model, logger=None):
+    """
+    Extract MEP memberships (MEPSystem-MEPElement edges) from IfcRelAssignsToGroup.
+
+    Args:
+        model: ifcopenshell model instance
+        logger: Optional logger for output messages
+
+    Returns:
+        edges:
+        List of membership dictionaries with keys:
+            - system_id: System GlobalId
+            - mep_id: MEP element GlobalId
+    """
+    memberships = []
+
+    for rel in model.by_type("IfcRelAssignsToGroup"):
+        system = getattr(rel, "RelatingGroup", None)
+        rel_id = getattr(system, "GlobalId", None)
+
+        if not system or not system.is_a("IfcSystem"):
+            continue
+
+        for obj in getattr(rel, "RelatedObjects", []):
+            obj_id = getattr(obj, "GlobalId", None)
+
+            if not rel_id or not obj_id:
+                continue
+
+            memberships.append({
+                "system_id": rel_id,
+                "mep_id": obj_id
+            })
+
+    if logger:
+        logger.logText(
+            "BIM2GRAPH", f"{len(memberships)} MEP memberships (MEPSystem-MEPElement) extracted")
+
+    return memberships

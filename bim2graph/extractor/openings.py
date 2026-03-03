@@ -5,7 +5,7 @@ Opening element extraction from IFC models.
 from .geometry import extract_centroid
 
 
-def extract_openings(model, logger=None):
+def extract_openings(model, logger=None) -> list[dict]:
     """
     Extract opening nodes from IfcOpeningElement entities.
 
