@@ -34,6 +34,6 @@ def extract_openings(model, logger=None) -> list[dict]:
 
     if logger:
         logger.logText(
-            "BIM2GRAPH", f"{len(openings)} Opening elements extracted")
+            "BIM2GRAPH", f"Extracted {len(openings)} Opening elements")
 
     return openings

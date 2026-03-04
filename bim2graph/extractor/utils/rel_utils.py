@@ -31,3 +31,23 @@ def compute_space_side_of_wall(space_centroid, wall_center, wall_axis2):
     side = "POSITIVE" if dot > 0 else "NEGATIVE"
 
     return side
+
+
+def bbox_intersects(bbox1_min, bbox1_max, bbox2_min, bbox2_max):
+    """
+    Check if two axis-aligned bounding boxes intersect.
+
+    Args:
+        bbox1_min, bbox1_max: First bounding box corners [x, y, z]
+        bbox2_min, bbox2_max: Second bounding box corners [x, y, z]
+
+    Returns:
+        bool:
+        True if boxes intersect
+    """
+    for i in range(3):
+        if bbox1_max[i] < bbox2_min[i]:
+            return False
+        if bbox2_max[i] < bbox1_min[i]:
+            return False
+    return True

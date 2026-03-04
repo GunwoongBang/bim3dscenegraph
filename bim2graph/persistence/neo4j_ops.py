@@ -77,21 +77,21 @@ class Neo4jOperations:
             tx.run(q, openings=openings)
         self._log(f"Upserted {len(openings)} Opening nodes")
 
-    def create_wall_layer_edges(self, tx, layers):
+    def create_wall_layer_rels(self, tx, layers):
         """Create relationships between walls and their layers."""
         q = self.qm.get("CREATE_WALL_LAYER_EDGES")
         if q:
             tx.run(q, layers=layers)
         self._log(f"Created {len(layers)} Wall-Layer relationships")
 
-    def create_wall_opening_edges(self, tx, edges):
+    def create_wall_opening_rels(self, tx, edges):
         """Create relationships between walls and openings."""
         q = self.qm.get("CREATE_WALL_OPENING_EDGES")
         if q:
             tx.run(q, edges=edges)
         self._log(f"Created {len(edges)} Wall-Opening relationships")
 
-    def create_space_wall_edges(self, tx, edges):
+    def create_space_wall_rels(self, tx, edges):
         """Create space-wall boundary relationships."""
         q = self.qm.get("CREATE_SPACE_WALL_EDGES")
         if q:
@@ -110,23 +110,23 @@ class Neo4jOperations:
         q = self.qm.get("UPSERT_MEP_SYSTEMS")
         if q:
             tx.run(q, systems=systems)
-        self._log(f"Upserted {len(systems)} MEP system nodes")
+        self._log(f"Upserted {len(systems)} MEPSystem nodes")
 
-    def create_mep_element_wall_edges(self, tx, edges):
+    def create_mep_element_wall_rels(self, tx, edges):
         """Create MEPElement-Wall relationships."""
         q = self.qm.get("CREATE_MEP_ELEMENT_WALL_EDGES")
         if q:
             tx.run(q, edges=edges)
         self._log(f"Created {len(edges)} MEPElement-Wall relationships")
 
-    def create_mep_system_mep_element_edges(self, tx, edges):
+    def create_mep_system_mep_element_rels(self, tx, edges):
         """Create MEPSystem-MEPElement relationships."""
         q = self.qm.get("CREATE_MEP_SYSTEM_MEP_ELEMENT_EDGES")
         if q:
             tx.run(q, edges=edges)
         self._log(f"Created {len(edges)} MEPSystem-MEPElement relationships")
 
-    def create_mep_system_space_edges(self, tx, edges):
+    def create_mep_system_space_rels(self, tx, edges):
         """Create MEPSystem-Space relationships."""
         q = self.qm.get("CREATE_MEP_SYSTEM_SPACE_EDGES")
         if q:

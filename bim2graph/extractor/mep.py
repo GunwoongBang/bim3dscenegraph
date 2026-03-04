@@ -2,21 +2,15 @@
 MEP (Mechanical, Electrical, Plumbing) element extraction from IFC models.
 """
 
-import ifcopenshell.util.placement
 import numpy as np
 
-from .geometry import extract_centroid, extract_bbox
+from bim2graph.extractor.utils.mep_utils import extract_shape_signature
+
+from .utils.mep_utils import MEP_TYPES
+from .geometry import extract_centroid, extract_bbox, extract_placement
 
 
-# MEP element types to extract
-MEP_TYPES = [
-    "IfcFlowSegment",           # Pipes
-    "IfcFlowFitting",           # Elbows, tees, etc.
-    "IfcBuildingElementProxy",  # Light fixtures, electric receptacles, panelboards
-]
-
-
-def extract_mep_systems(model, logger=None):
+def extract_mep_systems(model, logger=None) -> list[dict]:
     """
     Extract MEP systems from the IFC model.
 
@@ -42,16 +36,12 @@ def extract_mep_systems(model, logger=None):
 
     if logger:
         logger.logText(
-            "BIM2GRAPH", f"{len(systems)} MEP systems extracted")
+            "BIM2GRAPH", f"Extracted {len(systems)} MEP systems")
 
     return systems
 
 
-def enrice_mep_for_wall_penetrations():
-    return []
-
-
-def extract_mep_elements(arc_model, mep_model, logger=None):
+def extract_mep_elements(arc_model, mep_model, logger=None) -> list[dict]:
     """
     Extract MEP elements from the IFC model.
 
@@ -71,6 +61,21 @@ def extract_mep_elements(arc_model, mep_model, logger=None):
             - selective geometry fields (populated only for wall-related elements)
     """
     mep_elements = []
+    wall_geometries = []
+
+    for wall in arc_model.by_type("IfcWall"):
+        wall_bbox = extract_bbox(wall)
+
+        if not wall_bbox:
+            continue
+
+        _, wall_axis2 = extract_placement(wall)
+        wall_geometries.append({
+            "id": wall.GlobalId,
+            "bbox_min": wall_bbox[0],
+            "bbox_max": wall_bbox[1],
+            "axis2": wall_axis2,
+        })
 
     for mep_type in MEP_TYPES:
         try:
@@ -78,252 +83,120 @@ def extract_mep_elements(arc_model, mep_model, logger=None):
         except RuntimeError:
             continue
 
-        for elem in elements:
-            center = extract_centroid(elem)
-            bbox = extract_bbox(elem)
+        for element in elements:
+            center = extract_centroid(element)
+            bbox = extract_bbox(element)
 
             if center is None:
                 if logger:
                     logger.logText(
-                        "BIM2GRAPH", f"Geometry extraction failed for MEP {elem.GlobalId}")
+                        "BIM2GRAPH", f"Geometry extraction failed for MEP {element.GlobalId}")
                 continue
 
-            # mep_
+            signature = extract_shape_signature(element)
+            _, axis = extract_placement(element)
 
-            mep_elements.append({
-                "id": elem.GlobalId,
-                "name": getattr(elem, "Name", None) or "Unknown",
-                "ifcClass": elem.is_a(),
-                "center": center,
+            # best_overlap = None
+
+            # if bbox:
+            #     for wall in wall_geometries:
+            #         overlap = _bbox_overlap_with_axis(
+            #             bbox[0],
+            #             bbox[1],
+            #             wall.get("bbox_min"),
+            #             wall.get("bbox_max"),
+            #             axis,
+            #         )
+            #         if overlap is None:
+            #             continue
+
+            #         wall_thickness = _estimate_wall_thickness_mm(wall)
+
+            #         if wall_thickness is not None:
+            #             overlap["penetrationLengthMm"] = wall_thickness
+
+            #         if (best_overlap is None or
+            #                 overlap["penetrationLengthMm"] > best_overlap["penetrationLengthMm"]):
+            #             best_overlap = overlap
+
+            mep_data = {
+                "id": element.GlobalId,
+                "name": getattr(element, "Name", None) or "Unknown",
+                "ifcClass": element.is_a(),
                 "bbox_min": bbox[0] if bbox else None,
                 "bbox_max": bbox[1] if bbox else None,
-                "shapeType": None,
-                "geomAxis": None,
+                "shapeType": signature["shapeType"],
+                "geomAxis": axis,
                 "radiusMm": None,
                 "penetrationCenter": None,
                 "penetrationLengthMm": None,
                 "penetrationSizeXmm": None,
                 "penetrationSizeYmm": None,
                 "penetrationSizeZmm": None,
-            })
+            }
+
+            # if best_overlap:
+            #     mep_data["penetrationCenter"] = best_overlap["penetrationCenter"]
+            #     mep_data["penetrationLengthMm"] = best_overlap["penetrationLengthMm"]
+
+            #     if signature["shapeType"] == "cylindrical":
+            #         mep_data["radiusMm"] = signature["radiusMm"]
+            #     elif signature["shapeType"] == "rectangular":
+            #         mep_data["penetrationSizeXmm"] = best_overlap["penetrationSizeXmm"]
+            #         mep_data["penetrationSizeYmm"] = best_overlap["penetrationSizeYmm"]
+            #         mep_data["penetrationSizeZmm"] = best_overlap["penetrationSizeZmm"]
+
+            mep_elements.append(mep_data)
 
     if logger:
         logger.logText(
-            "BIM2GRAPH", f"{len(mep_elements)} MEP elements extracted")
+            "BIM2GRAPH", f"Extracted {len(mep_elements)} MEP elements")
 
     return mep_elements
 
 
-def bbox_intersects(bbox1_min, bbox1_max, bbox2_min, bbox2_max):
-    """
-    Check if two axis-aligned bounding boxes intersect.
+# def _bbox_overlap_with_axis(mep_bbox_min, mep_bbox_max, wall_bbox_min, wall_bbox_max, axis):
+#     if not mep_bbox_min or not mep_bbox_max or not wall_bbox_min or not wall_bbox_max:
+#         return None
 
-    Args:
-        bbox1_min, bbox1_max: First bounding box corners [x, y, z]
-        bbox2_min, bbox2_max: Second bounding box corners [x, y, z]
+#     overlap_min = [max(mep_bbox_min[i], wall_bbox_min[i]) for i in range(3)]
+#     overlap_max = [min(mep_bbox_max[i], wall_bbox_max[i]) for i in range(3)]
 
-    Returns:
-        bool:
-        True if boxes intersect
-    """
-    for i in range(3):
-        if bbox1_max[i] < bbox2_min[i]:
-            return False
-        if bbox2_max[i] < bbox1_min[i]:
-            return False
-    return True
+#     if any(overlap_min[i] >= overlap_max[i] for i in range(3)):
+#         return None
 
+#     extents = [round(overlap_max[i] - overlap_min[i], 5) for i in range(3)]
+#     center = [round((overlap_min[i] + overlap_max[i]) / 2, 5)
+#               for i in range(3)]
+#     axis_arr = np.array(axis, dtype=float) if axis else None
 
-def compute_mep_wall_relationships(
-    mep_elements,
-    walls,
-    logger=None
-):
-    """
-    Compute relationships between MEP elements and walls.
+#     if axis_arr is not None:
+#         penetration_length = float(np.dot(np.abs(axis_arr), np.array(extents)))
+#     else:
+#         penetration_length = float(max(extents))
 
-    Priority:
-        Geometry fallback (AABB intersection)
-
-    Args:
-        mep_model: ifcopenshell model instance (MEP IFC)
-        mep_elements: List of MEP dictionaries (from extract_mep_elements)
-        walls: List of wall dictionaries (from extract_walls)
-        allow_geometry_fallback: Use bbox overlap only when topology did not produce an edge
-        logger: Optional logger for output messages
-
-    Returns:
-        edges:
-        List of relationship dictionaries with keys:
-            - mep_id: MEP element GlobalId
-            - wall_id: Wall GlobalId
-            - relationship: "PASSES_THROUGH"
-    """
-    edges = []
-
-    for mep in mep_elements:
-        mep_bbox_min = mep.get("bbox_min")
-        mep_bbox_max = mep.get("bbox_max")
-
-        if not mep_bbox_min or not mep_bbox_max:
-            continue
-
-        for wall in walls:
-            wall_bbox_min = wall.get("bbox_min")
-            wall_bbox_max = wall.get("bbox_max")
-
-            if not wall_bbox_min or not wall_bbox_max:
-                continue
-
-            if not bbox_intersects(mep_bbox_min, mep_bbox_max, wall_bbox_min, wall_bbox_max):
-                continue
-
-            edges.append({
-                "mep_id": mep["id"],
-                "wall_id": wall["id"],
-                "relationship": "PASSES_THROUGH",
-            })
-
-    if logger:
-        logger.logText(
-            "BIM2GRAPH", f"{len(edges)} MEPElement-wall relationships extracted")
-
-    return edges
+#     return {
+#         "penetrationCenter": center,
+#         "penetrationLengthMm": round(penetration_length, 5),
+#         "penetrationSizeXmm": extents[0],
+#         "penetrationSizeYmm": extents[1],
+#         "penetrationSizeZmm": extents[2],
+#     }
 
 
-def compute_mep_system_space_edges(
-    arc_model,
-    mep_model,
-    systems,
-    memberships,
-    mep_elements,
-    logger=None,
-):
-    """
-    Compute MEP system-to-space relationships based on topology.
+# def _estimate_wall_thickness_mm(wall):
+#     wall_bbox_min = wall.get("bbox_min") if wall else None
+#     wall_bbox_max = wall.get("bbox_max") if wall else None
+#     if not wall_bbox_min or not wall_bbox_max:
+#         return None
 
-    A system is connected to spaces if any of its member elements are in that space.
-    Uses IFC topology (IfcRelContainedInSpatialStructure, IfcRelReferencedInSpatialStructure)
-    with geometry fallback for unmapped elements.
+#     wall_extents = np.array([
+#         wall_bbox_max[i] - wall_bbox_min[i] for i in range(3)
+#     ], dtype=float)
 
-    Methodology (priority order):
-      1. IFC topology through IfcRelContainedInSpatialStructure / IfcRelReferencedInSpatialStructure
-      2. Geometry fallback using MEP-space bounding-box intersection
+#     wall_axis2 = wall.get("axis2") if wall else None
+#     if wall_axis2:
+#         thickness = float(np.dot(np.abs(np.array(wall_axis2)), wall_extents))
+#         return round(thickness, 5)
 
-    Args:
-        arc_model: ifcopenshell model instance for the ARC file
-        mep_model: ifcopenshell model instance for the MEP file
-        systems: List of system dictionaries (from extract_mep_systems)
-        memberships: List of system membership dicts (from extract_mep_system_memberships)
-        mep_elements: List of MEP dictionaries (from extract_mep_elements)
-        logger: Optional logger for output messages
-
-    Returns:
-        List of system-space edge dictionaries with keys:
-            - system_id
-            - space_id
-            - source
-            - confidence
-    """
-    mep_by_id = {elem["id"]: elem for elem in mep_elements}
-    system_to_meps = {}
-    for edge in memberships:
-        system_to_meps.setdefault(edge["system_id"], set()).add(edge["mep_id"])
-
-    # mep_id -> {space_id: {"source": ..., "confidence": ...}}
-    mep_to_spaces = {}
-    topology_count = 0
-    geometry_count = 0
-
-    def _add_mep_space(mep_id, space_id, source, confidence):
-        nonlocal topology_count, geometry_count
-        current = mep_to_spaces.setdefault(mep_id, {}).get(space_id)
-        if current is not None and current["confidence"] >= confidence:
-            return
-
-        if current is None:
-            if source == "ifc_topology":
-                topology_count += 1
-            elif source == "geom_bbox_overlap":
-                geometry_count += 1
-
-        mep_to_spaces.setdefault(mep_id, {})[space_id] = {
-            "source": source,
-            "confidence": confidence,
-        }
-
-    def _collect_space_relation(relating_structure, related_elements):
-        if not relating_structure or not relating_structure.is_a("IfcSpace"):
-            return
-        space_id = relating_structure.GlobalId
-        for obj in related_elements or []:
-            obj_id = getattr(obj, "GlobalId", None)
-            if obj_id in mep_by_id:
-                _add_mep_space(obj_id, space_id, "ifc_topology", 1.0)
-
-    # Read topology from both files so split ARC/MEP exports are covered.
-    for model in (arc_model, mep_model):
-        if model is None:
-            continue
-        for rel in model.by_type("IfcRelContainedInSpatialStructure"):
-            _collect_space_relation(
-                getattr(rel, "RelatingStructure", None),
-                getattr(rel, "RelatedElements", []),
-            )
-        for rel in model.by_type("IfcRelReferencedInSpatialStructure"):
-            _collect_space_relation(
-                getattr(rel, "RelatingStructure", None),
-                getattr(rel, "RelatedElements", []),
-            )
-
-    # Geometry fallback for MEP elements not mapped by topology.
-    space_bboxes = {}
-    for space in arc_model.by_type("IfcSpace"):
-        bbox = extract_bbox(space)
-        if bbox:
-            space_bboxes[space.GlobalId] = bbox
-
-    for mep_id, mep in mep_by_id.items():
-        if mep_id in mep_to_spaces:
-            continue
-
-        mep_bbox_min = mep.get("bbox_min")
-        mep_bbox_max = mep.get("bbox_max")
-        if not mep_bbox_min or not mep_bbox_max:
-            continue
-
-        for space_id, (space_bbox_min, space_bbox_max) in space_bboxes.items():
-            if bbox_intersects(
-                mep_bbox_min, mep_bbox_max, space_bbox_min, space_bbox_max
-            ):
-                _add_mep_space(mep_id, space_id, "geom_bbox_overlap", 0.4)
-
-    system_space_edges = []
-    for system in systems:
-        system_id = system["id"]
-        mep_ids = system_to_meps.get(system_id, set())
-        space_edges_by_id = {}
-
-        for mep_id in mep_ids:
-            for space_id, meta in mep_to_spaces.get(mep_id, {}).items():
-                current = space_edges_by_id.get(space_id)
-                if current is None or meta["confidence"] > current["confidence"]:
-                    space_edges_by_id[space_id] = meta
-
-        for space_id in sorted(space_edges_by_id.keys()):
-            meta = space_edges_by_id[space_id]
-            system_space_edges.append({
-                "system_id": system_id,
-                "space_id": space_id,
-                "source": meta["source"],
-                "confidence": meta["confidence"],
-            })
-
-    if logger:
-        logger.logText(
-            "BIM2GRAPH",
-            f"{len(system_space_edges)} MEP system-space edges "
-            f"(topology={topology_count}, geometry_fallback={geometry_count})"
-        )
-
-    return system_space_edges
+#     return round(float(min(wall_extents)), 5)

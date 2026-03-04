@@ -61,7 +61,7 @@ def extract_walls(model, logger=None) -> list[dict]:
         walls.append(wall_data)
 
     if logger:
-        logger.logText("BIM2GRAPH", f"{len(walls)} Wall elements extracted")
+        logger.logText("BIM2GRAPH", f"Extracted {len(walls)} Wall elements")
 
     return walls
 
@@ -100,7 +100,7 @@ def extract_str_elements(str_model, logger=None) -> list[dict]:
 
     if logger:
         logger.logText(
-            "BIM2GRAPH", f"{len(str_elements)} structural wall elements extracted")
+            "BIM2GRAPH", f"Extracted {len(str_elements)} Structural wall elements")
 
     return str_elements
 
@@ -170,6 +170,6 @@ def extract_layers(
 
     if logger:
         logger.logText(
-            "BIM2GRAPH", f"{len(layers)} Layer elements extracted")
+            "BIM2GRAPH", f"Extracted {len(layers)} Layer elements")
 
     return layers

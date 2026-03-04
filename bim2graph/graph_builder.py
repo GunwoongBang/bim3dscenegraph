@@ -7,7 +7,7 @@ and persistence to Neo4j graph database.
 
 import ifcopenshell
 
-from .extractor.relationships import compute_mep_memberships
+from .extractor.relationships import compute_mep_element_wall_rels, compute_mep_memberships, compute_mep_system_space_rels
 
 from .query_manager import QueryManager
 from .persistence import Neo4jOperations
@@ -17,12 +17,10 @@ from .extractor import (
     extract_layers,
     extract_str_elements,
     extract_openings,
-    compute_wall_opening_edges,
-    ccompute_space_wall_edges,
+    compute_wall_opening_rels,
+    compute_space_wall_rels,
     extract_mep_elements,
     extract_mep_systems,
-    compute_mep_wall_relationships,
-    compute_mep_system_space_edges,
 )
 
 
@@ -61,30 +59,33 @@ def bim2graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
     # =========================================================================
     # Extract data from IFC
     # =========================================================================
+    # Extract nodes
     spaces = extract_spaces(arc_model, logger)
     walls = extract_walls(arc_model, logger)
 
-    # Extract structural elements if STR model is provided
     if str_model:
         str_elements = extract_str_elements(str_model, logger)
 
     layers = extract_layers(arc_model, walls, str_elements, logger)
     openings = extract_openings(arc_model, logger)
 
-    space_wall_edges = ccompute_space_wall_edges(
-        arc_model, spaces, walls, logger)
-    wall_opening_edges = compute_wall_opening_edges(arc_model, walls, logger)
-
-    # Extract MEP elements if MEP model is provided
     if mep_model:
         mep_systems = extract_mep_systems(mep_model, logger)
         mep_elements = extract_mep_elements(arc_model, mep_model, logger)
-        mep_memberships = compute_mep_memberships(mep_model, logger)
-        mep_element_wall_edges = compute_mep_wall_relationships(
+
+    # Extract relationships
+    space_wall_rels = compute_space_wall_rels(
+        arc_model, spaces, walls, logger)
+    wall_opening_rels = compute_wall_opening_rels(arc_model, logger)
+
+    if mep_model:
+        mep_memberships = compute_mep_memberships(
+            mep_model, mep_elements, logger)
+        mep_element_wall_rels = compute_mep_element_wall_rels(
             mep_elements, walls, logger)
 
         if mep_systems and mep_memberships:
-            mep_system_space_edges = compute_mep_system_space_edges(
+            mep_system_space_rels = compute_mep_system_space_rels(
                 arc_model,
                 mep_model,
                 mep_systems,
@@ -108,36 +109,31 @@ def bim2graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
             session.execute_write(neo4j_ops.upsert_walls, walls)
         if layers:
             session.execute_write(neo4j_ops.upsert_layers, layers)
-            session.execute_write(neo4j_ops.create_wall_layer_edges, layers)
         if openings:
             session.execute_write(neo4j_ops.upsert_openings, openings)
-        if wall_opening_edges:
-            session.execute_write(
-                neo4j_ops.create_wall_opening_edges,
-                wall_opening_edges,
-            )
-
-        # Create relationships
-        if space_wall_edges:
-            session.execute_write(
-                neo4j_ops.create_space_wall_edges, space_wall_edges)
-
-        # Create MEP nodes and relationships
-        if mep_elements:
-            session.execute_write(neo4j_ops.upsert_mep_elements, mep_elements)
         if mep_systems:
             session.execute_write(neo4j_ops.upsert_mep_systems, mep_systems)
+        if mep_elements:
+            session.execute_write(neo4j_ops.upsert_mep_elements, mep_elements)
+
+        # Create relationships
+        if space_wall_rels:
+            session.execute_write(
+                neo4j_ops.create_space_wall_rels, space_wall_rels)
+        if layers:
+            session.execute_write(neo4j_ops.create_wall_layer_rels, layers)
+        if wall_opening_rels:
+            session.execute_write(
+                neo4j_ops.create_wall_opening_rels, wall_opening_rels)
         if mep_memberships:
             session.execute_write(
-                neo4j_ops.create_mep_system_mep_element_edges, mep_memberships)
-        if mep_element_wall_edges:
+                neo4j_ops.create_mep_system_mep_element_rels, mep_memberships)
+        if mep_system_space_rels:
             session.execute_write(
-                neo4j_ops.create_mep_element_wall_edges, mep_element_wall_edges)
-        if mep_system_space_edges:
+                neo4j_ops.create_mep_system_space_rels, mep_system_space_rels)
+        if mep_element_wall_rels:
             session.execute_write(
-                neo4j_ops.create_mep_system_space_edges,
-                mep_system_space_edges,
-            )
+                neo4j_ops.create_mep_element_wall_rels, mep_element_wall_rels)
 
     if logger:
-        logger.logText("BIM2GRAPH", "Graph generation completed")
+        logger.logText("BIM2GRAPH", "Graph generation completed\n")

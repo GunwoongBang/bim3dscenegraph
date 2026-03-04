@@ -43,6 +43,6 @@ def extract_spaces(model, logger=None) -> list[dict]:
         spaces.append(space_data)
 
     if logger:
-        logger.logText("BIM2GRAPH", f"{len(spaces)} Space elements extracted")
+        logger.logText("BIM2GRAPH", f"Extracted {len(spaces)} Space elements")
 
     return spaces

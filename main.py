@@ -38,11 +38,10 @@ if __name__ == "__main__":
 
     try:
         # Generate a BIM-derived graph from BIM models (ARC + STR + MEP)
-        bim2graph(driver, arc_path=ARC_PATH,
-                  str_path=STR_PATH, mep_path=MEP_PATH, logger=logger)
+        bim2graph(driver, ARC_PATH, STR_PATH, MEP_PATH, logger)
 
         # Generate a Sensor-derived graph from BIM models (PCD)
-        sensor2graph(driver, pcd_path=PCD_PATH, logger=logger)
+        sensor2graph(driver, PCD_PATH, logger)
 
         # ====================================================================
         # GRAPH MERGING

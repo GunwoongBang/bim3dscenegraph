@@ -22,7 +22,7 @@ Package structure:
     - graph_builder.py: Main orchestrator
 """
 
-from .extractor.relationships import compute_mep_memberships
+from .extractor.relationships import compute_mep_element_wall_rels, compute_mep_memberships, compute_mep_system_space_rels
 
 from .graph_builder import bim2graph
 from .query_manager import QueryManager
@@ -32,11 +32,9 @@ from .extractor import (
     extract_walls,
     extract_layers,
     extract_str_elements,
-    ccompute_space_wall_edges,
+    compute_space_wall_rels,
     extract_mep_elements,
     extract_mep_systems,
-    compute_mep_wall_relationships,
-    compute_mep_system_space_edges,
     get_pset_property,
     geometry,
 )
@@ -56,12 +54,12 @@ __all__ = [
     'extract_walls',
     'extract_layers',
     'extract_str_elements',
-    'ccompute_space_wall_edges',
+    'compute_space_wall_rels',
     'extract_mep_elements',
     'extract_mep_systems',
     'compute_mep_memberships',
-    'compute_mep_wall_relationships',
-    'compute_mep_system_space_edges',
+    'compute_mep_element_wall_rels',
+    'compute_mep_system_space_rels',
     'get_pset_property',
     'geometry',
 ]
