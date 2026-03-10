@@ -11,7 +11,7 @@ import ifcopenshell.util.placement
 import numpy as np
 
 
-def get_geom_settings():
+def _get_geom_settings():
     """
     Get shared geometry settings for ifcopenshell.
 
@@ -23,7 +23,7 @@ def get_geom_settings():
     return settings
 
 
-def m_to_mm(coords):
+def _m_to_mm(coords):
     """
     Convert coordinates from meters to millimeters.
 
@@ -36,7 +36,7 @@ def m_to_mm(coords):
     return (np.array(coords) * 1000).round(2).tolist()
 
 
-def extract_vertices(element):
+def _extract_vertices(element):
     """
     Extract world-coordinate vertices from any IFC element.
 
@@ -49,7 +49,7 @@ def extract_vertices(element):
     Raises:
         Exception if geometry extraction fails
     """
-    settings = get_geom_settings()
+    settings = _get_geom_settings()
     shape = ifcopenshell.geom.create_shape(settings, element)
     return np.array(shape.geometry.verts).reshape(-1, 3)
 
@@ -66,9 +66,9 @@ def extract_bbox(element):
         Each is a list [x, y, z]
     """
     try:
-        verts = extract_vertices(element)
-        bbox_min = m_to_mm(verts.min(axis=0))
-        bbox_max = m_to_mm(verts.max(axis=0))
+        verts = _extract_vertices(element)
+        bbox_min = _m_to_mm(verts.min(axis=0))
+        bbox_max = _m_to_mm(verts.max(axis=0))
         return bbox_min, bbox_max
     except Exception:
         return None
@@ -85,9 +85,9 @@ def extract_centroid(element):
         List [x, y, z] centroid in millimeters, or None if extraction fails
     """
     try:
-        verts = extract_vertices(element)
+        verts = _extract_vertices(element)
         centroid_m = verts.mean(axis=0)
-        return m_to_mm(centroid_m)
+        return _m_to_mm(centroid_m)
     except Exception:
         return None
 

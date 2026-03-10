@@ -7,20 +7,21 @@ and persistence to Neo4j graph database.
 
 import ifcopenshell
 
-from .extractor.relationships import compute_mep_element_wall_rels, compute_mep_memberships, compute_mep_system_space_rels
-
 from .query_manager import QueryManager
 from .persistence import Neo4jOperations
 from .extractor import (
     extract_spaces,
     extract_walls,
-    extract_layers,
     extract_str_elements,
+    extract_layers,
     extract_openings,
+    extract_mep_systems,
+    extract_mep_elements,
     compute_wall_opening_rels,
     compute_space_wall_rels,
-    extract_mep_elements,
-    extract_mep_systems,
+    compute_mep_memberships,
+    compute_mep_element_wall_rels,
+    compute_mep_system_space_rels,
 )
 
 

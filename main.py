@@ -1,9 +1,11 @@
 import os
 import traceback
-from neo4j import GraphDatabase
+
 from dotenv import load_dotenv
+from neo4j import GraphDatabase
 from bim2graph import bim2graph
 from sensor2graph import sensor2graph
+
 import logger as logger
 
 load_dotenv()
@@ -62,13 +64,14 @@ if __name__ == "__main__":
 """
 TODO - Future works:
     0. Documentations
+    1. [BIM2GRAPH] MEP: Penetration extraction should be refined
+    2. [SENSOR2GRAPH] Point Cloud: the point cloud data should only collect point data from the indoor wall surface, not the whole building
 
     + Here, graph merging means to integrate the BIM-derived graph and the Sensor-derived 3D map into a unified graph representation
     based on 3D scene graph concept, where nodes represent entities
-    + BIM-derived graph should utilize IFC components and their properties as much as possible
+    + BIM-derived graph should utilize IFC components and their properties reasonably, not just as a source of node and relationship attributes, but also to inform the graph structure itself
 
 NOTE - Code review:
-    + The current code structure is not so consistent
-    + Wall has bbox but they are not really necessary, but it is used for extracting MEMElement wall relationships
-        + MEPElement-wall relationships should be created topologically, not based on bounding box intersection
+    + MEP-wall penetration
+    + Relationships
 """

@@ -4,7 +4,7 @@ MEP (Mechanical, Electrical, Plumbing) element extraction from IFC models.
 
 import numpy as np
 
-from .utils.mep_utils import MEP_TYPES, extract_shape_signature, extract_extrusion_axis, compute_ray_wall_penetration
+from .utils.mep_util import MEP_TYPES, extract_shape_signature, extract_extrusion_axis, compute_ray_wall_penetration
 from .geometry import extract_centroid, extract_bbox, extract_placement
 
 

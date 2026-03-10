@@ -2,11 +2,8 @@
 Relationship extraction from IFC models (space-wall boundaries, etc.).
 """
 
-
+from .utils.rel_util import compute_space_side_of_wall, check_bbox_intersection
 from bim2graph.extractor.geometry import extract_bbox
-from bim2graph.extractor.utils.rel_utils import check_bbox_intersection
-
-from .utils.rel_utils import compute_space_side_of_wall
 
 
 def compute_space_wall_rels(model, spaces, walls, logger=None) -> list[dict]:

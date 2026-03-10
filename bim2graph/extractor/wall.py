@@ -4,7 +4,7 @@ Wall and layer extraction from IFC models.
 
 from typing import Optional
 
-from .utils.wall_utils import get_material_info, get_pset_property, get_layer_info, get_material_layers, match_layer_to_str
+from .utils.wall_util import get_material_info, get_pset_property, get_layer_info, get_material_layers, match_layer_to_str
 from .geometry import extract_bbox, extract_centroid, extract_placement
 
 

@@ -7,7 +7,7 @@ Provides utility functions used by walls.py for property and material extraction
 from typing import Any, Optional
 
 
-def get_material_association(element):
+def _get_material_association(element):
     """
     Get the material definition associated with an IFC element.
 
@@ -61,7 +61,7 @@ def get_material_info(element) -> tuple[Optional[str], int, Optional[str]]:
             - layer_count: Number of material layers
             - material_type: Type of material definition found
     """
-    material_def, material_layers = get_material_association(element)
+    material_def, material_layers = _get_material_association(element)
 
     if material_def is None:
         return None, 0, None
@@ -155,7 +155,7 @@ def get_material_layers(element) -> list[dict]:
             - index: Layer position (0-based)
         Returns empty list if no layers found.
     """
-    _, material_layers = get_material_association(element)
+    _, material_layers = _get_material_association(element)
 
     if not material_layers:
         return []
