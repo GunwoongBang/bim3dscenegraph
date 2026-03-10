@@ -4,7 +4,7 @@ Relationship extraction from IFC models (space-wall boundaries, etc.).
 
 
 from bim2graph.extractor.geometry import extract_bbox
-from bim2graph.extractor.utils.rel_utils import bbox_intersects
+from bim2graph.extractor.utils.rel_utils import check_bbox_intersection
 
 from .utils.rel_utils import compute_space_side_of_wall
 
@@ -219,7 +219,7 @@ def compute_mep_element_wall_rels(
             if not wall_bbox_min or not wall_bbox_max:
                 continue
 
-            if not bbox_intersects(mep_bbox_min, mep_bbox_max, wall_bbox_min, wall_bbox_max):
+            if not check_bbox_intersection(mep_bbox_min, mep_bbox_max, wall_bbox_min, wall_bbox_max):
                 continue
 
             edges.append({
@@ -337,7 +337,7 @@ def compute_mep_system_space_rels(
             continue
 
         for space_id, (space_bbox_min, space_bbox_max) in space_bboxes.items():
-            if bbox_intersects(
+            if check_bbox_intersection(
                 mep_bbox_min, mep_bbox_max, space_bbox_min, space_bbox_max
             ):
                 _add_mep_space(mep_id, space_id, "geom_bbox_overlap", 0.4)

@@ -4,9 +4,7 @@ MEP (Mechanical, Electrical, Plumbing) element extraction from IFC models.
 
 import numpy as np
 
-from bim2graph.extractor.utils.mep_utils import extract_shape_signature
-
-from .utils.mep_utils import MEP_TYPES
+from .utils.mep_utils import MEP_TYPES, extract_shape_signature, extract_extrusion_axis, compute_ray_wall_penetration
 from .geometry import extract_centroid, extract_bbox, extract_placement
 
 
@@ -69,12 +67,12 @@ def extract_mep_elements(arc_model, mep_model, logger=None) -> list[dict]:
         if not wall_bbox:
             continue
 
-        _, wall_axis2 = extract_placement(wall)
+        _, axis = extract_placement(wall)
         wall_geometries.append({
             "id": wall.GlobalId,
             "bbox_min": wall_bbox[0],
             "bbox_max": wall_bbox[1],
-            "axis2": wall_axis2,
+            "axis2": axis,
         })
 
     for mep_type in MEP_TYPES:
@@ -94,39 +92,29 @@ def extract_mep_elements(arc_model, mep_model, logger=None) -> list[dict]:
                 continue
 
             signature = extract_shape_signature(element)
-            _, axis = extract_placement(element)
+            axis = extract_extrusion_axis(element)
 
-            # best_overlap = None
-
-            # if bbox:
-            #     for wall in wall_geometries:
-            #         overlap = _bbox_overlap_with_axis(
-            #             bbox[0],
-            #             bbox[1],
-            #             wall.get("bbox_min"),
-            #             wall.get("bbox_max"),
-            #             axis,
-            #         )
-            #         if overlap is None:
-            #             continue
-
-            #         wall_thickness = _estimate_wall_thickness_mm(wall)
-
-            #         if wall_thickness is not None:
-            #             overlap["penetrationLengthMm"] = wall_thickness
-
-            #         if (best_overlap is None or
-            #                 overlap["penetrationLengthMm"] > best_overlap["penetrationLengthMm"]):
-            #             best_overlap = overlap
+            best_overlap = None
+            if center and axis:
+                for wall in wall_geometries:
+                    wall_normal = wall.get("axis2")
+                    if wall_normal and abs(np.dot(np.array(axis), np.array(wall_normal))) < 0.3:
+                        continue
+                    hit = compute_ray_wall_penetration(center, axis, wall)
+                    if hit is None:
+                        continue
+                    if (best_overlap is None or
+                            hit["penetrationLengthMm"] > best_overlap["penetrationLengthMm"]):
+                        best_overlap = hit
 
             mep_data = {
                 "id": element.GlobalId,
-                "name": getattr(element, "Name", None) or "Unknown",
+                "name": getattr(element, "Name", None),
                 "ifcClass": element.is_a(),
                 "bbox_min": bbox[0] if bbox else None,
                 "bbox_max": bbox[1] if bbox else None,
                 "shapeType": signature["shapeType"],
-                "geomAxis": axis,
+                "geomAxis": axis,  # For MEP elements, the vector is along the extrusion direction
                 "radiusMm": None,
                 "penetrationCenter": None,
                 "penetrationLengthMm": None,
@@ -135,16 +123,15 @@ def extract_mep_elements(arc_model, mep_model, logger=None) -> list[dict]:
                 "penetrationSizeZmm": None,
             }
 
-            # if best_overlap:
-            #     mep_data["penetrationCenter"] = best_overlap["penetrationCenter"]
-            #     mep_data["penetrationLengthMm"] = best_overlap["penetrationLengthMm"]
-
-            #     if signature["shapeType"] == "cylindrical":
-            #         mep_data["radiusMm"] = signature["radiusMm"]
-            #     elif signature["shapeType"] == "rectangular":
-            #         mep_data["penetrationSizeXmm"] = best_overlap["penetrationSizeXmm"]
-            #         mep_data["penetrationSizeYmm"] = best_overlap["penetrationSizeYmm"]
-            #         mep_data["penetrationSizeZmm"] = best_overlap["penetrationSizeZmm"]
+            if best_overlap:
+                mep_data["penetrationCenter"] = best_overlap["penetrationCenter"]
+                mep_data["penetrationLengthMm"] = best_overlap["penetrationLengthMm"]
+                if signature["shapeType"] == "cylindrical":
+                    mep_data["radiusMm"] = signature["radiusMm"]
+                elif signature["shapeType"] == "rectangular":
+                    mep_data["penetrationSizeXmm"] = signature.get("xDimMm")
+                    mep_data["penetrationSizeYmm"] = signature.get("yDimMm")
+                    mep_data["penetrationSizeZmm"] = best_overlap["penetrationLengthMm"]
 
             mep_elements.append(mep_data)
 
@@ -153,50 +140,3 @@ def extract_mep_elements(arc_model, mep_model, logger=None) -> list[dict]:
             "BIM2GRAPH", f"Extracted {len(mep_elements)} MEP elements")
 
     return mep_elements
-
-
-# def _bbox_overlap_with_axis(mep_bbox_min, mep_bbox_max, wall_bbox_min, wall_bbox_max, axis):
-#     if not mep_bbox_min or not mep_bbox_max or not wall_bbox_min or not wall_bbox_max:
-#         return None
-
-#     overlap_min = [max(mep_bbox_min[i], wall_bbox_min[i]) for i in range(3)]
-#     overlap_max = [min(mep_bbox_max[i], wall_bbox_max[i]) for i in range(3)]
-
-#     if any(overlap_min[i] >= overlap_max[i] for i in range(3)):
-#         return None
-
-#     extents = [round(overlap_max[i] - overlap_min[i], 5) for i in range(3)]
-#     center = [round((overlap_min[i] + overlap_max[i]) / 2, 5)
-#               for i in range(3)]
-#     axis_arr = np.array(axis, dtype=float) if axis else None
-
-#     if axis_arr is not None:
-#         penetration_length = float(np.dot(np.abs(axis_arr), np.array(extents)))
-#     else:
-#         penetration_length = float(max(extents))
-
-#     return {
-#         "penetrationCenter": center,
-#         "penetrationLengthMm": round(penetration_length, 5),
-#         "penetrationSizeXmm": extents[0],
-#         "penetrationSizeYmm": extents[1],
-#         "penetrationSizeZmm": extents[2],
-#     }
-
-
-# def _estimate_wall_thickness_mm(wall):
-#     wall_bbox_min = wall.get("bbox_min") if wall else None
-#     wall_bbox_max = wall.get("bbox_max") if wall else None
-#     if not wall_bbox_min or not wall_bbox_max:
-#         return None
-
-#     wall_extents = np.array([
-#         wall_bbox_max[i] - wall_bbox_min[i] for i in range(3)
-#     ], dtype=float)
-
-#     wall_axis2 = wall.get("axis2") if wall else None
-#     if wall_axis2:
-#         thickness = float(np.dot(np.abs(np.array(wall_axis2)), wall_extents))
-#         return round(thickness, 5)
-
-#     return round(float(min(wall_extents)), 5)

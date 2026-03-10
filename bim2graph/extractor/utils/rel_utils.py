@@ -33,7 +33,7 @@ def compute_space_side_of_wall(space_centroid, wall_center, wall_axis2):
     return side
 
 
-def bbox_intersects(bbox1_min, bbox1_max, bbox2_min, bbox2_max):
+def check_bbox_intersection(bbox1_min, bbox1_max, bbox2_min, bbox2_max):
     """
     Check if two axis-aligned bounding boxes intersect.
 
