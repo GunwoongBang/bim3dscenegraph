@@ -57,15 +57,15 @@ def sensor2graph(driver, pcd_path=None, logger=None):
         )
 
         # Visualize the point cloud with colors (commented out for now)
-        # coord_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(
-        #     size=1.0)
+        coord_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(
+            size=1.0)
 
-        # o3d.visualization.draw_geometries(
-        #     [point_cloud, coord_frame],
-        #     window_name="Point Cloud from IFC (transformed)",
-        #     width=1200,
-        #     height=800
-        # )
+        o3d.visualization.draw_geometries(
+            [point_cloud, coord_frame],
+            window_name="Point Cloud from IFC (transformed)",
+            width=1200,
+            height=800
+        )
 
         # Export the point cloud data to a xyz file
         model_name = os.path.splitext(os.path.basename(pcd_path))[0]
