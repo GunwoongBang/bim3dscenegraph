@@ -72,7 +72,7 @@ def bim2graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
 
     if mep_model:
         mep_systems = extract_mep_systems(mep_model, logger)
-        mep_elements = extract_mep_elements(arc_model, mep_model, logger)
+        mep_elements = extract_mep_elements(mep_model, logger)
 
     # Extract relationships
     space_wall_rels = compute_space_wall_rels(
@@ -88,7 +88,6 @@ def bim2graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
         if mep_systems and mep_memberships:
             mep_system_space_rels = compute_mep_system_space_rels(
                 arc_model,
-                mep_model,
                 mep_systems,
                 mep_memberships,
                 mep_elements,

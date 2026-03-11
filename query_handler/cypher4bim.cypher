@@ -69,7 +69,6 @@ UNWIND $elements AS elem
 MERGE (me:MEPElement { id: elem.id })
 SET me.name = elem.name,
     me.ifcClass = elem.ifcClass,
-    me.center = elem.center,
     me.shapeType = elem.shapeType,
     me.geomAxis = elem.geomAxis,
     me.radiusMm = elem.radiusMm,
@@ -110,8 +109,7 @@ UNWIND $edges AS edge
 MATCH (ms:MEPSystem { id: edge.system_id })
 MATCH (s:Space { id: edge.space_id })
 MERGE (ms)-[r:VISIBLE_IN]->(s)
-SET r.source = edge.source,
-    r.confidence = edge.confidence
+SET r.source = edge.source
 
 -- name: CREATE_MEP_ELEMENT_WALL_EDGES
 UNWIND $edges AS edge
@@ -121,4 +119,9 @@ WITH me, w, edge
 WHERE edge.relationship = 'PASSES_THROUGH'
 MERGE (me)-[r:PASSES_THROUGH]->(w)
 SET r.source = edge.source,
-    r.confidence = edge.confidence
+    r.penetrationCenter = edge.penetrationCenter,
+    r.radiusMm = edge.radiusMm,
+    r.penetrationLengthMm = edge.penetrationLengthMm,
+    r.penetrationSizeXmm = edge.penetrationSizeXmm,
+    r.penetrationSizeYmm = edge.penetrationSizeYmm,
+    r.penetrationSizeZmm = edge.penetrationSizeZmm

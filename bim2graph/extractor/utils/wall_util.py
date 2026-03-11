@@ -33,14 +33,6 @@ def _get_material_association(element):
             if layer_set:
                 material_layers = getattr(layer_set, "MaterialLayers", [])
             return material, material_layers
-
-        # elif material.is_a("IfcMaterialLayerSet"):
-        #     material_layers = getattr(material, "MaterialLayers", [])
-        #     return material, material_layers
-
-        # elif material.is_a("IfcMaterialList"):
-        #     return material, None
-
         elif material.is_a("IfcMaterial"):
             return material, None
 
@@ -74,15 +66,6 @@ def get_material_info(element) -> tuple[Optional[str], int, Optional[str]]:
         direction_sense = getattr(material_def, "DirectionSense", None)
         if material_layers:
             layer_count = len(material_layers)
-
-    # elif material_def.is_a("IfcMaterialLayerSet"):
-    #     if material_layers:
-    #         layer_count = len(material_layers)
-
-    # elif material_def.is_a("IfcMaterialList"):
-    #     if hasattr(material_def, "Materials"):
-    #         layer_count = len(material_def.Materials)
-
     elif material_def.is_a("IfcMaterial"):
         layer_count = 1
 
@@ -149,6 +132,7 @@ def get_material_layers(element) -> list[dict]:
         element: IFC element with HasAssociations (typically IfcWall)
 
     Returns:
+        layers:
         List of dicts with keys:
             - thickness: Layer thickness in model units
             - name: Material name

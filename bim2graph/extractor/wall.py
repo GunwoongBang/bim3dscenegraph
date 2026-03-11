@@ -32,17 +32,21 @@ def extract_walls(model, logger=None) -> list[dict]:
     """
     walls = []
 
-    for wall in model.by_type("IfcWall"):
+    ifc_walls = model.by_type("IfcWall")
+
+    if not ifc_walls:
+        if logger:
+            logger.logText("BIM2GRAPH", "No IfcWall entities found in model")
+
+        return walls
+
+    for wall in ifc_walls:
         # Extract geometry
         bbox = extract_bbox(wall)
         center = extract_centroid(wall)
 
         # Only need axis2 for layer direction
         _, axis2 = extract_placement(wall)
-
-        if bbox is None and logger:
-            logger.logText(
-                "BIM2GRAPH", f"Geometry extraction failed for wall {wall.GlobalId}")
 
         # Extract material info
         direction_sense, layer_count, _ = get_material_info(wall)
@@ -83,7 +87,16 @@ def extract_str_elements(str_model, logger=None) -> list[dict]:
 
     str_elements = []
 
-    for elem in str_model.by_type("IfcWall"):
+    ifc_str_walls = str_model.by_type("IfcWall")
+
+    if not ifc_str_walls:
+        if logger:
+            logger.logText(
+                "BIM2GRAPH", "No IfcWall entities found in STR model")
+
+        return str_elements
+
+    for elem in ifc_str_walls:
         # Extract load bearing info for walls
         load_bearing = get_pset_property(elem, "LoadBearing")
         # bbox = extract_bbox(elem)
@@ -94,8 +107,6 @@ def extract_str_elements(str_model, logger=None) -> list[dict]:
             "loadBearing": load_bearing,
             "thickness": thickness,
             "materials": mat_names or [],
-            # "bbox_min": bbox[0] if bbox else None,
-            # "bbox_max": bbox[1] if bbox else None,
         })
 
     if logger:
@@ -146,6 +157,12 @@ def extract_layers(
             continue
 
         material_layers = get_material_layers(ifc_wall)
+
+        if not material_layers:
+            if logger:
+                logger.logText(
+                    "BIM2GRAPH", f"No material layers found for wall {wall_id}")
+            continue
 
         for layer in material_layers:
             mat_name = layer["name"]

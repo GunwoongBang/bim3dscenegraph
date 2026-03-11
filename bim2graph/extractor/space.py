@@ -24,14 +24,16 @@ def extract_spaces(model, logger=None) -> list[dict]:
     """
     spaces = []
 
-    for space in model.by_type("IfcSpace"):
-        centroid = geometry.extract_centroid(space)
+    ifc_spaces = model.by_type("IfcSpace")
 
-        if centroid is None and logger:
-            logger.logText(
-                "BIM2GRAPH",
-                f"Centroid extraction failed for space {space.GlobalId}"
-            )
+    if not ifc_spaces:
+        if logger:
+            logger.logText("BIM2GRAPH", "No IfcSpace entities found in model")
+
+        return spaces
+
+    for space in ifc_spaces:
+        centroid = geometry.extract_centroid(space)
 
         space_data = {
             "id": space.GlobalId,

@@ -23,7 +23,16 @@ def extract_openings(model, logger=None) -> list[dict]:
     """
     openings = []
 
-    for opening in model.by_type("IfcOpeningElement"):
+    ifc_openings = model.by_type("IfcOpeningElement")
+
+    if not ifc_openings:
+        if logger:
+            logger.logText(
+                "BIM2GRAPH", "No IfcOpeningElement entities found in model")
+
+        return openings
+
+    for opening in ifc_openings:
         opening_data = {
             "id": opening.GlobalId,
             "name": getattr(opening, "Name", None) or "Unknown",
