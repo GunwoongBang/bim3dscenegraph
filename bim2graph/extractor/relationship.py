@@ -6,7 +6,6 @@ from .utils.rel_util import (
     compute_space_side_of_wall,
     check_bbox_intersection,
     compute_bbox_overlap,
-    estimate_wall_thickness_mm,
 )
 from .geometry import extract_bbox
 
@@ -247,11 +246,11 @@ def compute_mep_element_wall_rels(
 
             if shape_type == "cylindrical":
                 edge_data["radiusMm"] = mep.get("radiusMm")
-                edge_data["penetrationLengthMm"] = estimate_wall_thickness_mm(
-                    wall_bbox_min,
-                    wall_bbox_max,
-                    wall.get("axis2"),
-                )
+                edge_data["penetrationLengthMm"] = round(max(
+                    overlap["penetrationSizeXmm"],
+                    overlap["penetrationSizeYmm"],
+                    overlap["penetrationSizeZmm"],
+                ), 5)
             elif shape_type == "rectangular":
                 edge_data["penetrationSizeXmm"] = overlap["penetrationSizeXmm"]
                 edge_data["penetrationSizeYmm"] = overlap["penetrationSizeYmm"]

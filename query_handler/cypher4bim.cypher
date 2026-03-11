@@ -70,7 +70,6 @@ MERGE (me:MEPElement { id: elem.id })
 SET me.name = elem.name,
     me.ifcClass = elem.ifcClass,
     me.shapeType = elem.shapeType,
-    me.geomAxis = elem.geomAxis,
     me.radiusMm = elem.radiusMm,
     me.penetrationCenter = elem.penetrationCenter,
     me.penetrationLengthMm = elem.penetrationLengthMm,

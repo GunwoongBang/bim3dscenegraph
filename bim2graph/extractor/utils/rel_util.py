@@ -55,7 +55,7 @@ def check_bbox_intersection(bbox1_min, bbox1_max, bbox2_min, bbox2_max):
 
 def compute_bbox_overlap(bbox1_min, bbox1_max, bbox2_min, bbox2_max) -> dict | None:
     """
-    Return overlap center/size geometry, or None if no intersection.
+    Return overlap bbox, center, and size geometry, or None if no intersection.
 
     Args:
         bbox1_min, bbox1_max: First bounding box corners [x, y, z]
@@ -67,14 +67,32 @@ def compute_bbox_overlap(bbox1_min, bbox1_max, bbox2_min, bbox2_max) -> dict | N
     if not check_bbox_intersection(bbox1_min, bbox1_max, bbox2_min, bbox2_max):
         return None
 
-    overlap_min = [max(bbox1_min[i], bbox2_min[i]) for i in range(3)]
-    overlap_max = [min(bbox1_max[i], bbox2_max[i]) for i in range(3)]
-    overlap_size = [round(overlap_max[i] - overlap_min[i], 5)
-                    for i in range(3)]
-    overlap_center = [round((overlap_min[i] + overlap_max[i]) / 2, 5)
-                      for i in range(3)]
+    # Per axis, overlap starts at the larger minimum and ends at the smaller maximum.
+    overlap_min_x = max(bbox1_min[0], bbox2_min[0])
+    overlap_min_y = max(bbox1_min[1], bbox2_min[1])
+    overlap_min_z = max(bbox1_min[2], bbox2_min[2])
+
+    overlap_max_x = min(bbox1_max[0], bbox2_max[0])
+    overlap_max_y = min(bbox1_max[1], bbox2_max[1])
+    overlap_max_z = min(bbox1_max[2], bbox2_max[2])
+
+    overlap_min = [overlap_min_x, overlap_min_y, overlap_min_z]
+    overlap_max = [overlap_max_x, overlap_max_y, overlap_max_z]
+
+    overlap_size = [
+        round(overlap_max_x - overlap_min_x, 5),
+        round(overlap_max_y - overlap_min_y, 5),
+        round(overlap_max_z - overlap_min_z, 5),
+    ]
+    overlap_center = [
+        round((overlap_min_x + overlap_max_x) / 2, 5),
+        round((overlap_min_y + overlap_max_y) / 2, 5),
+        round((overlap_min_z + overlap_max_z) / 2, 5),
+    ]
 
     return {
+        "overlapBBoxMin": overlap_min,
+        "overlapBBoxMax": overlap_max,
         "penetrationCenter": overlap_center,
         "penetrationSizeXmm": overlap_size[0],
         "penetrationSizeYmm": overlap_size[1],

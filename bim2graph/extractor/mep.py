@@ -2,7 +2,7 @@
 MEP (Mechanical, Electrical, Plumbing) element extraction from IFC models.
 """
 
-from .utils.mep_util import MEP_TYPES, extract_shape_signature, extract_extrusion_axis
+from .utils.mep_util import MEP_TYPES, extract_shape_signature
 from .geometry import extract_centroid, extract_bbox
 
 
@@ -79,8 +79,6 @@ def extract_mep_elements(mep_model, logger=None) -> list[dict]:
             bbox = extract_bbox(element)
 
             signature = extract_shape_signature(element)
-            axis = extract_extrusion_axis(element)
-
             mep_data = {
                 "id": element.GlobalId,
                 "name": getattr(element, "Name", None),
@@ -88,7 +86,6 @@ def extract_mep_elements(mep_model, logger=None) -> list[dict]:
                 "bbox_min": bbox[0] if bbox else None,
                 "bbox_max": bbox[1] if bbox else None,
                 "shapeType": signature["shapeType"],
-                "geomAxis": axis,  # For MEP elements, the vector is along the extrusion direction
                 "radiusMm": signature.get("radiusMm"),
             }
 
