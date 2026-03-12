@@ -10,7 +10,7 @@ import logger as logger
 
 load_dotenv()
 
-ARC_PATH = "ifc_models/Example/Example_ARC.ifc"
+ARC_PATH = "ifc_models/Example/Example_ARC_1.ifc"
 STR_PATH = "ifc_models/Example/Example_STR.ifc"
 MEP_PATH = "ifc_models/Example/Example_MEP.ifc"
 # Old file - need to be replaced with the current model
