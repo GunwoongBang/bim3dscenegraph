@@ -3,7 +3,7 @@ MEP (Mechanical, Electrical, Plumbing) element extraction from IFC models.
 """
 
 from .utils.mep_util import MEP_TYPES, extract_shape_signature
-from .geometry import extract_centroid, extract_bbox
+from .geometry import extract_bbox
 
 
 def extract_mep_systems(model, logger=None) -> list[dict]:

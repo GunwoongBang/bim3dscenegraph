@@ -1,5 +1,5 @@
 """
-Main orchestrator for Sensor-to-Graph conversion.
+Main orchestrator for SENSOR2GRAPH.
 
 This module coordinates the conversion of BIM model geometry into
 a point cloud representation and persistence to Neo4j graph database.
@@ -7,7 +7,11 @@ a point cloud representation and persistence to Neo4j graph database.
 
 import ifcopenshell
 
-from .extractor import export_point_cloud, generate_point_cloud, visualize_point_cloud
+from .extractor import (
+    generate_point_cloud,
+    visualize_point_cloud,
+    export_point_cloud,
+)
 
 # from .query_manager import QueryManager
 # from .persistence import Neo4jOperations
@@ -28,8 +32,7 @@ def sensor2graph(driver, pcd_path, logger=None):
         logger: Optional logger for output messages
     """
     if logger:
-        logger.logText(
-            "SENSOR2GRAPH", "Starting point cloud generation from IFC")
+        logger.logText("SENSOR2GRAPH", "PCD IFC model loaded")
 
     # Initialize components
     # query_manager = QueryManager()

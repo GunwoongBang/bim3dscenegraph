@@ -1,25 +1,9 @@
 """
-BIM2GRAPH - Convert IFC models to Neo4j property graphs.
-
-This package provides tools for extracting building information from IFC files
-and persisting it as a graph database in Neo4j.
+BIM2GRAPH - Convert IFC models to an integrated Neo4j property graph.
 
 Main entry point:
-    from bim2graph import generate_graph
-    
-    driver = GraphDatabase.driver(uri, auth=(user, password))
-    bim2graph(driver, "path/to/model.ifc")
 
 Package structure:
-    - extractor/: IFC data extraction modules
-        - geometry.py: Geometry utilities (centroid, bbox, placement)
-        - spaces.py: Space element extraction
-        - walls.py: Wall and material layer extraction
-        - relationships.py: Topological relationships
-    - persistence/: Neo4j database operations
-        - neo4j_ops.py: CRUD operations
-    - query_manager.py: Cypher query file loader
-    - graph_builder.py: Main orchestrator
 """
 
 from .graph_builder import bim2graph

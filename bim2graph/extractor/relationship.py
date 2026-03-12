@@ -2,7 +2,7 @@
 Relationship extraction from IFC models (space-wall boundaries, etc.).
 """
 
-from .utils.rel_util import (
+from .utils import (
     compute_space_side_of_wall,
     check_bbox_intersection,
     compute_bbox_overlap,

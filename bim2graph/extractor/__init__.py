@@ -1,5 +1,5 @@
 """
-IFC data extraction modules.
+Main extractor module for BIM2GRAPH.
 
 This package provides functions for extracting data from IFC models:
     - geometry: Low-level geometry utilities (centroid, bbox, placement)
