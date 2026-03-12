@@ -23,16 +23,20 @@ def get_geom_settings():
     return settings
 
 
-def extract_mesh_from_shape(element):
+def extract_mesh_from_shape(element, include_materials=False):
     """
     Extract vertices and faces from an ifcopenshell shape.
 
     Args:
         element: IFC element with geometry
 
+    Args:
+        include_materials: If True, also return geometry material list
+
     Returns:
         vertices: numpy array of shape (N, 3) - 3D vertex coordinates
         faces: numpy array of shape (M, 3) - triangle face indices
+        materials: optional if include_materials=True
     """
     settings = get_geom_settings()
     shape = ifcopenshell.geom.create_shape(settings, element)
@@ -42,5 +46,8 @@ def extract_mesh_from_shape(element):
 
     # Convert flat face list to (M, 3) array (triangles)
     faces = np.array(shape.geometry.faces).reshape(-1, 3)
+
+    if include_materials:
+        return vertices, faces, shape.geometry.materials
 
     return vertices, faces

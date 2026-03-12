@@ -2,21 +2,40 @@
 Point cloud generation from IFC model.
 """
 
+import os
 import numpy as np
 import open3d as o3d
+import laspy
+
 from . import geometry
 
-# Color palette for different elements (RGB, 0-1 range)
-ELEMENT_COLORS = [
-    [0.8, 0.2, 0.2],  # Red
-    [0.2, 0.8, 0.2],  # Green
-    [0.2, 0.2, 0.8],  # Blue
-    [0.8, 0.8, 0.2],  # Yellow
-    [0.8, 0.2, 0.8],  # Magenta
-    [0.2, 0.8, 0.8],  # Cyan
-    [0.9, 0.5, 0.2],  # Orange
-    [0.5, 0.2, 0.9],  # Purple
-]
+
+def _extract_ifc_color(materials):
+    """
+    Extract [r, g, b] from IFC geometry materials if available.
+
+    Args:
+        materials: IfcOpenShell geometry material collection
+
+    Returns:
+        list[float] in [0, 1] range, or None when unavailable
+    """
+    if not materials:
+        return None
+
+    try:
+        mat = materials[0]
+        col = mat.get_color() if hasattr(
+            mat, "get_color") else getattr(mat, "diffuse", None)
+        if col is None:
+            return None
+
+        r = float(col.r())
+        g = float(col.g())
+        b = float(col.b())
+        return [max(0.0, min(1.0, r)), max(0.0, min(1.0, g)), max(0.0, min(1.0, b))]
+    except Exception:
+        return None
 
 
 def transform_point_cloud(points, translation=(0, 0, 0), yaw_degrees=0):
@@ -69,33 +88,47 @@ def _face_normal(vertices, face):
     return n / norm
 
 
-def sample_points_on_mesh(vertices, faces, points_per_m2=100, interior_point=None):
+def sample_points_on_mesh(vertices, faces, points_per_m2=100, building_bbox=None):
     """
     Sample points uniformly on mesh surface using barycentric coordinates.
 
-    If interior_point is provided, only faces whose normal points toward that
-    point are sampled (indoor-surface-only mode).
+    If building_bbox is provided, faces whose normal points outward (i.e.
+    projecting along the normal exits the building bbox) are skipped.
+    This correctly keeps BOTH faces of interior walls while filtering the
+    outer face of exterior walls.
 
     Args:
         vertices: numpy array of shape (N, 3) - mesh vertices
         faces: numpy array of shape (M, 3) - triangle face indices
         points_per_m2: sampling density (points per square meter)
-        interior_point: optional [x, y, z] reference point inside the building;
-            faces whose normal points away from it are skipped.
+        building_bbox: optional tuple (bbox_min, bbox_max) numpy arrays [x,y,z];
+            faces that project outside this box are treated as exterior and skipped.
 
     Returns:
         points: numpy array of shape (P, 3) - sampled point cloud
     """
     all_points = []
 
+    if building_bbox is not None:
+        bbox_min, bbox_max = building_bbox
+        # Step distance: 10% of the smallest building dimension.
+        # This is unit-agnostic and ensures step > wall thickness but < room size.
+        step = float(np.min(bbox_max - bbox_min)) * 0.1
+
     for face in faces:
-        if interior_point is not None:
+        if building_bbox is not None:
             normal = _face_normal(vertices, face)
             if normal is not None:
-                face_center = (vertices[face[0]] + vertices[face[1]] + vertices[face[2]]) / 3.0
-                to_interior = np.array(interior_point) - face_center
-                # Skip face if normal points away from the interior
-                if np.dot(normal, to_interior) < 0:
+                face_center = (
+                    vertices[face[0]] + vertices[face[1]] + vertices[face[2]]) / 3.0
+                projected = face_center + normal * step
+                # If projecting outward exits the building bbox, this is an
+                # exterior-facing surface — skip it.
+                outside = any(
+                    projected[i] < bbox_min[i] or projected[i] > bbox_max[i]
+                    for i in range(3)
+                )
+                if outside:
                     continue
         # Get triangle vertices
         v0, v1, v2 = vertices[face[0]], vertices[face[1]], vertices[face[2]]
@@ -135,30 +168,29 @@ def sample_points_on_mesh(vertices, faces, points_per_m2=100, interior_point=Non
     return np.vstack(all_points)
 
 
-def _compute_interior_point(model, element_types):
+def _compute_building_bbox(model, element_types):
     """
-    Estimate a building interior reference point as the centroid of all
-    element mesh centroids for the given element types.
+    Compute the overall bounding box of all elements of the given types.
 
     Args:
         model: ifcopenshell model instance
         element_types: list of IFC class strings
 
     Returns:
-        interior_point: numpy array [x, y, z] or None if no geometry found
+        (bbox_min, bbox_max): numpy arrays [x,y,z] or (None, None) if no geometry
     """
-    settings = geometry.get_geom_settings()
-    centroids = []
+    all_verts = []
     for et in element_types:
         for element in model.by_type(et):
             try:
                 vertices, _ = geometry.extract_mesh_from_shape(element)
-                centroids.append(vertices.mean(axis=0))
+                all_verts.append(vertices)
             except Exception:
                 pass
-    if not centroids:
-        return None
-    return np.mean(centroids, axis=0)
+    if not all_verts:
+        return None, None
+    combined = np.vstack(all_verts)
+    return combined.min(axis=0), combined.max(axis=0)
 
 
 def generate_point_cloud(model, element_types=None, points_per_m2=100,
@@ -167,7 +199,7 @@ def generate_point_cloud(model, element_types=None, points_per_m2=100,
     """
     Generate a point cloud from the mesh surfaces of specified IFC element types.
 
-    Args: 
+    Args:
         model: ifcopenshell model instance
         element_types: List of IFC element types to include in the point cloud
         points_per_m2: Sampling density (number of points per square meter)
@@ -183,19 +215,21 @@ def generate_point_cloud(model, element_types=None, points_per_m2=100,
     if element_types is None:
         element_types = ["IfcWall", "IfcSlab"]
 
-    interior_point = None
+    building_bbox = None
     if indoor_only:
-        interior_point = _compute_interior_point(model, element_types)
+        bbox_min, bbox_max = _compute_building_bbox(model, element_types)
+        if bbox_min is not None:
+            building_bbox = (bbox_min, bbox_max)
         if logger:
             logger.logText(
                 "SENSOR2GRAPH",
-                f"Indoor-only mode: interior reference point = {np.round(interior_point, 2) if interior_point is not None else None}"
+                f"Indoor-only mode: building bbox min={np.round(bbox_min, 2) if bbox_min is not None else None}, "
+                f"max={np.round(bbox_max, 2) if bbox_max is not None else None}"
             )
 
     point_clouds = {}
     all_points = []
     all_colors = []
-    color_idx = 0
     total_points = 0
 
     for element_type in element_types:
@@ -203,15 +237,23 @@ def generate_point_cloud(model, element_types=None, points_per_m2=100,
 
         for element in elements:
             try:
-                vertices, faces = geometry.extract_mesh_from_shape(element)
+                vertices, faces, materials = geometry.extract_mesh_from_shape(
+                    element, include_materials=True)
 
-                # Sample points on mesh surface (indoor faces only if interior_point is set)
-                points = sample_points_on_mesh(vertices, faces, points_per_m2, interior_point)
+                # Sample points on mesh surface (exterior faces filtered if indoor_only)
+                points = sample_points_on_mesh(
+                    vertices, faces, points_per_m2, building_bbox)
 
-                # Assign color for this element
-                color = ELEMENT_COLORS[color_idx % len(ELEMENT_COLORS)]
+                # Use IFC-coded material color only.
+                color = _extract_ifc_color(materials)
+                if color is None:
+                    if logger:
+                        logger.logText(
+                            "SENSOR2GRAPH",
+                            f"Skipped {element_type} {element.GlobalId}: no IFC style color"
+                        )
+                    continue
                 colors = np.tile(color, (len(points), 1))
-                color_idx += 1
 
                 point_clouds[element.GlobalId] = {
                     'points': points,
@@ -267,3 +309,42 @@ def generate_point_cloud(model, element_types=None, points_per_m2=100,
         )
 
     return combined_pcd
+
+
+def visualize_point_cloud(point_cloud):
+    # Visualize the point cloud with colors (commented out for now)
+    coord_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(
+        size=1.0)
+
+    o3d.visualization.draw_geometries(
+        [point_cloud, coord_frame],
+        window_name="Point Cloud from IFC",
+        width=800,
+        height=600
+    )
+
+
+def export_point_cloud(pcd_path, point_cloud, logger=None):
+    model_name = os.path.splitext(os.path.basename(pcd_path))[0]
+    laz_path = f"pc_models/{model_name}.laz"
+
+    # Convert Open3D point cloud to laspy point format
+    points = np.asarray(point_cloud.points)
+    colors = np.asarray(point_cloud.colors)
+
+    # Create LAZ file with points and RGB colors
+    las = laspy.create()
+    las.x = points[:, 0]
+    las.y = points[:, 1]
+    las.z = points[:, 2]
+
+    # Scale colors from [0, 1] to [0, 65535] (16-bit)
+    las.red = (colors[:, 0] * 65535).astype(np.uint16)
+    las.green = (colors[:, 1] * 65535).astype(np.uint16)
+    las.blue = (colors[:, 2] * 65535).astype(np.uint16)
+
+    las.write(laz_path)
+
+    if logger:
+        logger.logText(
+            "SENSOR2GRAPH", f"Point cloud exported to {laz_path}")
