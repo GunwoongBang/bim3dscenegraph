@@ -1,5 +1,32 @@
 import numpy as np
 
+from sensor2graph.extractor import geometry
+
+
+def compute_building_bbox(model, element_types):
+    """
+    Compute the overall bounding box of all elements of the given types.
+
+    Args:
+        model: ifcopenshell model instance
+        element_types: list of IFC class strings
+
+    Returns:
+        (bbox_min, bbox_max): numpy arrays [x,y,z] or (None, None) if no geometry
+    """
+    all_verts = []
+    for et in element_types:
+        for element in model.by_type(et):
+            try:
+                vertices, _ = geometry.extract_mesh_from_shape(element)
+                all_verts.append(vertices)
+            except Exception:
+                pass
+    if not all_verts:
+        return None, None
+    combined = np.vstack(all_verts)
+    return combined.min(axis=0), combined.max(axis=0)
+
 
 def extract_ifc_color(materials):
     """

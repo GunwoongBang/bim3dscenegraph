@@ -8,6 +8,7 @@ import open3d as o3d
 import laspy
 
 from .utils import (
+    compute_building_bbox,
     extract_ifc_color,
     sample_points_on_mesh,
     transform_point_cloud,
@@ -15,34 +16,7 @@ from .utils import (
 from . import geometry
 
 
-def _compute_building_bbox(model, element_types):
-    """
-    Compute the overall bounding box of all elements of the given types.
-
-    Args:
-        model: ifcopenshell model instance
-        element_types: list of IFC class strings
-
-    Returns:
-        (bbox_min, bbox_max): numpy arrays [x,y,z] or (None, None) if no geometry
-    """
-    all_verts = []
-    for et in element_types:
-        for element in model.by_type(et):
-            try:
-                vertices, _ = geometry.extract_mesh_from_shape(element)
-                all_verts.append(vertices)
-            except Exception:
-                pass
-    if not all_verts:
-        return None, None
-    combined = np.vstack(all_verts)
-    return combined.min(axis=0), combined.max(axis=0)
-
-
-def generate_point_cloud(model, element_types=None, points_per_m2=100,
-                         translation=(0, 0, 0), yaw_degrees=0,
-                         indoor_only=True, logger=None):
+def generate_point_cloud(model, element_types, points_per_m2=100, translation=(0, 0, 0), yaw_degrees=0, logger=None):
     """
     Generate a point cloud from the mesh surfaces of specified IFC element types.
 
@@ -52,27 +26,17 @@ def generate_point_cloud(model, element_types=None, points_per_m2=100,
         points_per_m2: Sampling density (number of points per square meter)
         translation: tuple (x, y, z) - translation in meters
         yaw_degrees: float - rotation around Z-axis in degrees
-        indoor_only: if True, only sample faces whose normals face the building
-            interior (simulates an indoor sensor that cannot see outer surfaces)
         logger: Optional logger for output messages
 
     Returns:
         combined_pcd: Open3D point cloud with all points and colors
     """
-    if element_types is None:
-        element_types = ["IfcWall", "IfcSlab"]
-
     building_bbox = None
-    if indoor_only:
-        bbox_min, bbox_max = _compute_building_bbox(model, element_types)
-        if bbox_min is not None:
-            building_bbox = (bbox_min, bbox_max)
-        if logger:
-            logger.logText(
-                "SENSOR2GRAPH",
-                f"Indoor-only mode: building bbox min={np.round(bbox_min, 2) if bbox_min is not None else None}, "
-                f"max={np.round(bbox_max, 2) if bbox_max is not None else None}"
-            )
+
+    bbox_min, bbox_max = compute_building_bbox(model, element_types)
+
+    if bbox_min is not None:
+        building_bbox = (bbox_min, bbox_max)
 
     point_clouds = {}
     all_points = []
@@ -96,9 +60,7 @@ def generate_point_cloud(model, element_types=None, points_per_m2=100,
                 if color is None:
                     if logger:
                         logger.logText(
-                            "SENSOR2GRAPH",
-                            f"Skipped {element_type} {element.GlobalId}: no IFC style color"
-                        )
+                            "SENSOR2GRAPH", f"Skipped {element_type} {element.GlobalId}: no IFC style color")
                     continue
                 colors = np.tile(color, (len(points), 1))
 
@@ -115,16 +77,12 @@ def generate_point_cloud(model, element_types=None, points_per_m2=100,
 
                 if logger:
                     logger.logText(
-                        "SENSOR2GRAPH",
-                        f"Sampled {len(points)} points from {element_type} {element.GlobalId}"
-                    )
+                        "SENSOR2GRAPH", f"Sampled {len(points)} points from {element_type} {element.GlobalId}")
 
             except Exception as e:
                 if logger:
                     logger.logText(
-                        "SENSOR2GRAPH",
-                        f"Failed to process {element.GlobalId}: {e}"
-                    )
+                        "SENSOR2GRAPH", f"Failed to process {element.GlobalId}: {e}")
 
     # Combine all points and colors
     if all_points:
@@ -134,13 +92,10 @@ def generate_point_cloud(model, element_types=None, points_per_m2=100,
         # Apply transformation (translation + yaw rotation)
         if translation != (0, 0, 0) or yaw_degrees != 0:
             combined_points = transform_point_cloud(
-                combined_points, translation, yaw_degrees
-            )
+                combined_points, translation, yaw_degrees)
             if logger:
                 logger.logText(
-                    "SENSOR2GRAPH",
-                    f"Applied transform: translation={translation}, yaw={yaw_degrees}°"
-                )
+                    "SENSOR2GRAPH", f"Applied transform: translation={translation}, yaw={yaw_degrees}°")
 
         # Create Open3D point cloud with colors
         combined_pcd = o3d.geometry.PointCloud()
@@ -151,17 +106,14 @@ def generate_point_cloud(model, element_types=None, points_per_m2=100,
 
     if logger:
         logger.logText(
-            "SENSOR2GRAPH",
-            f"Total: {total_points} points from {len(point_clouds)} elements"
-        )
+            "SENSOR2GRAPH", f"Total: {total_points} points from {len(point_clouds)} elements")
 
     return combined_pcd
 
 
 def visualize_point_cloud(point_cloud):
     # Visualize the point cloud with colors (commented out for now)
-    coord_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(
-        size=1.0)
+    coord_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=1.0)
 
     o3d.visualization.draw_geometries(
         [point_cloud, coord_frame],
