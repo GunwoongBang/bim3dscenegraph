@@ -8,7 +8,6 @@ import open3d as o3d
 import laspy
 
 from .utils import (
-    compute_building_bbox,
     extract_ifc_color,
     sample_points_on_mesh,
     transform_point_cloud,
@@ -16,7 +15,7 @@ from .utils import (
 from . import geometry
 
 
-def generate_point_cloud(model, element_types, points_per_m2=100, translation=(0, 0, 0), yaw_degrees=0, logger=None):
+def generate_point_cloud(model, element_types, points_per_m2, translation, yaw_degrees, logger=None):
     """
     Generate a point cloud from the mesh surfaces of specified IFC element types.
 
@@ -33,15 +32,9 @@ def generate_point_cloud(model, element_types, points_per_m2=100, translation=(0
     """
     building_bbox = None
 
-    bbox_min, bbox_max = compute_building_bbox(model, element_types)
-
-    if bbox_min is not None:
-        building_bbox = (bbox_min, bbox_max)
-
-    point_clouds = {}
-    all_points = []
-    all_colors = []
-    total_points = 0
+    # Extract mesh geometry once per element and reuse for bbox + sampling.
+    extracted_elements = []
+    all_vertices = []
 
     for element_type in element_types:
         elements = model.by_type(element_type)
@@ -49,40 +42,53 @@ def generate_point_cloud(model, element_types, points_per_m2=100, translation=(0
         for element in elements:
             try:
                 vertices, faces, materials = geometry.extract_mesh_from_shape(
-                    element, include_materials=True)
-
-                # Sample points on mesh surface (exterior faces filtered if indoor_only)
-                points = sample_points_on_mesh(
-                    vertices, faces, points_per_m2, building_bbox)
-
-                # Use IFC-coded material color only.
-                color = extract_ifc_color(materials)
-                if color is None:
-                    if logger:
-                        logger.logText(
-                            "SENSOR2GRAPH", f"Skipped {element_type} {element.GlobalId}: no IFC style color")
-                    continue
-                colors = np.tile(color, (len(points), 1))
-
-                point_clouds[element.GlobalId] = {
-                    'points': points,
-                    'colors': colors,
-                    'element_type': element_type,
-                    'name': element.Name or "Unnamed"
-                }
-
-                all_points.append(points)
-                all_colors.append(colors)
-                total_points += len(points)
-
-                if logger:
-                    logger.logText(
-                        "SENSOR2GRAPH", f"Sampled {len(points)} points from {element_type} {element.GlobalId}")
-
+                    element)
+                extracted_elements.append(
+                    (element_type, element, vertices, faces, materials))
+                all_vertices.append(vertices)
             except Exception as e:
                 if logger:
                     logger.logText(
                         "SENSOR2GRAPH", f"Failed to process {element.GlobalId}: {e}")
+
+    if all_vertices:
+        combined_vertices = np.vstack(all_vertices)
+        building_bbox = (combined_vertices.min(axis=0),
+                         combined_vertices.max(axis=0))
+
+    point_clouds = {}
+    all_points = []
+    all_colors = []
+    total_points = 0
+
+    for element_type, element, vertices, faces, materials in extracted_elements:
+        # Sample points on mesh surface (exterior faces filtered if indoor_only)
+        points = sample_points_on_mesh(
+            vertices, faces, points_per_m2, building_bbox)
+
+        # Use IFC-coded material color only.
+        color = extract_ifc_color(materials)
+        if color is None:
+            if logger:
+                logger.logText(
+                    "SENSOR2GRAPH", f"Skipped {element_type} {element.GlobalId}: no IFC style color")
+            continue
+        colors = np.tile(color, (len(points), 1))
+
+        point_clouds[element.GlobalId] = {
+            'points': points,
+            'colors': colors,
+            'element_type': element_type,
+            'name': element.Name or "Unnamed"
+        }
+
+        all_points.append(points)
+        all_colors.append(colors)
+        total_points += len(points)
+
+        if logger:
+            logger.logText(
+                "SENSOR2GRAPH", f"Sampled {len(points)} points from {element_type} {element.GlobalId}")
 
     # Combine all points and colors
     if all_points:

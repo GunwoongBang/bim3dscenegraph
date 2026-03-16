@@ -42,7 +42,7 @@ def sensor2graph(driver, pcd_path, logger=None):
     model = ifcopenshell.open(pcd_path)
 
     # =========================================================================
-    # Generate point cloud from IFC (If XYZ not available)
+    # Generate point cloud from IFC
     # =========================================================================
     # TODO: Need to be refactored to keep the graph_builder clean
 
@@ -57,12 +57,9 @@ def sensor2graph(driver, pcd_path, logger=None):
 
     visualize_point_cloud(point_cloud)
     export_point_cloud(pcd_path, point_cloud, logger)
-    # =========================================================================
-    # Extract data from XYZ
-    # =========================================================================
 
     # =========================================================================
-    # Persist to Neo4j
+    # Extract data from XYZ
     # =========================================================================
 
     if logger:

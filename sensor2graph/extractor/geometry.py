@@ -7,11 +7,10 @@ with consistent unit handling (all outputs in millimeters).
 
 import ifcopenshell
 import ifcopenshell.geom
-# import ifcopenshell.util.placement
 import numpy as np
 
 
-def get_geom_settings():
+def _get_geom_settings():
     """
     Get shared geometry settings for ifcopenshell.
 
@@ -23,22 +22,19 @@ def get_geom_settings():
     return settings
 
 
-def extract_mesh_from_shape(element, include_materials=False):
+def extract_mesh_from_shape(element):
     """
     Extract vertices and faces from an ifcopenshell shape.
 
     Args:
         element: IFC element with geometry
 
-    Args:
-        include_materials: If True, also return geometry material list
-
     Returns:
         vertices: numpy array of shape (N, 3) - 3D vertex coordinates
         faces: numpy array of shape (M, 3) - triangle face indices
-        materials: optional if include_materials=True
+        materials: list of geometry materials (may be empty)
     """
-    settings = get_geom_settings()
+    settings = _get_geom_settings()
     shape = ifcopenshell.geom.create_shape(settings, element)
 
     # Convert flat vertex list to (N, 3) array
@@ -47,7 +43,4 @@ def extract_mesh_from_shape(element, include_materials=False):
     # Convert flat face list to (M, 3) array (triangles)
     faces = np.array(shape.geometry.faces).reshape(-1, 3)
 
-    if include_materials:
-        return vertices, faces, shape.geometry.materials
-
-    return vertices, faces
+    return vertices, faces, shape.geometry.materials
