@@ -153,3 +153,5 @@ def export_point_cloud(pcd_path, point_cloud, logger=None):
     if logger:
         logger.logText(
             "SENSOR2GRAPH", f"Point cloud exported to {laz_path}")
+
+    return laz_path
