@@ -15,7 +15,7 @@ from .utils import (
 from . import geometry
 
 
-def generate_point_cloud(model, element_types, points_per_m2, translation, yaw_degrees, logger=None):
+def generate_point_cloud(model, logger=None):
     """
     Generate a point cloud from the mesh surfaces of specified IFC element types.
 
@@ -30,6 +30,7 @@ def generate_point_cloud(model, element_types, points_per_m2, translation, yaw_d
     Returns:
         combined_pcd: Open3D point cloud with all points and colors
     """
+    element_types = ["IfcWall", "IfcSlab"]  # Default element types to sample
     building_bbox = None
 
     # Extract mesh geometry once per element and reuse for bbox + sampling.
@@ -61,6 +62,8 @@ def generate_point_cloud(model, element_types, points_per_m2, translation, yaw_d
     all_colors = []
     total_points = 0
 
+    points_per_m2 = 200  # Default sampling density
+
     for element_type, element, vertices, faces, materials in extracted_elements:
         # Sample points on mesh surface (exterior faces filtered if indoor_only)
         points = sample_points_on_mesh(
@@ -89,6 +92,9 @@ def generate_point_cloud(model, element_types, points_per_m2, translation, yaw_d
         if logger:
             logger.logText(
                 "SENSOR2GRAPH", f"Sampled {len(points)} points from {element_type} {element.GlobalId}")
+
+    translation = (2, 5, 3)  # Default translation
+    yaw_degrees = 25  # Default yaw rotation
 
     # Combine all points and colors
     if all_points:
@@ -124,8 +130,8 @@ def visualize_point_cloud(point_cloud):
     o3d.visualization.draw_geometries(
         [point_cloud, coord_frame],
         window_name="Point Cloud from IFC",
-        width=800,
-        height=600
+        width=1200,
+        height=800
     )
 
 
@@ -153,5 +159,3 @@ def export_point_cloud(pcd_path, point_cloud, logger=None):
     if logger:
         logger.logText(
             "SENSOR2GRAPH", f"Point cloud exported to {laz_path}")
-
-    return laz_path

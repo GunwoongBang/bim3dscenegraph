@@ -43,13 +43,7 @@ if __name__ == "__main__":
         bim2graph(driver, ARC_PATH, STR_PATH, MEP_PATH, logger)
 
         # Generate a Sensor-derived graph from BIM models (PCD)
-        sensor2graph(
-            driver,
-            PCD_PATH,
-            logger,
-            run_reconstruction=True,
-            visualize_reconstruction=True,
-        )
+        sensor2graph(PCD_PATH, logger)
 
         # ====================================================================
         # GRAPH MERGING

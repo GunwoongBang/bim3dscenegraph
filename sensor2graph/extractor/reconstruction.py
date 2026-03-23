@@ -6,8 +6,6 @@ This module reconstructs a surface mesh directly from scanned point cloud data
 generation so it can be used with real scans.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from pathlib import Path
 import argparse
@@ -222,33 +220,3 @@ def reconstruct_poisson_from_laz(
         "voxel_size": voxel_size,
         "output_mesh": str(output_mesh_path),
     }
-
-
-def _build_arg_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description="Poisson reconstruction from LAZ/LAS")
-    parser.add_argument("--input", required=True,
-                        help="Input LAZ/LAS file path")
-    parser.add_argument("--output", required=True,
-                        help="Output mesh path (.ply/.obj/.stl)")
-    parser.add_argument("--depth", type=int, default=10,
-                        help="Poisson octree depth")
-    parser.add_argument("--voxel", type=float, default=None,
-                        help="Voxel size for downsampling")
-    parser.add_argument("--simplify", type=int, default=None,
-                        help="Target triangle count")
-    return parser
-
-
-if __name__ == "__main__":
-    args = _build_arg_parser().parse_args()
-    config = PoissonConfig(
-        poisson_depth=args.depth,
-        voxel_size=args.voxel,
-        simplify_target_triangles=args.simplify,
-    )
-
-    stats = reconstruct_poisson_from_laz(args.input, args.output, config)
-    print("Reconstruction complete")
-    for k, v in stats.items():
-        print(f"{k}: {v}")
