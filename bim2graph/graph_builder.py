@@ -87,12 +87,7 @@ def bim2graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
 
         if mep_systems and mep_memberships:
             mep_system_space_rels = compute_mep_system_space_rels(
-                arc_model,
-                mep_systems,
-                mep_memberships,
-                mep_elements,
-                logger,
-            )
+                arc_model, mep_systems, mep_memberships, mep_elements, logger)
 
     # =========================================================================
     # Persist to Neo4j

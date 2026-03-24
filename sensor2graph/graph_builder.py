@@ -15,7 +15,8 @@ from .extractor import (
     visualize_point_cloud,
     export_point_cloud,
     reconstruct_poisson_from_laz,
-    PoissonConfig
+    PoissonConfig,
+    export_ifc_to_sdf,
 )
 
 
@@ -39,51 +40,56 @@ def sensor2graph(pcd_path, logger=None):
     model = ifcopenshell.open(pcd_path)
 
     # =========================================================================
-    # Generate point cloud from IFC
+    # Generate SDF model from IFC
     # =========================================================================
-    point_cloud = generate_point_cloud(model, logger)
+    sdf_stats = export_ifc_to_sdf(model, pcd_path, logger=logger)
 
-    # Visualize & export the point cloud
-    visualize_point_cloud(point_cloud)
-    export_point_cloud(pcd_path, point_cloud, logger)
+    # # =========================================================================
+    # # Generate point cloud from IFC
+    # # =========================================================================
+    # point_cloud = generate_point_cloud(model, logger)
 
-    # =========================================================================
-    # Reconstruct surface mesh from point cloud
-    # =========================================================================
-    model_name = os.path.splitext(os.path.basename(pcd_path))[0]
+    # # Visualize & export the point cloud
+    # visualize_point_cloud(point_cloud)
+    # export_point_cloud(pcd_path, point_cloud, logger)
 
-    laz_path = f"pc_models/{model_name}.laz"
-    mesh_path = f"pc_models/{model_name}_poisson.ply"
+    # # =========================================================================
+    # # Reconstruct surface mesh from point cloud
+    # # =========================================================================
+    # model_name = os.path.splitext(os.path.basename(pcd_path))[0]
 
-    stats = reconstruct_poisson_from_laz(
-        laz_path, mesh_path, PoissonConfig(poisson_depth=10), logger)
+    # laz_path = f"pc_models/{model_name}.laz"
+    # mesh_path = f"pc_models/{model_name}_poisson.ply"
 
-    if logger:
-        logger.logText(
-            "SENSOR2GRAPH",
-            "Poisson mesh ready: "
-            f"vertices={stats['mesh_vertices']} triangles={stats['mesh_triangles']}",
-        )
+    # stats = reconstruct_poisson_from_laz(
+    #     laz_path, mesh_path, PoissonConfig(poisson_depth=10), logger)
 
-    mesh = o3d.io.read_triangle_mesh(mesh_path)
-    if mesh.is_empty():
-        if logger:
-            logger.logText(
-                "SENSOR2GRAPH", f"Cannot visualize empty mesh: {mesh_path}")
-    else:
-        mesh.compute_vertex_normals()
-        coord_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(
-            size=1.0)
-        o3d.visualization.draw_geometries(
-            [mesh, coord_frame],
-            window_name="Poisson Reconstruction",
-            width=1200,
-            height=800,
-        )
+    # if logger:
+    #     logger.logText(
+    #         "SENSOR2GRAPH",
+    #         "Poisson mesh ready: "
+    #         f"vertices={stats['mesh_vertices']} triangles={stats['mesh_triangles']}",
+    #     )
 
-    # =========================================================================
-    # Extract data from point cloud
-    # =========================================================================
+    # mesh = o3d.io.read_triangle_mesh(mesh_path)
+    # if mesh.is_empty():
+    #     if logger:
+    #         logger.logText(
+    #             "SENSOR2GRAPH", f"Cannot visualize empty mesh: {mesh_path}")
+    # else:
+    #     mesh.compute_vertex_normals()
+    #     coord_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(
+    #         size=1.0)
+    #     o3d.visualization.draw_geometries(
+    #         [mesh, coord_frame],
+    #         window_name="Poisson Reconstruction",
+    #         width=1200,
+    #         height=800,
+    #     )
+
+    # # =========================================================================
+    # # Extract data from point cloud
+    # # =========================================================================
 
     if logger:
         logger.logText("SENSOR2GRAPH", "SENSOR2GRAPH under construction")

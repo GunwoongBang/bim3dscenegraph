@@ -15,8 +15,6 @@ log/
 
 # Environment variables
 .env
-.env.*
 
 # Files
-*.xyz
-*.laz
+pc_models/*
