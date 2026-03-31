@@ -13,8 +13,7 @@ load_dotenv()
 ARC_PATH = "ifc_models/Example/Example_ARC.ifc"
 STR_PATH = "ifc_models/Example/Example_STR.ifc"
 MEP_PATH = "ifc_models/Example/Example_MEP.ifc"
-# Old file - need to be replaced with the current model
-PCD_PATH = "ifc_models/Example/Example_PCD.ifc"
+# PCD_PATH = "ifc_models/Example/Example_PCD.ifc"
 
 NEO4J_URI = os.getenv("NEO4J_URI")
 NEO4J_USER = os.getenv("NEO4J_USER")
@@ -27,7 +26,6 @@ if not all([NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD]):
 def graph_initiate():
     driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
     logger.logText("PROJECT", "Neo4j driver initiated")
-    print("Neo4j host: http://localhost:7474/browser/")
     logger.logText("Divider")
     return driver
 
@@ -43,11 +41,13 @@ if __name__ == "__main__":
         bim2graph(driver, ARC_PATH, STR_PATH, MEP_PATH, logger)
 
         # Generate a Sensor-derived graph from BIM models (PCD)
-        sensor2graph(PCD_PATH, logger)
+        sensor2graph(ARC_PATH, logger)
 
         # ====================================================================
         # GRAPH MERGING
         # ====================================================================
+
+        print("Neo4j host: http://localhost:7474/browser/")
 
     except Exception as e:
         logger.logText("PROJECT", f"Error: {e}")

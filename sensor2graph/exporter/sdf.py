@@ -46,30 +46,59 @@ def _write_obj(mesh_path: Path, vertices: np.ndarray, faces: np.ndarray) -> None
     mesh_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def export_ifc_to_sdf(ifc_model, ifc_path: str, output_sdf_path: str | None = None, logger=None) -> dict:
+def export_ifc_to_sdf(ifc_model, ifc_path, logger=None):
     """
     Export IFC walls/slabs as mesh visuals to a single SDF world file.
 
     Args:
         ifc_model: Open ifcopenshell model
         ifc_path: Source IFC path (used for output naming)
-        output_sdf_path: Optional output path. Defaults to pc_models/<ifc_name>.sdf
         logger: Optional logger with logText(category, message)
 
     Returns:
         dict with output path and element counts
     """
     model_name = Path(ifc_path).stem
-    output_path = Path(output_sdf_path) if output_sdf_path else Path(
-        "pc_models") / f"{model_name}.sdf"
+    output_path = Path("pc_models") / "ifc_world.sdf"
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Gazebo classic has best compatibility with SDF 1.6.
     sdf = ET.Element("sdf", version="1.6")
-    world = ET.SubElement(sdf, "world", name=f"{model_name}_world")
+    world = ET.SubElement(sdf, "world", name=f"{model_name}")
 
-    mesh_dir = output_path.parent / f"{model_name}_meshes"
-    mesh_dir.mkdir(parents=True, exist_ok=True)
+    # World defaults for Gazebo simulation and virtual scanning.
+    include_ground = ET.SubElement(world, "include")
+    ET.SubElement(include_ground, "uri").text = "model://ground_plane"
+
+    include_sun = ET.SubElement(world, "include")
+    ET.SubElement(include_sun, "uri").text = "model://sun"
+
+    physics = ET.SubElement(world, "physics", type="ode")
+    ET.SubElement(physics, "real_time_update_rate").text = "1000.0"
+    ET.SubElement(physics, "max_step_size").text = "0.001"
+    ET.SubElement(physics, "real_time_factor").text = "1"
+
+    ode = ET.SubElement(physics, "ode")
+    solver = ET.SubElement(ode, "solver")
+    ET.SubElement(solver, "type").text = "quick"
+    ET.SubElement(solver, "iters").text = "150"
+    ET.SubElement(solver, "precon_iters").text = "0"
+    ET.SubElement(solver, "sor").text = "1.4"
+    ET.SubElement(solver, "use_dynamic_moi_rescaling").text = "1"
+
+    constraints = ET.SubElement(ode, "constraints")
+    ET.SubElement(constraints, "cfm").text = "0.00001"
+    ET.SubElement(constraints, "erp").text = "0.2"
+    ET.SubElement(constraints, "contact_max_correcting_vel").text = "2000.0"
+    ET.SubElement(constraints, "contact_surface_layer").text = "0.01"
+
+    include_robot = ET.SubElement(world, "include")
+    ET.SubElement(include_robot, "name").text = "robot"
+    ET.SubElement(include_robot, "uri").text = "model://robot"
+    ET.SubElement(
+        include_robot, "pose").text = "-1.5 3 0.7 3.141592654 0 3.141592654"
+    ET.SubElement(include_robot, "static").text = "false"
+
+    mesh_dir = Path("src/robot_gazebo/") / "ifc_world"
 
     total_exported = 0
     per_type = {}
@@ -111,6 +140,14 @@ def export_ifc_to_sdf(ifc_model, ifc_path: str, output_sdf_path: str | None = No
             ET.SubElement(model_node, "pose").text = "0 0 0 0 0 0"
 
             link = ET.SubElement(model_node, "link", name="link")
+
+            collision = ET.SubElement(link, "collision", name="collision")
+            collision_geometry = ET.SubElement(collision, "geometry")
+            collision_mesh = ET.SubElement(collision_geometry, "mesh")
+            ET.SubElement(collision_mesh, "uri").text = str(
+                mesh_path.as_posix())
+            ET.SubElement(collision_mesh, "scale").text = "1 1 1"
+
             visual = ET.SubElement(link, "visual", name="visual")
             geometry = ET.SubElement(visual, "geometry")
             mesh = ET.SubElement(geometry, "mesh")
@@ -138,14 +175,4 @@ def export_ifc_to_sdf(ifc_model, ifc_path: str, output_sdf_path: str | None = No
     output_path.write_text(_pretty_xml(sdf), encoding="utf-8")
 
     if logger:
-        logger.logText(
-            "SENSOR2GRAPH",
-            f"SDF world exported: {output_path} (elements={total_exported})",
-        )
-
-    return {
-        "sdf_path": str(output_path),
-        "mesh_dir": str(mesh_dir),
-        "exported_elements": total_exported,
-        "per_type": per_type,
-    }
+        logger.logText("SENSOR2GRAPH", f"SDF world exported: {output_path}")
