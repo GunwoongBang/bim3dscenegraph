@@ -98,7 +98,7 @@ def export_ifc_to_sdf(ifc_model, ifc_path, logger=None):
         include_robot, "pose").text = "-1.5 3 0.7 3.141592654 0 3.141592654"
     ET.SubElement(include_robot, "static").text = "false"
 
-    mesh_dir = Path("src/robot_gazebo/") / "ifc_world"
+    mesh_dir = output_path.parent / f"{model_name}_meshes"
 
     total_exported = 0
     per_type = {}
