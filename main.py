@@ -4,10 +4,11 @@ import traceback
 from pathlib import Path
 from dotenv import load_dotenv
 from neo4j import GraphDatabase
+
 from bim2graph import bim2graph
 from sensor2graph import sensor2graph
 
-import logger as logger
+import logger
 
 load_dotenv()
 
@@ -43,7 +44,7 @@ if __name__ == "__main__":
 
         # Generate a Sensor-derived graph from BIM models (PCD)
         # Note: If PCD data is present, change the third argument (pcd_present) to True
-        sensor2graph(ARC_PATH, PCD_PATH, logger)
+        sensor2graph(PCD_PATH, ARC_PATH, logger)
 
         # ====================================================================
         # GRAPH MERGING

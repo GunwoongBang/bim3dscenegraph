@@ -2,7 +2,7 @@
 Point cloud cleaning utilities from PCD data.
 """
 
-from .util.pcd_util import (
+from .util import (
     read_point_cloud,
     voxel_downsample,
     remove_statistical_outliers,
@@ -14,7 +14,18 @@ from .util.pcd_util import (
 
 
 def clean_point_cloud(pcd_path, ifc_model, logger=None):
-    """Preprocess PCD data and export to {pcd_file_name}_cleaned.pcd."""
+    """
+    Preprocess PCD data and export to {pcd_file_name}_cleaned.pcd.
+
+    Args:
+        pcd_path: Path to the input PCD file.
+        ifc_model: IFC model for computing bounds.
+        logger: Optional logger for output messages.
+
+    Returns:
+        cleaned_path: Path to the cleaned PCD file.
+        stats: Dictionary with point counts at each stage.
+    """
     voxel_size = 0.05
     nb_neighbors = 20
     std_ratio = 2.0
@@ -57,4 +68,4 @@ def clean_point_cloud(pcd_path, ifc_model, logger=None):
         )
         logger.logText("SENSOR2GRAPH", f"Cleaned PCD saved: {cleaned_path}")
 
-    return cleaned_path, stats
+    return cleaned_path

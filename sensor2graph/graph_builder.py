@@ -16,7 +16,7 @@ from .worker import (
 )
 
 
-def sensor2graph(arc_path, pcd_path, logger=None):
+def sensor2graph(pcd_path, arc_path, logger=None):
     """
     Generates a sensor-derived graph from an IFC model and persists to Neo4j.
 
@@ -26,8 +26,8 @@ def sensor2graph(arc_path, pcd_path, logger=None):
         3. Reconstruct surface mesh from point cloud
 
     Args:
-        arc_path: Path to the ARC IFC file
         pcd_path: Path to the PCD PCD file
+        arc_path: Path to the ARC IFC file
         logger: Optional logger for output messages
     """
     if logger:
@@ -36,8 +36,8 @@ def sensor2graph(arc_path, pcd_path, logger=None):
         else:
             logger.logText("SENSOR2GRAPH", "ARC IFC model loaded")
 
-    # Load IFC model
-    model = ifcopenshell.open(arc_path)
+    # Load ARC IFC model
+    arc_model = ifcopenshell.open(arc_path)
 
     # =========================================================================
     # Generate point cloud as fallback if PCD data is not present
@@ -47,16 +47,16 @@ def sensor2graph(arc_path, pcd_path, logger=None):
         if logger:
             logger.logText(
                 "SENSOR2GRAPH", "Point cloud file not found. Exporting IFC to SDF as fallback.")
-        export_ifc_to_sdf(model, logger)
+        export_ifc_to_sdf(arc_model, logger)
         pcd_path = Path("pc_models/cloudGlobals.pcd")
 
     # =========================================================================
     # Segment point cloud
     # =========================================================================
     # Point cloud preprocessing
-    clean_point_cloud(pcd_path, logger)
+    cleaned_pcd_path = clean_point_cloud(pcd_path, arc_model, logger)
 
-    visualize_point_cloud(pcd_path, logger)
+    visualize_point_cloud(cleaned_pcd_path, logger)
 
     # =========================================================================
     # Merge point cloud with BIM-derived graph

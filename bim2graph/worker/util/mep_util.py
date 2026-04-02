@@ -11,6 +11,15 @@ MEP_TYPES = [
 
 
 def _normalize(vec):
+    """
+    Normalize a 3D vector. Returns None if the vector has zero length.
+
+    Args:
+        vec: Iterable of 3 numbers representing a vector
+
+    Returns:
+        Normalized vector as a numpy array, or None if input is zero-length
+    """
     arr = np.array(vec, dtype=float)
     norm = np.linalg.norm(arr)
     if norm == 0:
@@ -19,6 +28,15 @@ def _normalize(vec):
 
 
 def _generate_orientation_matrix(mapped_item):
+    """
+    Generate a 3x3 orientation matrix from an IfcMappedItem's MappingTarget axes.
+
+    Args:
+        mapped_item: An IfcMappedItem with a MappingTarget that may have Axis1, Axis2, Axis3
+
+    Returns:
+        A 3x3 numpy array representing the orientation matrix, or identity if not defined
+    """
     mapping_target = getattr(mapped_item, "MappingTarget", None)
     if mapping_target is None:
         return np.eye(3)
@@ -44,6 +62,18 @@ def _generate_orientation_matrix(mapped_item):
 
 
 def _classify_mep_element(element):
+    """
+    Classify an MEP element's shape type and extract relevant geometric information.
+
+    Args:
+        element: IFC element to classify
+
+    Returns:
+        Tuple:
+        (item, mapped_rot) where:
+            - item: The IfcExtrudedAreaSolid representing the main geometry, or None if not found
+            - mapped_rot: The orientation matrix from the IfcMappedItem, or identity
+    """
     representation = getattr(element, "Representation", None)
     reps = getattr(representation, "Representations", None)
     if not reps:
@@ -68,6 +98,15 @@ def _classify_mep_element(element):
 
 
 def extract_shape_signature(element):
+    """
+    Extract shape signature (cylindrical vs rectangular) and dimensions from MEP element IFC geometry.
+
+    Args:
+        element: IFC element to analyze
+
+    Returns:
+        dict: Dictionary with shapeType ("cylindrical", "rectangular", or "other") and dimensions in mm
+    """
     item, _ = _classify_mep_element(element)
 
     # elements out of scope (e.g. tee, elbow, etc.)
@@ -120,6 +159,15 @@ def _generate_rotation_matrix_from_axis(position):
 
 
 def extract_extrusion_axis(element):
+    """
+    Extract the extrusion axis from an MEP element IFC geometry.
+
+    Args:
+        element: IFC element to analyze
+
+    Returns:
+        list: Normalized direction vector of the extrusion axis or None if not found.
+    """
     item, mapped_rot = _classify_mep_element(element)
     if item is None or not item.is_a("IfcExtrudedAreaSolid"):
         return None
