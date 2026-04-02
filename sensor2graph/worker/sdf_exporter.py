@@ -143,3 +143,5 @@ def export_ifc_to_sdf(ifc_model, logger=None):
 
     if logger:
         logger.logText("SENSOR2GRAPH", f"SDF world exported: {output_path}")
+
+    return Path(output_path)

@@ -5,15 +5,18 @@ This module coordinates the conversion of BIM model geometry into
 a point cloud representation and persistence to Neo4j graph database.
 """
 
+from pathlib import Path
+
 import ifcopenshell
 
 from .worker import (
     export_ifc_to_sdf,
+    clean_point_cloud,
     visualize_point_cloud,
 )
 
 
-def sensor2graph(pcd_path, logger=None):
+def sensor2graph(arc_path, pcd_path, logger=None):
     """
     Generates a sensor-derived graph from an IFC model and persists to Neo4j.
 
@@ -23,25 +26,41 @@ def sensor2graph(pcd_path, logger=None):
         3. Reconstruct surface mesh from point cloud
 
     Args:
-        pcd_path: Path to the PCD IFC file
+        arc_path: Path to the ARC IFC file
+        pcd_path: Path to the PCD PCD file
         logger: Optional logger for output messages
     """
     if logger:
-        logger.logText("SENSOR2GRAPH", "PCD IFC model loaded")
+        if Path(pcd_path).exists():
+            logger.logText("SENSOR2GRAPH", "ARC, PCD IFC models loaded")
+        else:
+            logger.logText("SENSOR2GRAPH", "ARC IFC model loaded")
 
     # Load IFC model
-    model = ifcopenshell.open(pcd_path)
+    model = ifcopenshell.open(arc_path)
 
     # =========================================================================
-    # Generate SDF model from IFC
+    # Generate point cloud as fallback if PCD data is not present
     # =========================================================================
-    export_ifc_to_sdf(model, logger)
+    # Export IFC to SDF
+    if not Path(pcd_path).exists():
+        if logger:
+            logger.logText(
+                "SENSOR2GRAPH", "Point cloud file not found. Exporting IFC to SDF as fallback.")
+        export_ifc_to_sdf(model, logger)
+        pcd_path = Path("pc_models/cloudGlobals.pcd")
 
     # =========================================================================
-    # Extract data from point cloud
+    # Segment point cloud
     # =========================================================================
-    pc_path = "pc_models/cloudGlobal.pcd"
-    visualize_point_cloud(pc_path)
+    # Point cloud preprocessing
+    clean_point_cloud(pcd_path, logger)
+
+    visualize_point_cloud(pcd_path, logger)
+
+    # =========================================================================
+    # Merge point cloud with BIM-derived graph
+    # =========================================================================
 
     if logger:
         logger.logText("SENSOR2GRAPH", "SENSOR2GRAPH under construction")

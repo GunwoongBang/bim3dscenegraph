@@ -1,6 +1,7 @@
 import os
 import traceback
 
+from pathlib import Path
 from dotenv import load_dotenv
 from neo4j import GraphDatabase
 from bim2graph import bim2graph
@@ -10,10 +11,10 @@ import logger as logger
 
 load_dotenv()
 
-ARC_PATH = "ifc_models/Example/Example_ARC.ifc"
-STR_PATH = "ifc_models/Example/Example_STR.ifc"
-MEP_PATH = "ifc_models/Example/Example_MEP.ifc"
-# PCD_PATH = "ifc_models/Example/Example_PCD.ifc"
+ARC_PATH = Path("ifc_models/Example/Example_ARC.ifc")
+STR_PATH = Path("ifc_models/Example/Example_STR.ifc")
+MEP_PATH = Path("ifc_models/Example/Example_MEP.ifc")
+PCD_PATH = Path("pc_models/cloudGlobal.pcd")
 
 NEO4J_URI = os.getenv("NEO4J_URI")
 NEO4J_USER = os.getenv("NEO4J_USER")
@@ -41,7 +42,8 @@ if __name__ == "__main__":
         bim2graph(driver, ARC_PATH, STR_PATH, MEP_PATH, logger)
 
         # Generate a Sensor-derived graph from BIM models (PCD)
-        sensor2graph(ARC_PATH, logger)
+        # Note: If PCD data is present, change the third argument (pcd_present) to True
+        sensor2graph(ARC_PATH, PCD_PATH, logger)
 
         # ====================================================================
         # GRAPH MERGING

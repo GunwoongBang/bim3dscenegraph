@@ -1,4 +1,6 @@
-"""Point-cloud utilities for SENSOR2GRAPH worker."""
+"""
+
+"""
 
 from pathlib import Path
 
@@ -97,32 +99,29 @@ def _remove_sparse_noise(points, neighborhood_voxel, min_neighbors) -> np.ndarra
     return filtered if len(filtered) > 0 else points
 
 
-def visualize_point_cloud(pc_path, voxel_size=0.07, noise_voxel_size=0.06, min_neighbors=2):
-    """Visualize a PCD point cloud with Matplotlib.
+def visualize_point_cloud(pc_path, logger=None):
+    """
+    Visualize a PCD point cloud with Matplotlib.
 
     Args:
         pc_path: Path to a .pcd file.
-        voxel_size: Voxel size for downsampling in meters.
-        noise_voxel_size: Voxel size used for neighborhood noise filtering.
-        min_neighbors: Minimum occupied neighboring voxels to keep a point.
+        logger: Optional logger for output messages.
     """
-    path = Path(pc_path)
-    if not path.exists():
-        raise FileNotFoundError(f"Point cloud file not found: {path}")
+    if not Path(pc_path).exists():
+        raise FileNotFoundError(f"Point cloud file not found: {pc_path}")
 
-    raw_points = _read_ascii_pcd_xyz(path)
-    downsampled_points = _voxel_downsample(raw_points, voxel_size=voxel_size)
+    voxel_size = 0.07
+    noise_voxel_size = 0.06
+    min_neighbors = 2
+
+    raw_points = _read_ascii_pcd_xyz(pc_path)
+    downsampled_points = _voxel_downsample(raw_points, voxel_size)
     points_to_show = _remove_sparse_noise(
-        downsampled_points,
-        neighborhood_voxel=noise_voxel_size,
-        min_neighbors=min_neighbors,
-    )
+        downsampled_points, noise_voxel_size, min_neighbors)
 
-    print(
-        "Point-cloud preprocessing "
-        f"(raw={len(raw_points)}, downsampled={len(downsampled_points)}, "
-        f"denoised={len(points_to_show)})"
-    )
+    if logger:
+        logger.logText(
+            "SENSOR2GRAPH", f"Point-cloud preprocessing (raw={len(raw_points)}, downsampled={len(downsampled_points)} denoised={len(points_to_show)})")
 
     fig = plt.figure(figsize=(10, 8))
     ax = fig.add_subplot(111, projection="3d")
@@ -136,7 +135,7 @@ def visualize_point_cloud(pc_path, voxel_size=0.07, noise_voxel_size=0.06, min_n
         alpha=0.8,
         linewidths=0,
     )
-    ax.set_title(f"Point Cloud Viewer: {path.name}")
+    ax.set_title(f"Point Cloud Viewer: {pc_path.name}")
     ax.set_xlabel("X")
     ax.set_ylabel("Y")
     ax.set_zlabel("Z")
@@ -145,6 +144,7 @@ def visualize_point_cloud(pc_path, voxel_size=0.07, noise_voxel_size=0.06, min_n
     maxs = points_to_show.max(axis=0)
     centers = (mins + maxs) / 8.0
     half_range = (maxs - mins).max() / 8.0
+
     ax.set_xlim(centers[0] - half_range, centers[0] + half_range)
     ax.set_ylim(centers[1] - half_range, centers[1] + half_range)
     ax.set_zlim(centers[2] - half_range, centers[2] + half_range)
