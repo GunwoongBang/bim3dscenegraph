@@ -2,7 +2,7 @@
 Relationship extraction from IFC models (space-wall boundaries, etc.).
 """
 
-from .utils import (
+from .util import (
     compute_space_side_of_wall,
     check_bbox_intersection,
     compute_bbox_overlap,
@@ -179,11 +179,7 @@ def compute_mep_memberships(model, mep_elements, logger=None) -> list[dict]:
     return memberships
 
 
-def compute_mep_element_wall_rels(
-    mep_elements,
-    walls,
-    logger=None
-) -> list[dict]:
+def compute_mep_element_wall_rels(mep_elements, walls, logger=None) -> list[dict]:
     """
     Compute relationships between MEP elements and walls.
 
@@ -265,13 +261,7 @@ def compute_mep_element_wall_rels(
     return edges
 
 
-def compute_mep_system_space_rels(
-    arc_model,
-    systems,
-    memberships,
-    mep_elements,
-    logger=None,
-) -> list[dict]:
+def compute_mep_system_space_rels(arc_model, systems, memberships, mep_elements, logger=None) -> list[dict]:
     """
     Compute MEP system-to-space relationships using geometry only.
 

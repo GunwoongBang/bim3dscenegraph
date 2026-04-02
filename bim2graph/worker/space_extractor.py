@@ -2,7 +2,7 @@
 Space extraction from IFC models.
 """
 
-from . import geometry
+from .geometry import extract_centroid
 
 
 def extract_spaces(model, logger=None) -> list[dict]:
@@ -33,7 +33,7 @@ def extract_spaces(model, logger=None) -> list[dict]:
         return spaces
 
     for space in ifc_spaces:
-        centroid = geometry.extract_centroid(space)
+        centroid = extract_centroid(space)
 
         space_data = {
             "id": space.GlobalId,

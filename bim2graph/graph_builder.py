@@ -9,7 +9,7 @@ import ifcopenshell
 
 from .query_manager import QueryManager
 from .persistence import Neo4jOperations
-from .extractor import (
+from .worker import (
     extract_spaces,
     extract_walls,
     extract_str_elements,

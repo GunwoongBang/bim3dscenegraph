@@ -72,7 +72,7 @@ def get_material_info(element) -> tuple[Optional[str], int, Optional[str]]:
     return direction_sense, layer_count, material_type
 
 
-def get_pset_property(element, prop_name: str, pset_name: Optional[str] = None) -> Any:
+def get_pset_property(element, prop_name, pset_name=None) -> Any:
     """
     Extract a property value from an IFC element's property sets.
 
@@ -157,11 +157,7 @@ def get_material_layers(element) -> list[dict]:
     return layers
 
 
-def match_layer_to_str(
-    layer_thickness: Optional[float],
-    mat_name: Optional[str],
-    str_elements: list[dict]
-) -> Optional[bool]:
+def match_layer_to_str(str_elements, layer_thickness=None, mat_name=None) -> Optional[bool]:
     """
     Match a layer to structural elements by thickness and material name.
 
@@ -177,8 +173,7 @@ def match_layer_to_str(
         return None
 
     for str_elem in str_elements:
-        if (str_elem["thickness"] == layer_thickness and
-                mat_name in str_elem["materials"]):
+        if (str_elem["thickness"] == layer_thickness and mat_name in str_elem["materials"]):
             return str_elem["loadBearing"]
 
     return None

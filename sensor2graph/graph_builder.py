@@ -7,8 +7,9 @@ a point cloud representation and persistence to Neo4j graph database.
 
 import ifcopenshell
 
-from .exporter import (
+from .worker import (
     export_ifc_to_sdf,
+    visualize_point_cloud,
 )
 
 
@@ -34,11 +35,13 @@ def sensor2graph(pcd_path, logger=None):
     # =========================================================================
     # Generate SDF model from IFC
     # =========================================================================
-    export_ifc_to_sdf(model, pcd_path, logger)
+    export_ifc_to_sdf(model, logger)
 
     # =========================================================================
     # Extract data from point cloud
     # =========================================================================
+    pc_path = "pc_models/cloudGlobal.pcd"
+    visualize_point_cloud(pc_path)
 
     if logger:
         logger.logText("SENSOR2GRAPH", "SENSOR2GRAPH under construction")

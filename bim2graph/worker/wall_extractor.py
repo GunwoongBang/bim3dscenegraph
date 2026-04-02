@@ -4,7 +4,7 @@ Wall and layer extraction from IFC models.
 
 from typing import Optional
 
-from .utils import (
+from .util import (
     get_material_info,
     get_pset_property,
     get_layer_info,
@@ -181,8 +181,7 @@ def extract_layers(
 
             # Match with STR elements
             layer_load_bearing = match_layer_to_str(
-                layer_thickness, mat_name, str_elements
-            )
+                str_elements, layer_thickness, mat_name)
 
             layer_data = {
                 "id": f"{wall_id}_layer_{layer_index}",
