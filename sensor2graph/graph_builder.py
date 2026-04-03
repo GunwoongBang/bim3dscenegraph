@@ -47,16 +47,18 @@ def sensor2graph(pcd_path, arc_path, logger=None):
         if logger:
             logger.logText(
                 "SENSOR2GRAPH", "Point cloud file not found. Exporting IFC to SDF as fallback.")
+
         export_ifc_to_sdf(arc_model, logger)
-        pcd_path = Path("pc_models/cloudGlobals.pcd")
+        pcd_path = Path("pc_models/cloudGlobal.pcd")
 
     # =========================================================================
     # Segment point cloud
     # =========================================================================
     # Point cloud preprocessing
-    cleaned_pcd_path = clean_point_cloud(pcd_path, arc_model, logger)
+    # Note: Will shortly be reintroduced. For now we assume that we have a clean point cloud
+    # cleaned_pcd_path = clean_point_cloud(pcd_path, arc_model, logger)
 
-    visualize_point_cloud(cleaned_pcd_path, logger)
+    # visualize_point_cloud(cleaned_pcd_path, logger)
 
     # =========================================================================
     # Merge point cloud with BIM-derived graph

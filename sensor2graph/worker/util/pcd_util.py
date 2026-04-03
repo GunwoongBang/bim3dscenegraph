@@ -77,7 +77,7 @@ def compute_ifc_bounds(ifc_model, include_types=None):
     }
 
 
-def keep_points_inside_ifc_bounds(cloud, bounds, xy_margin, z_margin):
+def keep_points_inside_ifc_bounds(cloud, bounds, margin):
     """Keep only points inside IFC-derived axis-aligned bounds with margin."""
     if bounds is None:
         return cloud
@@ -87,12 +87,12 @@ def keep_points_inside_ifc_bounds(cloud, bounds, xy_margin, z_margin):
         return cloud
 
     mask = (
-        (points[:, 0] >= bounds["min_x"] - xy_margin)
-        & (points[:, 0] <= bounds["max_x"] + xy_margin)
-        & (points[:, 1] >= bounds["min_y"] - xy_margin)
-        & (points[:, 1] <= bounds["max_y"] + xy_margin)
-        & (points[:, 2] >= bounds["min_z"] - z_margin)
-        & (points[:, 2] <= bounds["max_z"] + z_margin)
+        (points[:, 0] >= bounds["min_x"] - margin)
+        & (points[:, 0] <= bounds["max_x"] + margin)
+        & (points[:, 1] >= bounds["min_y"] - margin)
+        & (points[:, 1] <= bounds["max_y"] + margin)
+        & (points[:, 2] >= bounds["min_z"] - margin)
+        & (points[:, 2] <= bounds["max_z"] + margin)
     )
 
     kept_indices = np.where(mask)[0].tolist()
@@ -102,11 +102,11 @@ def keep_points_inside_ifc_bounds(cloud, bounds, xy_margin, z_margin):
     return cloud.select_by_index(kept_indices)
 
 
-def write_point_cloud(cloud, input_path, suffix="_cleaned"):
+def write_point_cloud(cloud, input_path):
     """Write a cleaned cloud to {stem}{suffix}{ext} and return its path."""
 
     src = Path(input_path)
-    output_path = src.with_name(f"{src.stem}{suffix}{src.suffix}")
+    output_path = src.with_name(f"{src.stem}_cleaned{src.suffix}")
     o3d.io.write_point_cloud(str(output_path), cloud, write_ascii=True)
     return output_path
 

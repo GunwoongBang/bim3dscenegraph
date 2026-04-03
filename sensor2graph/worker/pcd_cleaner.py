@@ -29,8 +29,7 @@ def clean_point_cloud(pcd_path, ifc_model, logger=None):
     voxel_size = 0.05
     nb_neighbors = 20
     std_ratio = 2.0
-    xy_margin = 0.35
-    z_margin = 0.50
+    margin = 0.50
 
     raw_cloud = read_point_cloud(pcd_path)
     downsampled_cloud = voxel_downsample(raw_cloud, voxel_size)
@@ -44,8 +43,7 @@ def clean_point_cloud(pcd_path, ifc_model, logger=None):
     cleaned_cloud = keep_points_inside_ifc_bounds(
         inlier_cloud,
         bounds=ifc_bounds,
-        xy_margin=xy_margin,
-        z_margin=z_margin,
+        margin=margin,
     )
 
     cleaned_path = write_point_cloud(cleaned_cloud, pcd_path)
