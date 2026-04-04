@@ -1,5 +1,5 @@
 """
-Point cloud cleaning utilities from PCD data.
+Point cloud preprocessing (downsampling, outlier removal, cropping) of PCD data.
 """
 
 from .util import (
@@ -11,6 +11,10 @@ from .util import (
     write_point_cloud,
     count_points,
 )
+
+# Note: This cleaner is currently disabled
+# Later, when the cleaner is reintroduced, the visualization will be updated not to include the cleaning step
+# The returning file path has to be [file_name]_cleaned.pcd, since the future code will expect that and be built upon that assumption.
 
 
 def clean_point_cloud(pcd_path, ifc_model, logger=None):

@@ -10,6 +10,9 @@ import open3d as o3d
 from ..geometry import extract_mesh_from_shape
 
 
+# =========================================================================
+# Point cloud cleaning utilities
+# =========================================================================
 def read_point_cloud(pcd_path):
     """Load a point cloud from a PCD file using Open3D."""
 
@@ -114,3 +117,7 @@ def write_point_cloud(cloud, input_path):
 def count_points(cloud):
     """Return point count for an Open3D point cloud."""
     return len(np.asarray(cloud.points))
+
+# =========================================================================
+# Point cloud segmentation utilities
+# =========================================================================

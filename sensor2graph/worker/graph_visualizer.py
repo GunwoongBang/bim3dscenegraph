@@ -7,7 +7,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from .util import read_point_cloud
+from .util import read_point_cloud, voxel_downsample
 
 
 def visualize_point_cloud(pc_path, logger=None):
@@ -22,7 +22,16 @@ def visualize_point_cloud(pc_path, logger=None):
         raise FileNotFoundError(f"Point cloud file not found: {pc_path}")
 
     cloud = read_point_cloud(pc_path)
-    points_to_show = np.asarray(cloud.points)
+
+    # Note: Temporary sampling for visualization
+    # It will be deleted later, after a cleaner is reintroduced
+    # =========================================================================
+    voxel_size = 0.01
+
+    downsampled_cloud = voxel_downsample(cloud, voxel_size)
+    # =========================================================================
+
+    points_to_show = np.asarray(downsampled_cloud.points)
     if points_to_show.size == 0:
         raise ValueError(f"No points to visualize: {pc_path}")
 
@@ -50,7 +59,7 @@ def visualize_point_cloud(pc_path, logger=None):
     mins = points_to_show.min(axis=0)
     maxs = points_to_show.max(axis=0)
     centers = (mins + maxs) / 2.0
-    half_range = (maxs - mins).max() / 4.0
+    half_range = (maxs - mins).max() / 2.0
 
     ax.set_xlim(centers[0] - half_range, centers[0] + half_range)
     ax.set_ylim(centers[1] - half_range, centers[1] + half_range)

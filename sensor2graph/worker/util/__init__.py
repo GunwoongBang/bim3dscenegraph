@@ -12,6 +12,11 @@ from .pcd_util import (
     write_point_cloud,
     count_points,
 )
+from .label_handler import (
+    InteractiveLabeler,
+    load_labels_from_csv,
+    create_labeled_cloud,
+)
 
 __all__ = [
     'safe_name',
@@ -24,4 +29,7 @@ __all__ = [
     'keep_points_inside_ifc_bounds',
     'write_point_cloud',
     'count_points',
+    'InteractiveLabeler',
+    'load_labels_from_csv',
+    'create_labeled_cloud',
 ]
