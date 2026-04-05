@@ -41,6 +41,7 @@ if __name__ == "__main__":
     try:
         # Generate a BIM-derived graph from BIM models (ARC + STR + MEP)
         bim2graph(driver, ARC_PATH, STR_PATH, MEP_PATH, logger)
+        print("Neo4j host: http://localhost:7474/browser/")
 
         # Generate a Sensor-derived graph from BIM models (PCD)
         # Note: If PCD data is present, change the third argument (pcd_present) to True
@@ -49,8 +50,6 @@ if __name__ == "__main__":
         # ====================================================================
         # GRAPH MERGING
         # ====================================================================
-
-        print("Neo4j host: http://localhost:7474/browser/")
 
     except Exception as e:
         logger.logText("PROJECT", f"Error: {e}")

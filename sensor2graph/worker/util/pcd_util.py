@@ -118,6 +118,56 @@ def count_points(cloud):
     """Return point count for an Open3D point cloud."""
     return len(np.asarray(cloud.points))
 
+
+def extract_plane_groups(
+    cloud,
+    distance_threshold=0.02,
+    min_inliers=500,
+    max_planes=50,
+    num_iterations=1000,
+):
+    """Extract planar groups from a point cloud using iterative RANSAC."""
+    if cloud.is_empty():
+        return [], cloud
+
+    remaining_cloud = cloud
+    remaining_indices = np.arange(count_points(cloud))
+    plane_groups = []
+
+    for plane_id in range(max_planes):
+        if count_points(remaining_cloud) < min_inliers:
+            break
+
+        plane_model, inliers = remaining_cloud.segment_plane(
+            distance_threshold=distance_threshold,
+            ransac_n=3,
+            num_iterations=num_iterations,
+        )
+
+        if len(inliers) < min_inliers:
+            break
+
+        normal = np.asarray(plane_model[:3], dtype=np.float64)
+        normal_norm = np.linalg.norm(normal)
+        if normal_norm > 0:
+            normal = normal / normal_norm
+
+        original_indices = remaining_indices[np.asarray(inliers)]
+        plane_groups.append(
+            {
+                "segment_id": plane_id,
+                "plane_model": plane_model,
+                "normal": normal,
+                "inlier_indices": original_indices,
+                "point_count": len(inliers),
+            }
+        )
+
+        remaining_cloud = remaining_cloud.select_by_index(inliers, invert=True)
+        remaining_indices = np.delete(remaining_indices, inliers)
+
+    return plane_groups, remaining_cloud
+
 # =========================================================================
 # Point cloud segmentation utilities
 # =========================================================================

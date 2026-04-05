@@ -11,9 +11,9 @@ import ifcopenshell
 
 from .worker import (
     export_ifc_to_sdf,
-    clean_point_cloud,
-    visualize_point_cloud,
     segment_point_cloud_interactive,
+    segment_point_cloud_by_planes,
+    segment_point_cloud_by_planes_and_ifc,
     visualize_labeled_cloud,
 )
 
@@ -58,14 +58,16 @@ def sensor2graph(pcd_path, arc_path, logger=None):
     # =========================================================================
     # Point cloud preprocessing
     # Note: Will shortly be reintroduced. For now we assume that we have a clean point cloud
-    # cleaned_pcd_path = clean_point_cloud(pcd_path, arc_model, logger)
     cleaned_pcd_path = Path("pc_models/cloudGlobal_cleaned.pcd")
-    # visualize_point_cloud(cleaned_pcd_path, logger)
 
     # Point cloud segmentation and labeling
-    segment_point_cloud_interactive(cleaned_pcd_path, logger)
-    visualize_labeled_cloud(
-        cleaned_pcd_path, "pc_models/cloudGlobal_cleaned_labels.csv", logger)
+    # segment_point_cloud_interactive(cleaned_pcd_path, logger)
+    plane_semantic_csv = segment_point_cloud_by_planes_and_ifc(
+        cleaned_pcd_path,
+        arc_model,
+        logger=logger,
+    )
+    visualize_labeled_cloud(cleaned_pcd_path, plane_semantic_csv, logger)
 
     # =========================================================================
     # Merge point cloud with BIM-derived graph

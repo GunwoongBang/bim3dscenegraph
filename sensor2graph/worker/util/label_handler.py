@@ -219,8 +219,15 @@ def create_labeled_cloud(cloud_path, labels_df, output_pcd_path=None):
 
     colors = np.ones((len(points), 3)) * 0.5
     for idx, row in labels_df.iterrows():
-        surface_type = row['surface_type']
-        colors[idx] = color_map.get(surface_type, np.array([0.5, 0.5, 0.5]))
+        surface_type = row.get('plane_label', row.get(
+            'surface_type', row.get('semantic_type', 'unlabeled')))
+        if surface_type in color_map:
+            colors[idx] = color_map[surface_type]
+        else:
+            segment_id = row.get('segment_id', idx)
+            seed = int(segment_id) if pd.notna(segment_id) else idx
+            rng = np.random.default_rng(seed)
+            colors[idx] = rng.random(3) * 0.7 + 0.2
 
     cloud.colors = o3d.utility.Vector3dVector(colors)
 

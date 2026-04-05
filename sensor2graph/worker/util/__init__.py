@@ -11,6 +11,7 @@ from .pcd_util import (
     keep_points_inside_ifc_bounds,
     write_point_cloud,
     count_points,
+    extract_plane_groups,
 )
 from .label_handler import (
     InteractiveLabeler,
@@ -29,6 +30,7 @@ __all__ = [
     'keep_points_inside_ifc_bounds',
     'write_point_cloud',
     'count_points',
+    'extract_plane_groups',
     'InteractiveLabeler',
     'load_labels_from_csv',
     'create_labeled_cloud',
