@@ -56,11 +56,6 @@ def _print_ifc_wall_options(walls):
 def segment_point_cloud_by_planes_and_ifc(
     pcd_path,
     ifc_model,
-    output_csv=None,
-    distance_threshold=0.02,
-    min_inliers=500,
-    max_planes=50,
-    num_iterations=1000,
     logger=None,
 ):
     """Pick a seed point, select its whole plane, then assign IFC wall semantics."""
@@ -71,10 +66,10 @@ def segment_point_cloud_by_planes_and_ifc(
     cloud = read_point_cloud(pcd_path)
     plane_groups, residual_cloud = extract_plane_groups(
         cloud,
-        distance_threshold=distance_threshold,
-        min_inliers=min_inliers,
-        max_planes=max_planes,
-        num_iterations=num_iterations,
+        distance_threshold=0.02,
+        min_inliers=500,
+        max_planes=50,
+        num_iterations=1000,
     )
 
     points = np.asarray(cloud.points)
@@ -90,10 +85,7 @@ def segment_point_cloud_by_planes_and_ifc(
     if not walls:
         raise ValueError("No IfcWall elements were found in the IFC model.")
 
-    if output_csv is None:
-        output_csv = path.with_name(f"{path.stem}_plane_semantic.csv")
-    else:
-        output_csv = Path(output_csv)
+    output_csv = path.with_name(f"{path.stem}_plane_semantic.csv")
 
     plane_semantics = {}
     plane_colors = _make_plane_colors(plane_groups, n_points)
@@ -103,7 +95,8 @@ def segment_point_cloud_by_planes_and_ifc(
     print("Press Q to close the viewer after picking the seed point.")
 
     while True:
-        seed_index = _pick_seed_point(cloud, plane_colors, window_name="Pick Plane Seed")
+        seed_index = _pick_seed_point(
+            cloud, plane_colors, window_name="Pick Plane Seed")
         if seed_index is None:
             print("No point picked. Stopping semantic labeling.")
             break
@@ -154,10 +147,12 @@ def segment_point_cloud_by_planes_and_ifc(
                 "ifc_global_id": wall_id,
                 "ifc_name": wall_name,
             }
-            print(f"Assigned plane {plane_id} -> IfcWall: {wall_id} ({wall_name})")
+            print(
+                f"Assigned plane {plane_id} -> IfcWall: {wall_id} ({wall_name})")
             break
 
-        continue_labeling = input("Label another plane? [Y/n]: ").strip().lower()
+        continue_labeling = input(
+            "Label another plane? [Y/n]: ").strip().lower()
         if continue_labeling in {"n", "no", "done", "q", "quit", "exit"}:
             break
 

@@ -67,9 +67,6 @@ def export_ifc_to_sdf(ifc_model, logger=None):
     mesh_dir = output_path.parent / f"{model_name}_meshes"
     mesh_dir.mkdir(parents=True, exist_ok=True)
 
-    total_exported = 0
-    per_type = {}
-
     for ifc_type in SUPPORTED_TYPES:
         try:
             elements = ifc_model.by_type(ifc_type)
@@ -78,8 +75,6 @@ def export_ifc_to_sdf(ifc_model, logger=None):
             continue
         if not elements:
             continue
-
-        exported_count = 0
 
         for element in elements:
             try:
@@ -95,7 +90,7 @@ def export_ifc_to_sdf(ifc_model, logger=None):
                 continue
 
             global_id = getattr(element, "GlobalId", "unknown")
-            model_id = safe_name(global_id, f"{ifc_type}_{exported_count}")
+            model_id = safe_name(global_id)
             model_name_for_sdf = f"{ifc_type}_{model_id}"
 
             mesh_name = f"{model_name_for_sdf}.obj"
@@ -132,12 +127,6 @@ def export_ifc_to_sdf(ifc_model, logger=None):
             else:
                 ET.SubElement(material, "ambient").text = "0.50 0.65 0.85 1"
                 ET.SubElement(material, "diffuse").text = "0.55 0.70 0.90 1"
-
-            exported_count += 1
-            total_exported += 1
-
-        if exported_count > 0:
-            per_type[ifc_type] = exported_count
 
     output_path.write_text(pretty_xml(sdf), encoding="utf-8")
 

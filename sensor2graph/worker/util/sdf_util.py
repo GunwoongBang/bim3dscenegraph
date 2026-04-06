@@ -2,12 +2,10 @@ import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
 
-def safe_name(text, fallback) -> str:
-    if not text:
-        return fallback
+def safe_name(text) -> str:
     cleaned = "".join(ch if ch.isalnum() or ch in (
         "_", "-") else "_" for ch in text)
-    return cleaned[:120] if cleaned else fallback
+    return cleaned[:120]
 
 
 def write_obj(mesh_path, vertices, faces) -> None:

@@ -131,4 +131,4 @@ def bim2graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
                 neo4j_ops.create_mep_element_wall_rels, mep_element_wall_rels)
 
     if logger:
-        logger.logText("BIM2GRAPH", "Graph generation completed\n")
+        logger.logText("BIM2GRAPH", "Graph generation completed")

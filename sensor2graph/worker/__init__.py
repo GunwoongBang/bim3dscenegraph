@@ -10,6 +10,7 @@ from .pcd_segmenter import (
     segment_point_cloud_by_planes_and_ifc,
     visualize_labeled_cloud,
 )
+from .pcd_category_visualizer import visualize_point_cloud_with_categories
 # from .graph_visualizer import visualize_point_cloud
 
 __all__ = [
@@ -20,4 +21,5 @@ __all__ = [
     'segment_point_cloud_by_planes',
     'segment_point_cloud_by_planes_and_ifc',
     'visualize_labeled_cloud',
+    'visualize_point_cloud_with_categories',
 ]

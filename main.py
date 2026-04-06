@@ -28,51 +28,35 @@ if not all([NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD]):
 def graph_initiate():
     driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
     logger.logText("PROJECT", "Neo4j driver initiated")
-    logger.logText("Divider")
     return driver
+
+
+def graph_close(driver):
+    driver.close()
+    logger.logText("PROJECT", "Neo4j driver closed")
+    print("Neo4j host: http://localhost:7474/browser/")
 
 
 if __name__ == "__main__":
     logger.logText("PROJECT", "Started")
+    logger.logText("Divider")
 
     # Create driver once for all operations
     driver = graph_initiate()
 
-    try:
-        # Generate a BIM-derived graph from BIM models (ARC + STR + MEP)
-        bim2graph(driver, ARC_PATH, STR_PATH, MEP_PATH, logger)
-        print("Neo4j host: http://localhost:7474/browser/")
+    # =========================================================================
+    # BIM2GRAPH: Extract graph from BIM and persist to Neo4j
+    # =========================================================================
+    bim2graph(driver, ARC_PATH, STR_PATH, MEP_PATH, logger)
 
-        # Generate a Sensor-derived graph from BIM models (PCD)
-        # Note: If PCD data is present, change the third argument (pcd_present) to True
-        sensor2graph(PCD_PATH, ARC_PATH, logger)
+    # Close driver after BIM2GRAPH operations
+    graph_close(driver)
+    logger.logText("Divider")
 
-        # ====================================================================
-        # GRAPH MERGING
-        # ====================================================================
+    # =========================================================================
+    # SENSOR2GRAPH: Extract graph from sensor data and merge with BIM graph
+    # =========================================================================
+    sensor2graph(PCD_PATH, ARC_PATH, logger)
 
-    except Exception as e:
-        logger.logText("PROJECT", f"Error: {e}")
-        logger.logText("PROJECT", f"Traceback:\n{traceback.format_exc()}")
-    finally:
-        # Ensure driver is always closed
-        driver.close()
-        logger.logText("Divider")
-        logger.logText("PROJECT", "Neo4j driver closed")
-
+    logger.logText("Divider")
     logger.logText("PROJECT", "Ended")
-
-
-"""
-TODO - Future works:
-    0. Documentations
-    1. [SENSOR2GRAPH] Point Cloud: the point cloud data should only collect point data from the indoor wall surface, not the whole building
-
-    + Here, graph merging means to integrate the BIM-derived graph and the Sensor-derived 3D map into a unified graph representation
-    based on 3D scene graph concept, where nodes represent entities
-    + BIM-derived graph should utilize IFC components and their properties reasonably, not just as a source of node and relationship attributes, but also to inform the graph structure itself
-
-NOTE - Code review:
-    + MEP-wall penetration
-    + Relationships
-"""

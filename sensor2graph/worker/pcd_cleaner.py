@@ -17,13 +17,13 @@ from .util import (
 # The returning file path has to be [file_name]_cleaned.pcd, since the future code will expect that and be built upon that assumption.
 
 
-def clean_point_cloud(pcd_path, ifc_model, logger=None):
+def clean_point_cloud(pcd_path, arc_model, logger=None):
     """
     Preprocess PCD data and export to {pcd_file_name}_cleaned.pcd.
 
     Args:
         pcd_path: Path to the input PCD file.
-        ifc_model: IFC model for computing bounds.
+        arc_model: ARC IFC model for computing bounds.
         logger: Optional logger for output messages.
 
     Returns:
@@ -43,7 +43,7 @@ def clean_point_cloud(pcd_path, ifc_model, logger=None):
         std_ratio=std_ratio,
     )
 
-    ifc_bounds = compute_ifc_bounds(ifc_model)
+    ifc_bounds = compute_ifc_bounds(arc_model)
     cleaned_cloud = keep_points_inside_ifc_bounds(
         inlier_cloud,
         bounds=ifc_bounds,
