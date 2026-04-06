@@ -2,7 +2,6 @@
 Util extractor module for SENSOR2GRAPH.
 """
 
-from .sdf_util import safe_name, write_obj, pretty_xml
 from .pcd_util import (
     read_point_cloud,
     voxel_downsample,
@@ -20,9 +19,6 @@ from .label_handler import (
 )
 
 __all__ = [
-    'safe_name',
-    'write_obj',
-    'pretty_xml',
     'read_point_cloud',
     'voxel_downsample',
     'remove_statistical_outliers',

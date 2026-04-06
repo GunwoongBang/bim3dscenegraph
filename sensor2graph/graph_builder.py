@@ -43,18 +43,6 @@ def sensor2graph(pcd_path, arc_path, logger=None):
     arc_model = ifcopenshell.open(arc_path)
 
     # =========================================================================
-    # Generate point cloud as fallback if PCD data is missing
-    # =========================================================================
-    # Export IFC to SDF
-    if not Path(pcd_path).exists():
-        if logger:
-            logger.logText(
-                "SENSOR2GRAPH", "Point cloud file not found. Exporting IFC to SDF as fallback.")
-
-        export_ifc_to_sdf(arc_model, logger)
-        pcd_path = Path("pc_models/cloudGlobal.pcd")
-
-    # =========================================================================
     # Segment point cloud
     # =========================================================================
     # Point cloud preprocessing
