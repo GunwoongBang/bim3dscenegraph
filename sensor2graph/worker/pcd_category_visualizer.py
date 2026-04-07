@@ -20,28 +20,6 @@ COMMON_CATEGORY_COLS = (
     "label",
 )
 
-COMMON_COLORS = {
-}
-
-
-def _infer_category_column(labels_df, requested_column=None):
-    """Pick a category column from the CSV."""
-    if requested_column:
-        if requested_column not in labels_df.columns:
-            raise ValueError(
-                f"Category column '{requested_column}' was not found in the CSV."
-            )
-        return requested_column
-
-    for column in COMMON_CATEGORY_COLS:
-        if column in labels_df.columns:
-            return column
-
-    raise ValueError(
-        "Could not infer a category column. "
-        f"Expected one of: {', '.join(COMMON_CATEGORY_COLS)}"
-    )
-
 
 def _build_color_for_category(category, cache):
     """Create a deterministic color for arbitrary categories."""
@@ -156,7 +134,7 @@ def _build_arg_parser():
     parser.add_argument(
         "csv_path",
         nargs="?",
-        default="pc_models/cloudGlobal_cleaned_plane_semantic.csv",
+        default="pc_models/cloudGlobal_cleaned_label.csv",
         help="Path to the CSV file containing labels.",
     )
     parser.add_argument(

@@ -10,13 +10,16 @@ Package structure:
 """
 
 from .graph_builder import sensor2graph
-# from .query_manager import QueryManager
-# from .persistence import Neo4jOperations
+from .worker import (
+    clean_point_cloud,
+    segment_point_cloud_by_planes_and_ifc,
+)
+
 
 __version__ = "0.1.0"
 
 __all__ = [
     "sensor2graph",
-    "QueryManager",
-    "Neo4jOperations",
+    "clean_point_cloud",
+    "segment_point_cloud_by_planes_and_ifc",
 ]
