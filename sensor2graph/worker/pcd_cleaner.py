@@ -6,7 +6,6 @@ from .util import (
     read_point_cloud,
     voxel_downsample,
     remove_statistical_outliers,
-    detect_ground_plane,
     write_point_cloud,
 )
 
@@ -25,43 +24,30 @@ def clean_point_cloud(pcd_path, logger=None):
 
     Returns:
         cleaned_path: Path to the cleaned PCD file.
-        stats: Dictionary with point counts at each stage.
     """
     voxel_size = 0.05
     nb_neighbors = 20
     std_ratio = 2.0
-    floor_distance_threshold = 0.02
-    floor_min_inliers = 1000
-    floor_normal_z_threshold = 0.85
+    floor_z_cutoff = -0.55
 
-    raw_cloud = read_point_cloud(pcd_path)
-    downsampled_cloud = voxel_downsample(raw_cloud, voxel_size)
+    cloud = read_point_cloud(pcd_path)
+    # downsampled_cloud = voxel_downsample(cloud, voxel_size)
     # inlier_cloud = remove_statistical_outliers(
     #     downsampled_cloud,
-    #     nb_neighbors=nb_neighbors,
-    #     std_ratio=std_ratio,
+    #     nb_neighbors = nb_neighbors,
+    #     std_ratio = std_ratio,
     # )
 
-    floor_plane = detect_ground_plane(
-        downsampled_cloud,
-        distance_threshold=floor_distance_threshold,
-        min_inliers=floor_min_inliers,
-        normal_z_threshold=floor_normal_z_threshold,
-    )
+    points = cloud.points
+    keep_indices = [idx for idx, point in enumerate(
+        points) if point[2] > floor_z_cutoff]
+    cleaned_cloud = cloud.select_by_index(keep_indices)
 
-    # if floor_plane is None:
-    #     cleaned_cloud = downsampled_cloud
-    # else:
-    #     cleaned_cloud = downsampled_cloud.select_by_index(
-    #         floor_plane["inlier_indices"],
-    #         invert=True,
-    #     )
-
-    cleaned_path = write_point_cloud(downsampled_cloud, pcd_path)
+    cleaned_path = write_point_cloud(cleaned_cloud, pcd_path)
 
     if logger:
         logger.logText(
-            "SENSOR2GRAPH", "PCD cleaned (Downsampled, outliers removed, floor removed)")
+            "SENSOR2GRAPH", f"PCD cleaned (Downsampled, outliers removed, z <= {floor_z_cutoff}m removed)")
         logger.logText("SENSOR2GRAPH", f"Cleaned PCD saved: {cleaned_path}")
 
     return cleaned_path

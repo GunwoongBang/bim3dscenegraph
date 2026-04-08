@@ -48,12 +48,18 @@ def _print_ifc_wall_options(walls):
         print(f"  {idx}. IfcWall: {wall_id} ({wall_name})")
 
 
-def segment_point_cloud_by_planes_and_ifc(
-    pcd_path,
-    ifc_model,
-    logger=None,
-):
-    """Pick a seed point, select its whole plane, then assign IFC wall semantics."""
+def segment_point_cloud(pcd_path, ifc_model, logger=None):
+    """
+    Pick a seed point, select its whole plane, then assign IFC wall semantics.
+
+    Args:
+        pcd_path: Path to the input PCD file.
+        ifc_model: IFC model loaded with IfcOpenShell.
+        logger: Optional logger for output messages.
+
+    Returns:
+        output_csv: Path to the CSV file containing plane semantic labels.
+    """
     path = Path(pcd_path)
     if not path.exists():
         raise FileNotFoundError(f"Point cloud file not found: {path}")
@@ -216,3 +222,66 @@ def segment_point_cloud_by_planes_and_ifc(
         )
 
     return output_csv
+
+
+def exclude_points(input_pcd: Path, input_csv: Path, logger=None):
+    """
+    Exclude rows that are not labeled.
+
+    Args:
+        input_pcd: Path to the PCD file containing the point cloud.
+        input_csv: Path to the CSV file containing plane segmentation results.
+        logger: Optional logger for output messages.
+
+    Returns:
+        output_pcd: Path to the PCD file containing only labeled points.
+        output_csv: Path to the CSV file containing only labeled rows.
+    """
+    df = pd.read_csv(input_csv)
+    unlabeled_indices = []
+
+    if "plane_label" not in df.columns:
+        raise KeyError("Required column 'plane_label' not found in input CSV.")
+
+    plane_series = df["plane_label"].fillna(
+        "").astype(str).str.strip().str.lower()
+    filtered_df = df[plane_series != "unlabeled"]
+    unlabeled_df = df[plane_series == "unlabeled"]
+
+    if unlabeled_df.empty:
+        if logger:
+            logger.logText(
+                "SENSOR2GRAPH",
+                f"No unlabeled rows found in {input_csv.name}; no points excluded.",
+            )
+        return input_pcd, input_csv
+
+    unlabeled_indices = unlabeled_df["point_index"].tolist()
+
+    output_csv = input_csv.with_name(
+        f"{input_csv.stem}_excluded{input_csv.suffix}")
+    filtered_df.to_csv(output_csv, index=False)
+
+    if logger:
+        removed_count = len(df) - len(filtered_df)
+        logger.logText(
+            "SENSOR2GRAPH",
+            f"Excluded {removed_count} unlabeled rows from {input_csv.name}",
+        )
+        logger.logText("SENSOR2GRAPH", f"Filtered CSV saved: {output_csv}")
+
+    output_pcd = input_pcd.with_name(
+        f"{input_pcd.stem}_excluded{input_pcd.suffix}")
+
+    input_cloud = read_point_cloud(input_pcd)
+    filtered_cloud = input_cloud.select_by_index(
+        unlabeled_indices, invert=True)
+    o3d.io.write_point_cloud(str(output_pcd), filtered_cloud, write_ascii=True)
+
+    if logger:
+        logger.logText(
+            "SENSOR2GRAPH",
+            f"Filtered PCD saved: {output_pcd} (removed={len(unlabeled_indices)})",
+        )
+
+    return output_pcd, output_csv

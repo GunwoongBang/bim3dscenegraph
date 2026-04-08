@@ -128,13 +128,13 @@ def _build_arg_parser():
     parser.add_argument(
         "pcd_path",
         nargs="?",
-        default="pc_models/cloudGlobal_cleaned.pcd",
+        default="pc_models/cloudGlobal_cc_cleaned_excluded.pcd",
         help="Path to the PCD file.",
     )
     parser.add_argument(
         "csv_path",
         nargs="?",
-        default="pc_models/cloudGlobal_cleaned_label.csv",
+        default="cloudGlobal_cc_cleaned_label_excluded.csv",
         help="Path to the CSV file containing labels.",
     )
     parser.add_argument(

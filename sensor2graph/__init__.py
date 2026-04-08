@@ -12,7 +12,7 @@ Package structure:
 from .graph_builder import sensor2graph
 from .worker import (
     clean_point_cloud,
-    segment_point_cloud_by_planes_and_ifc,
+    segment_point_cloud,
 )
 
 
@@ -21,5 +21,5 @@ __version__ = "0.1.0"
 __all__ = [
     "sensor2graph",
     "clean_point_cloud",
-    "segment_point_cloud_by_planes_and_ifc",
+    "segment_point_cloud",
 ]

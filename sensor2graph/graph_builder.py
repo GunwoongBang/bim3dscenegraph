@@ -11,7 +11,8 @@ import ifcopenshell
 
 from .worker import (
     clean_point_cloud,
-    segment_point_cloud_by_planes_and_ifc,
+    segment_point_cloud,
+    exclude_points,
 )
 
 
@@ -50,11 +51,14 @@ def sensor2graph(pcd_path, arc_path, logger=None):
     # Point cloud segmentation and labeling
     # Note: Current method is manual segmentation, but will shortly be replaced
     # by an automatic method that combines plane detection with IFC geometry
-    plane_semantic_csv = segment_point_cloud_by_planes_and_ifc(
+    segmented_csv_path = segment_point_cloud(
         cleaned_pcd_path,
         arc_model,
         logger,
     )
+
+    excluded_pcd, excluded_csv_path = exclude_points(
+        cleaned_pcd_path, Path("cloudGlobal_cc_cleaned_label.csv"), logger)
 
     # =========================================================================
     # Merge point cloud with BIM-derived graph
