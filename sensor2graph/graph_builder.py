@@ -45,8 +45,7 @@ def sensor2graph(pcd_path, arc_path, logger=None):
     # =========================================================================
     # Point cloud preprocessing
     # Note: Will shortly be reintroduced. For now we assume that we have a clean point cloud
-    pcd_path_ = Path("pc_models/cloudGlobal_cc.pcd")
-    cleaned_pcd_path = clean_point_cloud(pcd_path_, logger)
+    cleaned_pcd_path = clean_point_cloud(pcd_path, logger)
 
     # Point cloud segmentation and labeling
     # Note: Current method is manual segmentation, but will shortly be replaced
@@ -58,7 +57,7 @@ def sensor2graph(pcd_path, arc_path, logger=None):
     )
 
     excluded_pcd, excluded_csv_path = exclude_points(
-        cleaned_pcd_path, Path("cloudGlobal_cc_cleaned_label.csv"), logger)
+        cleaned_pcd_path, segmented_csv_path, logger)
 
     # =========================================================================
     # Merge point cloud with BIM-derived graph

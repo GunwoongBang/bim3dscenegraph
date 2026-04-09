@@ -43,15 +43,6 @@ def remove_statistical_outliers(cloud, nb_neighbors, std_ratio):
     return filtered
 
 
-def write_point_cloud(cloud, input_path):
-    """Write a cleaned cloud to {stem}{suffix}{ext} and return its path."""
-
-    src = Path(input_path)
-    output_path = src.with_name(f"{src.stem}_cleaned{src.suffix}")
-    o3d.io.write_point_cloud(str(output_path), cloud, write_ascii=True)
-    return output_path
-
-
 def count_points(cloud):
     """Return point count for an Open3D point cloud."""
     return len(np.asarray(cloud.points))

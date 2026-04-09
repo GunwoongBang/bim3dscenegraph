@@ -30,7 +30,7 @@ def _build_color_for_category(category, cache):
     return cache[category]
 
 
-def visualize_point_cloud_with_categories(
+def visualize_point_cloud(
     pcd_path,
     csv_path,
     category_column=None,
@@ -128,13 +128,13 @@ def _build_arg_parser():
     parser.add_argument(
         "pcd_path",
         nargs="?",
-        default="pc_models/cloudGlobal_cc_cleaned_excluded.pcd",
+        default="pc_models/cloudGlobal_cleaned_excluded.pcd",
         help="Path to the PCD file.",
     )
     parser.add_argument(
         "csv_path",
         nargs="?",
-        default="cloudGlobal_cc_cleaned_label_excluded.csv",
+        default="pc_models/cloudGlobal_cleaned_excluded.csv",
         help="Path to the CSV file containing labels.",
     )
     parser.add_argument(
@@ -154,7 +154,7 @@ def _build_arg_parser():
 
 if __name__ == "__main__":
     args = _build_arg_parser().parse_args()
-    visualize_point_cloud_with_categories(
+    visualize_point_cloud(
         args.pcd_path,
         args.csv_path,
         category_column=args.category_column,

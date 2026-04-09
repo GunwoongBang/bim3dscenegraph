@@ -69,7 +69,7 @@ def segment_point_cloud(pcd_path, ifc_model, logger=None):
         cloud,
         distance_threshold=0.02,
         min_inliers=500,
-        max_planes=50,
+        max_planes=10,
         num_iterations=1000,
     )
 
@@ -86,7 +86,7 @@ def segment_point_cloud(pcd_path, ifc_model, logger=None):
     if not walls:
         raise ValueError("No IfcWall elements were found in the IFC model.")
 
-    output_csv = path.with_name(f"{path.stem}_plane_semantic.csv")
+    output_csv = path.with_name(f"{path.stem}.csv")
 
     plane_semantics = {}
     plane_colors = _make_plane_colors(plane_groups, n_points)
@@ -157,7 +157,6 @@ def segment_point_cloud(pcd_path, ifc_model, logger=None):
         if continue_labeling in {"n", "no", "done", "q", "quit", "exit"}:
             break
 
-    point_indices = np.arange(n_points)
     segment_ids = np.full(n_points, -1, dtype=np.int32)
     surface_types = np.full(n_points, "unlabeled", dtype=object)
     normal_x = np.full(n_points, np.nan, dtype=np.float64)
@@ -192,7 +191,6 @@ def segment_point_cloud(pcd_path, ifc_model, logger=None):
 
     df = pd.DataFrame(
         {
-            "point_index": point_indices,
             "plane_segment_id": segment_ids,
             "plane_label": surface_types,
             "normal_x": normal_x,
@@ -205,7 +203,7 @@ def segment_point_cloud(pcd_path, ifc_model, logger=None):
             "ifc_name": ifc_name,
         }
     )
-    df.to_csv(output_csv, index=False)
+    df.to_csv(output_csv, index=True, index_label="index")
 
     residual_count = len(np.asarray(residual_cloud.points))
     print(f"Saved plane semantic labels to: {output_csv}")
@@ -224,7 +222,7 @@ def segment_point_cloud(pcd_path, ifc_model, logger=None):
     return output_csv
 
 
-def exclude_points(input_pcd: Path, input_csv: Path, logger=None):
+def exclude_points(input_pcd, input_csv, logger=None):
     """
     Exclude rows that are not labeled.
 
@@ -238,7 +236,6 @@ def exclude_points(input_pcd: Path, input_csv: Path, logger=None):
         output_csv: Path to the CSV file containing only labeled rows.
     """
     df = pd.read_csv(input_csv)
-    unlabeled_indices = []
 
     if "plane_label" not in df.columns:
         raise KeyError("Required column 'plane_label' not found in input CSV.")
@@ -247,6 +244,7 @@ def exclude_points(input_pcd: Path, input_csv: Path, logger=None):
         "").astype(str).str.strip().str.lower()
     filtered_df = df[plane_series != "unlabeled"]
     unlabeled_df = df[plane_series == "unlabeled"]
+    unlabeled_indices = unlabeled_df["index"].astype(int).tolist()
 
     if unlabeled_df.empty:
         if logger:
@@ -256,18 +254,11 @@ def exclude_points(input_pcd: Path, input_csv: Path, logger=None):
             )
         return input_pcd, input_csv
 
-    unlabeled_indices = unlabeled_df["point_index"].tolist()
-
     output_csv = input_csv.with_name(
         f"{input_csv.stem}_excluded{input_csv.suffix}")
-    filtered_df.to_csv(output_csv, index=False)
+    filtered_df.to_csv(output_csv, index=True, index_label="index")
 
     if logger:
-        removed_count = len(df) - len(filtered_df)
-        logger.logText(
-            "SENSOR2GRAPH",
-            f"Excluded {removed_count} unlabeled rows from {input_csv.name}",
-        )
         logger.logText("SENSOR2GRAPH", f"Filtered CSV saved: {output_csv}")
 
     output_pcd = input_pcd.with_name(
@@ -279,9 +270,6 @@ def exclude_points(input_pcd: Path, input_csv: Path, logger=None):
     o3d.io.write_point_cloud(str(output_pcd), filtered_cloud, write_ascii=True)
 
     if logger:
-        logger.logText(
-            "SENSOR2GRAPH",
-            f"Filtered PCD saved: {output_pcd} (removed={len(unlabeled_indices)})",
-        )
+        logger.logText("SENSOR2GRAPH", f"Filtered PCD saved: {output_pcd}")
 
     return output_pcd, output_csv
