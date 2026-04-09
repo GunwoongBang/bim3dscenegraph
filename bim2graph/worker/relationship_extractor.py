@@ -3,11 +3,11 @@ Relationship extraction from IFC models (space-wall boundaries, etc.).
 """
 
 from .util import (
+    extract_bbox,
     compute_space_side_of_wall,
     check_bbox_intersection,
     compute_bbox_overlap,
 )
-from .geometry import extract_bbox
 
 
 def compute_space_wall_rels(model, spaces, walls, logger=None) -> list[dict]:

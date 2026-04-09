@@ -12,7 +12,7 @@ import ifcopenshell
 from .worker import (
     clean_point_cloud,
     segment_point_cloud,
-    filter_points,
+    exclude_planes,
 )
 
 
@@ -53,7 +53,7 @@ def sensor2graph(pcd_path, arc_path, logger=None):
     segmented_csv_path = segment_point_cloud(
         cleaned_pcd_path, arc_model, logger)
 
-    excluded_pcd_path, excluded_csv_path = filter_points(
+    excluded_pcd_path, excluded_csv_path = exclude_planes(
         cleaned_pcd_path, segmented_csv_path, logger)
 
     # =========================================================================

@@ -1,5 +1,4 @@
 import os
-import traceback
 
 from pathlib import Path
 from dotenv import load_dotenv
@@ -34,7 +33,6 @@ def graph_initiate():
 def graph_close(driver):
     driver.close()
     logger.logText("PROJECT", "Neo4j driver closed")
-    print("Neo4j host: http://localhost:7474/browser/")
 
 
 if __name__ == "__main__":

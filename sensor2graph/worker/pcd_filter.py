@@ -1,5 +1,5 @@
 """
-Point cloud segmentation.
+Point cloud segmentation and filtering.
 """
 
 from pathlib import Path
@@ -8,44 +8,13 @@ import open3d as o3d
 import numpy as np
 import pandas as pd
 
-from .util import read_point_cloud, extract_plane_groups
-
-
-def _make_plane_colors(plane_groups, n_points):
-    """Create deterministic colors for plane visualization."""
-    colors = np.ones((n_points, 3), dtype=np.float64) * 0.35
-    for plane_group in plane_groups:
-        segment_id = plane_group["segment_id"]
-        rng = np.random.default_rng(1337 + int(segment_id))
-        colors[plane_group["inlier_indices"]] = rng.random(3) * 0.6 + 0.25
-    return colors
-
-
-def _pick_seed_point(cloud, colors, window_name="Plane Picker"):
-    """Open a selection-capable viewer and return one picked point index."""
-    picker_cloud = o3d.geometry.PointCloud()
-    picker_cloud.points = cloud.points
-    picker_cloud.colors = o3d.utility.Vector3dVector(colors)
-
-    visualizer = o3d.visualization.VisualizerWithEditing()
-    visualizer.create_window(window_name=window_name)
-    visualizer.add_geometry(picker_cloud)
-    visualizer.run()
-    picked = visualizer.get_picked_points()
-    visualizer.destroy_window()
-
-    if not picked:
-        return None
-    return int(picked[0])
-
-
-def _print_ifc_wall_options(walls):
-    """Print IFC wall options as numbered menu entries."""
-    print("\nAvailable IFC wall labels:")
-    for idx, wall in enumerate(walls, start=1):
-        wall_name = getattr(wall, "Name", None) or "Unnamed"
-        wall_id = getattr(wall, "GlobalId", None) or "NoGlobalId"
-        print(f"  {idx}. IfcWall: {wall_id} ({wall_name})")
+from .util import (
+    read_point_cloud,
+    extract_plane_groups,
+    make_plane_colors,
+    pick_seed_point,
+    print_ifc_wall_options,
+)
 
 
 def segment_point_cloud(pcd_path, ifc_model, logger=None):
@@ -89,14 +58,14 @@ def segment_point_cloud(pcd_path, ifc_model, logger=None):
     output_csv = path.with_name(f"{path.stem}.csv")
 
     plane_semantics = {}
-    plane_colors = _make_plane_colors(plane_groups, n_points)
+    plane_colors = make_plane_colors(plane_groups, n_points)
 
     print("\nPlane-based semantic labeling started.")
     print("Pick one point on a plane in the viewer; the whole plane will be selected.")
     print("Press Q to close the viewer after picking the seed point.")
 
     while True:
-        seed_index = _pick_seed_point(
+        seed_index = pick_seed_point(
             cloud, plane_colors, window_name="Pick Plane Seed")
         if seed_index is None:
             print("No point picked. Stopping semantic labeling.")
@@ -115,7 +84,7 @@ def segment_point_cloud(pcd_path, ifc_model, logger=None):
             f"\nSelected plane segment {plane_id} "
             f"(points={point_count}, normal={normal[0]:.3f}, {normal[1]:.3f}, {normal[2]:.3f})"
         )
-        _print_ifc_wall_options(walls)
+        print_ifc_wall_options(walls)
 
         while True:
             selection = input(
@@ -127,7 +96,7 @@ def segment_point_cloud(pcd_path, ifc_model, logger=None):
             if selection == "skip":
                 break
             if selection == "list":
-                _print_ifc_wall_options(walls)
+                print_ifc_wall_options(walls)
                 continue
 
             if not selection.isdigit():
@@ -222,7 +191,7 @@ def segment_point_cloud(pcd_path, ifc_model, logger=None):
     return output_csv
 
 
-def filter_points(input_pcd, input_csv, logger=None):
+def exclude_planes(input_pcd, input_csv, logger=None):
     """
     Exclude rows that are not labeled.
 

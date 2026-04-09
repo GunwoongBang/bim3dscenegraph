@@ -112,3 +112,40 @@ def extract_plane_groups(
         working_indices = np.delete(working_indices, inliers)
 
     return plane_groups, working_cloud
+
+
+def make_plane_colors(plane_groups, n_points):
+    """Create deterministic colors for plane visualization."""
+    colors = np.ones((n_points, 3), dtype=np.float64) * 0.35
+    for plane_group in plane_groups:
+        segment_id = plane_group["segment_id"]
+        rng = np.random.default_rng(1337 + int(segment_id))
+        colors[plane_group["inlier_indices"]] = rng.random(3) * 0.6 + 0.25
+    return colors
+
+
+def pick_seed_point(cloud, colors, window_name="Plane Picker"):
+    """Open a selection-capable viewer and return one picked point index."""
+    picker_cloud = o3d.geometry.PointCloud()
+    picker_cloud.points = cloud.points
+    picker_cloud.colors = o3d.utility.Vector3dVector(colors)
+
+    visualizer = o3d.visualization.VisualizerWithEditing()
+    visualizer.create_window(window_name=window_name)
+    visualizer.add_geometry(picker_cloud)
+    visualizer.run()
+    picked = visualizer.get_picked_points()
+    visualizer.destroy_window()
+
+    if not picked:
+        return None
+    return int(picked[0])
+
+
+def print_ifc_wall_options(walls):
+    """Print IFC wall options as numbered menu entries."""
+    print("\nAvailable IFC wall labels:")
+    for idx, wall in enumerate(walls, start=1):
+        wall_name = getattr(wall, "Name", None) or "Unnamed"
+        wall_id = getattr(wall, "GlobalId", None) or "NoGlobalId"
+        print(f"  {idx}. IfcWall: {wall_id} ({wall_name})")
