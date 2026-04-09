@@ -12,7 +12,7 @@ import ifcopenshell
 from .worker import (
     clean_point_cloud,
     segment_point_cloud,
-    exclude_points,
+    filter_points,
 )
 
 
@@ -41,7 +41,7 @@ def sensor2graph(pcd_path, arc_path, logger=None):
     arc_model = ifcopenshell.open(arc_path)
 
     # =========================================================================
-    # Clean & Segment point cloud
+    # Clean & Segment & filter point cloud
     # =========================================================================
     # Point cloud preprocessing
     # Note: Will shortly be reintroduced. For now we assume that we have a clean point cloud
@@ -51,12 +51,9 @@ def sensor2graph(pcd_path, arc_path, logger=None):
     # Note: Current method is manual segmentation, but will shortly be replaced
     # by an automatic method that combines plane detection with IFC geometry
     segmented_csv_path = segment_point_cloud(
-        cleaned_pcd_path,
-        arc_model,
-        logger,
-    )
+        cleaned_pcd_path, arc_model, logger)
 
-    excluded_pcd, excluded_csv_path = exclude_points(
+    excluded_pcd_path, excluded_csv_path = filter_points(
         cleaned_pcd_path, segmented_csv_path, logger)
 
     # =========================================================================

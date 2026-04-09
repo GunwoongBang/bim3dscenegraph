@@ -222,7 +222,7 @@ def segment_point_cloud(pcd_path, ifc_model, logger=None):
     return output_csv
 
 
-def exclude_points(input_pcd, input_csv, logger=None):
+def filter_points(input_pcd, input_csv, logger=None):
     """
     Exclude rows that are not labeled.
 

@@ -93,8 +93,7 @@ def bim2graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
     # Persist to Neo4j
     # =========================================================================
     with driver.session() as session:
-        # Reset and setup schema
-        session.execute_write(neo4j_ops.reset_database)
+        # Incremental update mode: keep existing graph and upsert changes.
         session.execute_write(neo4j_ops.ensure_schema)
 
         # Create nodes
