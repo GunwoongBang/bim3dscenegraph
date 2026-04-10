@@ -10,7 +10,7 @@ MEP_TYPES = [
 ]
 
 
-def _normalize(vec):
+def _normalize(vec: list[float]) -> np.ndarray | None:
     """
     Normalize a 3D vector. Returns None if the vector has zero length.
 
@@ -18,7 +18,7 @@ def _normalize(vec):
         vec: Iterable of 3 numbers representing a vector
 
     Returns:
-        Normalized vector as a numpy array, or None if input is zero-length
+        ndarray: Normalized vector as a numpy array, or None if input is zero-length
     """
     arr = np.array(vec, dtype=float)
     norm = np.linalg.norm(arr)
@@ -27,7 +27,7 @@ def _normalize(vec):
     return arr / norm
 
 
-def _generate_orientation_matrix(mapped_item):
+def _generate_orientation_matrix(mapped_item) -> np.ndarray:
     """
     Generate a 3x3 orientation matrix from an IfcMappedItem's MappingTarget axes.
 
@@ -35,7 +35,7 @@ def _generate_orientation_matrix(mapped_item):
         mapped_item: An IfcMappedItem with a MappingTarget that may have Axis1, Axis2, Axis3
 
     Returns:
-        A 3x3 numpy array representing the orientation matrix, or identity if not defined
+        ndarray: A 3x3 numpy array representing the orientation matrix, or identity if not defined
     """
     mapping_target = getattr(mapped_item, "MappingTarget", None)
     if mapping_target is None:
@@ -61,7 +61,7 @@ def _generate_orientation_matrix(mapped_item):
     return np.column_stack((x, y, z))
 
 
-def _classify_mep_element(element):
+def _classify_mep_element(element) -> tuple:
     """
     Classify an MEP element's shape type and extract relevant geometric information.
 
@@ -97,7 +97,7 @@ def _classify_mep_element(element):
     return None, np.eye(3)
 
 
-def extract_shape_signature(element):
+def extract_shape_signature(element) -> dict:
     """
     Extract shape signature (cylindrical vs rectangular) and dimensions from MEP element IFC geometry.
 
@@ -130,7 +130,16 @@ def extract_shape_signature(element):
     return {"shapeType": "other", "radiusMm": None, "xDimMm": None, "yDimMm": None}
 
 
-def _generate_rotation_matrix_from_axis(position):
+def _generate_rotation_matrix_from_axis(position) -> np.ndarray:
+    """
+    Generate a rotation matrix from an IfcLocalPlacement's axis and ref direction.
+
+    Args:
+        position: An IfcLocalPlacement with optional Axis and RefDirection
+
+    Returns:
+        ndarray: A 3x3 numpy array representing the rotation matrix, or identity if not
+    """
     if position is None:
         return np.eye(3)
 
@@ -158,7 +167,7 @@ def _generate_rotation_matrix_from_axis(position):
     return np.column_stack((x, y, z))
 
 
-def extract_extrusion_axis(element):
+def extract_extrusion_axis(element) -> list[float] | None:
     """
     Extract the extrusion axis from an MEP element IFC geometry.
 

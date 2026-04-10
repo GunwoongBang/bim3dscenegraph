@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def compute_space_side_of_wall(space_centroid, wall_center, wall_axis2):
+def compute_space_side_of_wall(space_centroid, wall_center, wall_axis2) -> str | None:
     """
     Determine which side of the wall's AXIS2 the space is on.
 
@@ -15,9 +15,9 @@ def compute_space_side_of_wall(space_centroid, wall_center, wall_axis2):
 
     Returns:
         side:
-        "POSITIVE" if space is on positive side of AXIS2
-        "NEGATIVE" if space is on negative side of AXIS2
-        None if any input is missing
+            - "POSITIVE" if space is on positive side of AXIS2
+            - "NEGATIVE" if space is on negative side of AXIS2
+            - None if any input is missing
     """
     if not space_centroid or not wall_center or not wall_axis2:
         return None
@@ -33,7 +33,7 @@ def compute_space_side_of_wall(space_centroid, wall_center, wall_axis2):
     return side
 
 
-def check_bbox_intersection(bbox1_min, bbox1_max, bbox2_min, bbox2_max):
+def check_bbox_intersection(bbox1_min, bbox1_max, bbox2_min, bbox2_max) -> bool:
     """
     Check if two axis-aligned bounding boxes intersect.
 
@@ -42,8 +42,7 @@ def check_bbox_intersection(bbox1_min, bbox1_max, bbox2_min, bbox2_max):
         bbox2_min, bbox2_max: Second bounding box corners [x, y, z]
 
     Returns:
-        bool:
-        True if boxes intersect
+        bool: True if boxes intersect
     """
     for i in range(3):
         if bbox1_max[i] < bbox2_min[i]:
@@ -100,7 +99,7 @@ def compute_bbox_overlap(bbox1_min, bbox1_max, bbox2_min, bbox2_max) -> dict | N
     }
 
 
-def estimate_wall_thickness_mm(wall_bbox_min, wall_bbox_max, wall_axis2=None):
+def estimate_wall_thickness_mm(wall_bbox_min, wall_bbox_max, wall_axis2=None) -> float | None:
     """
     Estimate wall thickness in mm from wall bbox and optional local AXIS2.
 
@@ -109,7 +108,7 @@ def estimate_wall_thickness_mm(wall_bbox_min, wall_bbox_max, wall_axis2=None):
         wall_axis2: Optional wall local AXIS2 direction vector [dx, dy, dz]
 
     Returns:
-        thicknessMm: Estimated wall thickness in mm, or None if cannot be estimated
+        float: Estimated wall thickness in mm, or None if cannot be estimated
     """
     if not wall_bbox_min or not wall_bbox_max:
         return None

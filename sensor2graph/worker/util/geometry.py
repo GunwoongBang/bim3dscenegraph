@@ -1,10 +1,3 @@
-"""
-Geometry utilities for IFC element processing.
-
-Provides shared functions for extracting geometric data from IFC elements,
-with consistent unit handling (all outputs in millimeters).
-"""
-
 import ifcopenshell
 import ifcopenshell.geom
 import numpy as np

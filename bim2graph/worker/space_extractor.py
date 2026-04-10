@@ -5,7 +5,7 @@ Space extraction from IFC models.
 from .util import extract_centroid
 
 
-def extract_spaces(model, logger=None) -> list[dict]:
+def extract_spaces(arc_model, logger=None) -> list[dict]:
     """
     Extract all spaces from the IFC model.
 
@@ -24,7 +24,7 @@ def extract_spaces(model, logger=None) -> list[dict]:
     """
     spaces = []
 
-    ifc_spaces = model.by_type("IfcSpace")
+    ifc_spaces = arc_model.by_type("IfcSpace")
 
     if not ifc_spaces:
         if logger:

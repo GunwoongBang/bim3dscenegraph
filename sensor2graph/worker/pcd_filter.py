@@ -17,7 +17,7 @@ from .util import (
 )
 
 
-def segment_point_cloud(pcd_path, ifc_model, logger=None):
+def segment_point_cloud(pcd_path: Path, ifc_model: Path, logger=None) -> Path:
     """
     Pick a seed point, select its whole plane, then assign IFC wall semantics.
 
@@ -29,12 +29,11 @@ def segment_point_cloud(pcd_path, ifc_model, logger=None):
     Returns:
         output_csv: Path to the CSV file containing plane semantic labels.
     """
-    path = Path(pcd_path)
-    if not path.exists():
-        raise FileNotFoundError(f"Point cloud file not found: {path}")
+    if not pcd_path.exists():
+        raise FileNotFoundError(f"Point cloud file not found: {pcd_path}")
 
     cloud = read_point_cloud(pcd_path)
-    plane_groups, residual_cloud = extract_plane_groups(
+    plane_groups = extract_plane_groups(
         cloud,
         distance_threshold=0.02,
         min_inliers=500,
@@ -55,7 +54,7 @@ def segment_point_cloud(pcd_path, ifc_model, logger=None):
     if not walls:
         raise ValueError("No IfcWall elements were found in the IFC model.")
 
-    output_csv = path.with_name(f"{path.stem}.csv")
+    output_csv = pcd_path.with_name(f"{pcd_path.stem}.csv")
 
     plane_semantics = {}
     plane_colors = make_plane_colors(plane_groups, n_points)
@@ -174,24 +173,22 @@ def segment_point_cloud(pcd_path, ifc_model, logger=None):
     )
     df.to_csv(output_csv, index=True, index_label="index")
 
-    residual_count = len(np.asarray(residual_cloud.points))
     print(f"Saved plane semantic labels to: {output_csv}")
     print(f"Detected planes: {len(plane_groups)}")
-    print(f"Residual unlabeled points: {residual_count}")
 
     if logger:
         logger.logText(
             "SENSOR2GRAPH",
             (
                 f"Plane semantic labeling saved: {output_csv} "
-                f"(planes={len(plane_groups)}, residual={residual_count})"
+                # f"(planes={len(plane_groups)}, residual={residual_count})"
             ),
         )
 
     return output_csv
 
 
-def exclude_planes(input_pcd, input_csv, logger=None):
+def exclude_planes(input_pcd: Path, input_csv: Path, logger=None) -> tuple[Path, Path]:
     """
     Exclude rows that are not labeled.
 
@@ -201,8 +198,9 @@ def exclude_planes(input_pcd, input_csv, logger=None):
         logger: Optional logger for output messages.
 
     Returns:
-        output_pcd: Path to the PCD file containing only labeled points.
-        output_csv: Path to the CSV file containing only labeled rows.
+        Tuple:
+            - output_pcd: Path to the PCD file containing only labeled points.
+            - output_csv: Path to the CSV file containing only labeled rows.
     """
     df = pd.read_csv(input_csv)
 
