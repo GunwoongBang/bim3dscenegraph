@@ -7,6 +7,9 @@ and persistence to Neo4j graph database.
 
 import ifcopenshell
 
+from neo4j import Driver
+from pathlib import Path
+
 from .query_manager import QueryManager
 from .persistence import Neo4jOperations
 from .worker import (
@@ -25,7 +28,7 @@ from .worker import (
 )
 
 
-def bim2graph(driver, arc_path, str_path=None, mep_path=None, logger=None):
+def bim2graph(driver: Driver, arc_path: Path, str_path: Path = None, mep_path: Path = None, logger=None):
     """
     Generate a BIM-derived graph from an IFC model and persist to Neo4j.
 

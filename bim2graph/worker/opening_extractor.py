@@ -5,12 +5,12 @@ Opening element extraction from IFC models.
 from .util import extract_centroid
 
 
-def extract_openings(model, logger=None) -> list[dict]:
+def extract_openings(arc_model, logger=None) -> list[dict]:
     """
     Extract opening nodes from IfcOpeningElement entities.
 
     Args:
-        model: ifcopenshell model instance
+        arc_model: ifcopenshell model instance
         logger: Optional logger for output messages
 
     Returns:
@@ -23,7 +23,7 @@ def extract_openings(model, logger=None) -> list[dict]:
     """
     openings = []
 
-    ifc_openings = model.by_type("IfcOpeningElement")
+    ifc_openings = arc_model.by_type("IfcOpeningElement")
 
     if not ifc_openings:
         if logger:

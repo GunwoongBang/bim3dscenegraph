@@ -1,13 +1,7 @@
-"""
-Shared IFC helpers for wall extraction.
-
-Provides utility functions used by walls.py for property and material extraction.
-"""
-
-from typing import Any, Optional
+from typing import Any
 
 
-def _get_material_association(element):
+def _get_material_association(element) -> tuple[Any, list[Any] | None]:
     """
     Get the material definition associated with an IFC element.
 
@@ -19,6 +13,7 @@ def _get_material_association(element):
         (material_def, material_layers) where:
             - material_def: The IfcMaterialLayerSetUsage, IfcMaterialLayerSet, etc.
             - material_layers: List of IfcMaterialLayer objects, or None
+
         Returns (None, None) if no material association found.
     """
     for assoc in getattr(element, "HasAssociations", []):
@@ -39,7 +34,7 @@ def _get_material_association(element):
     return None, None
 
 
-def get_material_info(element) -> tuple[Optional[str], int, Optional[str]]:
+def get_material_info(element) -> tuple[str | None, int, str | None]:
     """
     Extract material layer set information from an element.
 
@@ -81,8 +76,7 @@ def get_pset_property(element, prop_name, pset_name=None) -> Any:
         prop_name: Name of the property to find
         pset_name: Optional specific property set name to search in
 
-    Returns:
-        Property value (unwrapped if IfcValue), or None if not found
+    Returns: Property value (unwrapped if IfcValue), or None if not found
     """
     for rel in getattr(element, "IsDefinedBy", []):
         if not rel.is_a("IfcRelDefinesByProperties"):
@@ -104,7 +98,7 @@ def get_pset_property(element, prop_name, pset_name=None) -> Any:
     return None
 
 
-def get_layer_info(element) -> tuple[Optional[float], Optional[list[str]]]:
+def get_layer_info(element) -> tuple[float | None, list[str] | None]:
     """
     Extract aggregated layer info from a wall element.
 
@@ -112,8 +106,7 @@ def get_layer_info(element) -> tuple[Optional[float], Optional[list[str]]]:
         element: IFC wall element
 
     Returns:
-        Tuple:
-        (total_thickness, material_names_list) or (None, None) if not available
+        Tuple: (total_thickness, material_names_list) or (None, None) if not available
     """
     layers = get_material_layers(element)
     if not layers:
@@ -137,6 +130,7 @@ def get_material_layers(element) -> list[dict]:
             - thickness: Layer thickness in model units
             - name: Material name
             - index: Layer position (0-based)
+
         Returns empty list if no layers found.
     """
     _, material_layers = _get_material_association(element)
@@ -157,7 +151,7 @@ def get_material_layers(element) -> list[dict]:
     return layers
 
 
-def match_layer_to_str(str_elements, layer_thickness=None, mat_name=None) -> Optional[bool]:
+def match_layer_to_str(str_elements, layer_thickness=None, mat_name=None) -> bool | None:
     """
     Match a layer to structural elements by thickness and material name.
 
@@ -166,8 +160,7 @@ def match_layer_to_str(str_elements, layer_thickness=None, mat_name=None) -> Opt
         mat_name: Material name
         str_elements: List of structural element dicts from extract_str_elements
 
-    Returns:
-        loadBearing value (True/False) if matched, None otherwise
+    Returns: loadBearing value (True/False) if matched, None otherwise
     """
     if not str_elements or layer_thickness is None:
         return None

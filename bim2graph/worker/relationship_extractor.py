@@ -10,7 +10,7 @@ from .util import (
 )
 
 
-def compute_space_wall_rels(model, spaces, walls, logger=None) -> list[dict]:
+def compute_space_wall_rels(arc_model, spaces: list[dict], walls: list[dict], logger=None) -> list[dict]:
     """
     Extract space-wall topological relationships with side information.
 
@@ -22,7 +22,7 @@ def compute_space_wall_rels(model, spaces, walls, logger=None) -> list[dict]:
         - If side != wall.directionSense: use IFC layer order
 
     Args:
-        model: ifcopenshell model instance
+        arc_model: ifcopenshell model instance
         spaces: List of space dictionaries (from extract_spaces)
         walls: List of wall dictionaries (from extract_walls)
         logger: Optional logger for output messages
@@ -46,7 +46,7 @@ def compute_space_wall_rels(model, spaces, walls, logger=None) -> list[dict]:
         w["id"]: (w.get("center"), w.get("axis2")) for w in walls
     }
 
-    for rel in model.by_type("IfcRelSpaceBoundary"):
+    for rel in arc_model.by_type("IfcRelSpaceBoundary"):
         space = getattr(rel, "RelatingSpace", None)
         element = getattr(rel, "RelatedBuildingElement", None)
 
@@ -89,23 +89,23 @@ def compute_space_wall_rels(model, spaces, walls, logger=None) -> list[dict]:
     return edges
 
 
-def compute_wall_opening_rels(model, logger=None) -> list[dict]:
+def compute_wall_opening_rels(arc_model, logger=None) -> list[dict]:
     """
     Extract Wall-Opening edges from IfcRelVoidsElement.
 
     Args:
-        model: ifcopenshell model instance
+        arc_model: ifcopenshell model instance
         logger: Optional logger for output messages
 
     Returns:
-        wall_opening_edges:
+        edges:
         List of dictionaries with keys:
             - wall_id: Wall GlobalId
             - opening_id: Opening GlobalId
     """
     edges = []
 
-    for rel in model.by_type("IfcRelVoidsElement"):
+    for rel in arc_model.by_type("IfcRelVoidsElement"):
         wall = getattr(rel, "RelatingBuildingElement", None)
         opening = getattr(rel, "RelatedOpeningElement", None)
 
@@ -132,12 +132,12 @@ def compute_wall_opening_rels(model, logger=None) -> list[dict]:
     return edges
 
 
-def compute_mep_memberships(model, mep_elements, logger=None) -> list[dict]:
+def compute_mep_memberships(mep_model, mep_elements: list[dict], logger=None) -> list[dict]:
     """
     Extract MEP memberships (MEPSystem-MEPElement edges) from IfcRelAssignsToGroup.
 
     Args:
-        model: ifcopenshell model instance
+        mep_model: ifcopenshell model instance
         mep_elements: List of extracted MEP element dictionaries
         logger: Optional logger for output messages
 
@@ -150,7 +150,7 @@ def compute_mep_memberships(model, mep_elements, logger=None) -> list[dict]:
     mep_ids = {elem["id"] for elem in mep_elements}
     membership_pairs = set()
 
-    for rel in model.by_type("IfcRelAssignsToGroup"):
+    for rel in mep_model.by_type("IfcRelAssignsToGroup"):
         system = getattr(rel, "RelatingGroup", None)
         rel_id = getattr(system, "GlobalId", None)
 
@@ -179,7 +179,7 @@ def compute_mep_memberships(model, mep_elements, logger=None) -> list[dict]:
     return memberships
 
 
-def compute_mep_element_wall_rels(mep_elements, walls, logger=None) -> list[dict]:
+def compute_mep_element_wall_rels(mep_elements: list[dict], walls: list[dict], logger=None) -> list[dict]:
     """
     Compute relationships between MEP elements and walls.
 
@@ -261,7 +261,7 @@ def compute_mep_element_wall_rels(mep_elements, walls, logger=None) -> list[dict
     return edges
 
 
-def compute_mep_system_space_rels(arc_model, systems, memberships, mep_elements, logger=None) -> list[dict]:
+def compute_mep_system_space_rels(arc_model, mep_systems: list[dict], mep_memberships: list[dict], mep_elements: list[dict], logger=None) -> list[dict]:
     """
     Compute MEP system-to-space relationships using geometry only.
 
@@ -272,12 +272,13 @@ def compute_mep_system_space_rels(arc_model, systems, memberships, mep_elements,
 
     Args:
         arc_model: ifcopenshell model instance for the ARC file
-        systems: List of system dictionaries (from extract_mep_systems)
-        memberships: List of system membership dicts (from extract_mep_system_memberships)
+        mep_systems: List of system dictionaries (from extract_mep_systems)
+        mep_memberships: List of system membership dicts (from extract_mep_system_memberships)
         mep_elements: List of MEP dictionaries (from extract_mep_elements)
         logger: Optional logger for output messages
 
     Returns:
+        edges:
         List of system-space edge dictionaries with keys:
             - system_id
             - space_id
@@ -285,7 +286,7 @@ def compute_mep_system_space_rels(arc_model, systems, memberships, mep_elements,
     """
     mep_by_id = {elem["id"]: elem for elem in mep_elements}
     system_to_meps = {}
-    for edge in memberships:
+    for edge in mep_memberships:
         system_to_meps.setdefault(edge["system_id"], set()).add(edge["mep_id"])
 
     # mep_id -> {space_id: {"source": ...}}
@@ -319,8 +320,8 @@ def compute_mep_system_space_rels(arc_model, systems, memberships, mep_elements,
             ):
                 _add_mep_space(mep_id, space_id, "geom_bbox_overlap")
 
-    system_space_edges = []
-    for system in systems:
+    edges = []
+    for system in mep_systems:
         system_id = system["id"]
         mep_ids = system_to_meps.get(system_id, set())
         space_edges_by_id = {}
@@ -333,7 +334,7 @@ def compute_mep_system_space_rels(arc_model, systems, memberships, mep_elements,
 
         for space_id in sorted(space_edges_by_id.keys()):
             meta = space_edges_by_id[space_id]
-            system_space_edges.append({
+            edges.append({
                 "system_id": system_id,
                 "space_id": space_id,
                 "source": meta["source"],
@@ -341,6 +342,6 @@ def compute_mep_system_space_rels(arc_model, systems, memberships, mep_elements,
 
     if logger:
         logger.logText(
-            "BIM2GRAPH", f"Computed {len(system_space_edges)} MEPSystem-Space relationships")
+            "BIM2GRAPH", f"Computed {len(edges)} MEPSystem-Space relationships")
 
-    return system_space_edges
+    return edges

@@ -9,33 +9,33 @@ from .util import (
 )
 
 
-def extract_mep_systems(model, logger=None) -> list[dict]:
+def extract_mep_systems(mep_model, logger=None) -> list[dict]:
     """
     Extract MEP systems from the IFC model.
 
     Args:
-        model: ifcopenshell model instance
+        mep_model: ifcopenshell model instance
         logger: Optional logger for output messages
 
     Returns:
-        systems:
+        mep_systems:
         List of system dictionaries with keys:
             - id: GlobalId
             - name: System name
             - ifcClass: IFC class type
     """
-    systems = []
+    mep_systems = []
 
-    ifc_systems = model.by_type("IfcSystem")
+    ifc_systems = mep_model.by_type("IfcSystem")
 
     if not ifc_systems:
         if logger:
             logger.logText("BIM2GRAPH", "No IfcSystem entities found in model")
 
-        return systems
+        return mep_systems
 
     for system in ifc_systems:
-        systems.append({
+        mep_systems.append({
             "id": system.GlobalId,
             "name": getattr(system, "Name", None) or "Unknown",
             "ifcClass": system.is_a(),
@@ -43,9 +43,9 @@ def extract_mep_systems(model, logger=None) -> list[dict]:
 
     if logger:
         logger.logText(
-            "BIM2GRAPH", f"Extracted {len(systems)} MEP systems")
+            "BIM2GRAPH", f"Extracted {len(mep_systems)} MEP systems")
 
-    return systems
+    return mep_systems
 
 
 def extract_mep_elements(mep_model, logger=None) -> list[dict]:

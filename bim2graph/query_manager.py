@@ -24,7 +24,7 @@ class QueryManager:
         self.query_file = query_file
         self.queries = self._load_queries(query_file)
 
-    def _load_queries(self, path):
+    def _load_queries(self, path) -> dict:
         """
         Parse a Cypher query file with -- name: labels.
 
@@ -39,7 +39,7 @@ class QueryManager:
             path: Path to the .cypher file
 
         Returns:
-            Dictionary mapping query names to query strings
+            dict: Dictionary mapping query names to query strings
         """
         queries = {}
 
@@ -67,7 +67,7 @@ class QueryManager:
 
         return queries
 
-    def get(self, name):
+    def get(self, name) -> str | None:
         """
         Get a query by name.
 
@@ -75,15 +75,15 @@ class QueryManager:
             name: Query name as defined in the .cypher file
 
         Returns:
-            Query string, or None if not found
+            String: Query string, or None if not found
         """
         return self.queries.get(name)
 
-    def list_queries(self):
+    def list_queries(self) -> list[str]:
         """
         List all available query names.
 
         Returns:
-            List of query names
+            List: List of query names
         """
         return list(self.queries.keys())

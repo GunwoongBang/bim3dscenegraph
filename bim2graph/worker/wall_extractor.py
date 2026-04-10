@@ -2,8 +2,6 @@
 Wall and layer extraction from IFC models.
 """
 
-from typing import Optional
-
 from .util import (
     extract_bbox,
     extract_centroid,
@@ -16,12 +14,12 @@ from .util import (
 )
 
 
-def extract_walls(model, logger=None) -> list[dict]:
+def extract_walls(arc_model, logger=None) -> list[dict]:
     """
     Extract all walls from the IFC model.
 
     Args:
-        model: ifcopenshell model instance
+        arc_model: ifcopenshell model instance
         logger: Optional logger for output messages
 
     Returns:
@@ -40,7 +38,7 @@ def extract_walls(model, logger=None) -> list[dict]:
     """
     walls = []
 
-    ifc_walls = model.by_type("IfcWall")
+    ifc_walls = arc_model.by_type("IfcWall")
 
     if not ifc_walls:
         if logger:
@@ -88,7 +86,11 @@ def extract_str_elements(str_model, logger=None) -> list[dict]:
 
     Returns:
         str_elements:
-        List of structural elements with properties relevant for updating layer nodes in the graph.
+        List of structural elements with properties relevant for updating layer nodes in the graph:
+            - id: GlobalId
+            - loadBearing: Boolean or None
+            - thickness: Total wall thickness in model units
+            - materials: List of material names (if available)
     """
     if str_model is None:
         return []
@@ -124,19 +126,14 @@ def extract_str_elements(str_model, logger=None) -> list[dict]:
     return str_elements
 
 
-def extract_layers(
-    model,
-    walls: list[dict],
-    str_elements: Optional[list[dict]] = None,
-    logger=None
-) -> list[dict]:
+def extract_layers(arc_model, walls: list[dict], str_elements: list[dict] = None, logger=None) -> list[dict]:
     """
     Extract all material layers from walls.
 
     Args:
-        model: ifcopenshell model instance
+        arc_model: ifcopenshell model instance
         walls: List of wall dictionaries (from extract_walls)
-        str_elements: Pre-extracted structural elements (from extract_str_elements), optional
+        str_elements: List of pre-extracted structural elements (from extract_str_elements)
         logger: Optional logger for output messages
 
     Returns:
@@ -156,7 +153,7 @@ def extract_layers(
 
     # Build lookup of IFC wall objects
     ifc_walls = {
-        wall.GlobalId: wall for wall in model.by_type("IfcWall")
+        wall.GlobalId: wall for wall in arc_model.by_type("IfcWall")
     }
 
     # items() returns key-value pairs of (GlobalId, wall object) according to ifc_walls (line: 142)

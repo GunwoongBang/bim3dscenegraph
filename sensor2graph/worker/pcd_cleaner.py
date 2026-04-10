@@ -8,16 +8,15 @@ import open3d as o3d
 
 from .util import (
     read_point_cloud,
-    voxel_downsample,
-    remove_statistical_outliers,
+    # voxel_downsample,
+    # remove_statistical_outliers,
 )
 
-# Note: This cleaner is currently disabled
+
 # Later, when the cleaner is reintroduced, the visualization will be updated not to include the cleaning step
 # The returning file path has to be [file_name]_cleaned.pcd, since the future code will expect that and be built upon that assumption.
 
-
-def clean_point_cloud(pcd_path, logger=None):
+def clean_point_cloud(pcd_path: Path, logger=None) -> Path:
     """
     Preprocess PCD data and export to {pcd_file_name}_cleaned.pcd.
 
@@ -46,8 +45,8 @@ def clean_point_cloud(pcd_path, logger=None):
         points) if point[2] > floor_z_cutoff]
     cleaned_cloud = cloud.select_by_index(keep_indices)
 
-    src = Path(pcd_path)
-    cleaned_path = src.with_name(f"{src.stem}_cleaned{src.suffix}")
+    cleaned_path = pcd_path.with_name(
+        f"{pcd_path.stem}_cleaned{pcd_path.suffix}")
     o3d.io.write_point_cloud(
         str(cleaned_path), cleaned_cloud, write_ascii=True)
 
