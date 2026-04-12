@@ -4,7 +4,6 @@ Point cloud segmentation and filtering.
 
 from pathlib import Path
 
-import open3d as o3d
 import numpy as np
 import pandas as pd
 
@@ -14,6 +13,7 @@ from .util import (
     make_plane_colors,
     pick_seed_point,
     print_ifc_wall_options,
+    compact_point_cloud,
 )
 
 
@@ -46,7 +46,7 @@ def segment_point_cloud(pcd_path: Path, ifc_model: Path, logger=None) -> Path:
     point_to_plane = np.full(n_points, -1, dtype=np.int32)
     plane_by_id = {}
     for plane_group in plane_groups:
-        plane_id = int(plane_group["segment_id"])
+        plane_id = int(plane_group["plane_id"])
         plane_by_id[plane_id] = plane_group
         point_to_plane[plane_group["inlier_indices"]] = plane_id
 
@@ -64,8 +64,7 @@ def segment_point_cloud(pcd_path: Path, ifc_model: Path, logger=None) -> Path:
     print("Press Q to close the viewer after picking the seed point.")
 
     while True:
-        seed_index = pick_seed_point(
-            cloud, plane_colors, window_name="Pick Plane Seed")
+        seed_index = pick_seed_point(cloud, plane_colors)
         if seed_index is None:
             print("No point picked. Stopping semantic labeling.")
             break
@@ -125,7 +124,7 @@ def segment_point_cloud(pcd_path: Path, ifc_model: Path, logger=None) -> Path:
         if continue_labeling in {"n", "no", "done", "q", "quit", "exit"}:
             break
 
-    segment_ids = np.full(n_points, -1, dtype=np.int32)
+    plane_ids = np.full(n_points, -1, dtype=np.int32)
     surface_types = np.full(n_points, "unlabeled", dtype=object)
     normal_x = np.full(n_points, np.nan, dtype=np.float64)
     normal_y = np.full(n_points, np.nan, dtype=np.float64)
@@ -137,13 +136,13 @@ def segment_point_cloud(pcd_path: Path, ifc_model: Path, logger=None) -> Path:
     ifc_name = np.full(n_points, "", dtype=object)
 
     for plane_group in plane_groups:
-        plane_id = int(plane_group["segment_id"])
+        plane_id = int(plane_group["plane_id"])
         inlier_indices = plane_group["inlier_indices"]
         normal = plane_group["normal"]
         offset = float(plane_group["plane_model"][3])
         plane_label = f"plane_{plane_id:02d}"
 
-        segment_ids[inlier_indices] = plane_id
+        plane_ids[inlier_indices] = plane_id
         surface_types[inlier_indices] = plane_label
         normal_x[inlier_indices] = normal[0]
         normal_y[inlier_indices] = normal[1]
@@ -159,16 +158,16 @@ def segment_point_cloud(pcd_path: Path, ifc_model: Path, logger=None) -> Path:
 
     df = pd.DataFrame(
         {
-            "plane_segment_id": segment_ids,
+            # "plane_id": plane_ids,
             "plane_label": surface_types,
-            "normal_x": normal_x,
-            "normal_y": normal_y,
-            "normal_z": normal_z,
-            "plane_offset": plane_offset,
-            "semantic_type": semantic_type,
+            # "normal_x": normal_x,
+            # "normal_y": normal_y,
+            # "normal_z": normal_z,
+            # "plane_offset": plane_offset,
+            # "semantic_type": semantic_type,
             "ifc_type": ifc_type,
             "ifc_global_id": ifc_global_id,
-            "ifc_name": ifc_name,
+            # "ifc_name": ifc_name,
         }
     )
     df.to_csv(output_csv, index=True, index_label="index")
@@ -178,12 +177,7 @@ def segment_point_cloud(pcd_path: Path, ifc_model: Path, logger=None) -> Path:
 
     if logger:
         logger.logText(
-            "SENSOR2GRAPH",
-            (
-                f"Plane semantic labeling saved: {output_csv} "
-                # f"(planes={len(plane_groups)}, residual={residual_count})"
-            ),
-        )
+            "SENSOR2GRAPH", f"Segmented CSV file saved: {output_csv}")
 
     return output_csv
 
@@ -223,18 +217,13 @@ def exclude_planes(input_pcd: Path, input_csv: Path, logger=None) -> tuple[Path,
 
     output_csv = input_csv.with_name(
         f"{input_csv.stem}_excluded{input_csv.suffix}")
-    filtered_df.to_csv(output_csv, index=True, index_label="index")
+    filtered_df.to_csv(output_csv, index=False)
 
     if logger:
         logger.logText("SENSOR2GRAPH", f"Filtered CSV saved: {output_csv}")
 
-    output_pcd = input_pcd.with_name(
-        f"{input_pcd.stem}_excluded{input_pcd.suffix}")
-
-    input_cloud = read_point_cloud(input_pcd)
-    filtered_cloud = input_cloud.select_by_index(
-        unlabeled_indices, invert=True)
-    o3d.io.write_point_cloud(str(output_pcd), filtered_cloud, write_ascii=True)
+    # Rewrite the PCD file to include only the points corresponding to the filtered CSV
+    output_pcd = compact_point_cloud(input_pcd, unlabeled_indices)
 
     if logger:
         logger.logText("SENSOR2GRAPH", f"Filtered PCD saved: {output_pcd}")

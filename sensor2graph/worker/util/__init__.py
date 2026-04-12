@@ -6,11 +6,12 @@ from .pcd_util import (
     read_point_cloud,
     # voxel_downsample,
     # remove_statistical_outliers,
+    floor_removal,
+    compact_point_cloud,
     extract_plane_groups,
     make_plane_colors,
     pick_seed_point,
     print_ifc_wall_options,
-
 )
 
 __all__ = [
@@ -18,6 +19,8 @@ __all__ = [
     'read_point_cloud',
     # 'voxel_downsample',
     # 'remove_statistical_outliers',
+    'floor_removal',
+    'compact_point_cloud',
     'extract_plane_groups',
     'make_plane_colors',
     'pick_seed_point',

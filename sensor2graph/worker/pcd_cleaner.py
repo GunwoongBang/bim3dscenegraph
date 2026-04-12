@@ -4,12 +4,12 @@ Point cloud preprocessing (downsampling, outlier removal, cropping) of PCD data.
 
 from pathlib import Path
 
-import open3d as o3d
 
 from .util import (
     read_point_cloud,
     # voxel_downsample,
     # remove_statistical_outliers,
+    floor_removal,
 )
 
 
@@ -27,9 +27,9 @@ def clean_point_cloud(pcd_path: Path, logger=None) -> Path:
     Returns:
         cleaned_path: Path to the cleaned PCD file.
     """
-    voxel_size = 0.05
-    nb_neighbors = 20
-    std_ratio = 2.0
+    # voxel_size = 0.05
+    # nb_neighbors = 20
+    # std_ratio = 2.0
     floor_z_cutoff = -0.555
 
     cloud = read_point_cloud(pcd_path)
@@ -40,19 +40,10 @@ def clean_point_cloud(pcd_path: Path, logger=None) -> Path:
     #     std_ratio = std_ratio,
     # )
 
-    points = cloud.points
-    keep_indices = [idx for idx, point in enumerate(
-        points) if point[2] > floor_z_cutoff]
-    cleaned_cloud = cloud.select_by_index(keep_indices)
-
-    cleaned_path = pcd_path.with_name(
-        f"{pcd_path.stem}_cleaned{pcd_path.suffix}")
-    o3d.io.write_point_cloud(
-        str(cleaned_path), cleaned_cloud, write_ascii=True)
+    cleaned_path = floor_removal(pcd_path, cloud, floor_z_cutoff)
 
     if logger:
         logger.logText(
-            "SENSOR2GRAPH", f"PCD cleaned (floor removal)")
-        logger.logText("SENSOR2GRAPH", f"Cleaned PCD saved: {cleaned_path}")
+            "SENSOR2GRAPH", f"Cleaned PCD saved: {cleaned_path} (floor removal)")
 
     return cleaned_path

@@ -3,11 +3,13 @@ from pathlib import Path
 import numpy as np
 import open3d as o3d
 
+# from sensor2graph.worker.util import read_point_cloud
+
 
 # =========================================================================
 # Point cloud utilities
 # =========================================================================
-def _count_points(cloud):
+def _count_points(cloud) -> int:
     """Return point count for an Open3D point cloud."""
     return len(np.asarray(cloud.points))
 
@@ -41,20 +43,67 @@ def read_point_cloud(pcd_path: Path) -> o3d.geometry.PointCloud:
         cloud: Open3D PointCloud object containing the loaded point cloud data.
     """
 
-    path = Path(pcd_path)
-    if not path.exists():
-        raise FileNotFoundError(f"Point cloud file not found: {path}")
+    if not pcd_path.exists():
+        raise FileNotFoundError(f"Point cloud file not found: {pcd_path}")
 
-    cloud = o3d.io.read_point_cloud(str(path))
+    cloud = o3d.io.read_point_cloud(str(pcd_path))
     if cloud.is_empty():
-        raise ValueError(f"Point cloud is empty or unreadable: {path}")
+        raise ValueError(f"Point cloud is empty or unreadable: {pcd_path}")
     return cloud
+
+
+def floor_removal(pcd_path: Path, cloud, floor_z_cutoff: float) -> Path:
+    """
+    Remove points below a certain Z value to eliminate floor points.
+
+    Args:
+        pcd_path: Path to the original PCD file (used for naming the output).
+        cloud: Open3D point cloud to process.
+        floor_z_cutoff: Z value below which points are considered floor and removed.
+
+    Returns:
+        cleaned_path: Path to the new PCD file without floor points.
+    """
+    points = cloud.points
+    keep_indices = [idx for idx, point in enumerate(
+        points) if point[2] > floor_z_cutoff]
+    cleaned_cloud = cloud.select_by_index(keep_indices)
+
+    cleaned_path = pcd_path.with_name(
+        f"{pcd_path.stem}_cleaned{pcd_path.suffix}")
+    o3d.io.write_point_cloud(
+        str(cleaned_path), cleaned_cloud, write_ascii=True)
+
+    return cleaned_path
+
+
+def compact_point_cloud(input_pcd: Path, index_list: list[int]) -> Path:
+    """
+    Rewrite a new PCD file containing only the points at the specified indices.
+
+    Args:
+        input_pcd: Path to the original PCD file.
+        index_list: List of point indices to include in the new PCD.
+
+    Returns:
+        output_pcd: Path to the newly created PCD file with filtered points.
+    """
+    output_pcd = input_pcd.with_name(
+        f"{input_pcd.stem}_excluded{input_pcd.suffix}")
+
+    input_cloud = read_point_cloud(input_pcd)
+    filtered_cloud = input_cloud.select_by_index(index_list, invert=True)
+    o3d.io.write_point_cloud(
+        str(output_pcd), filtered_cloud, write_ascii=True)
+
+    return output_pcd
 
 
 def extract_plane_groups(
     cloud: o3d.geometry.PointCloud,
     distance_threshold: float,
-    min_inliers: int, max_planes: int,
+    min_inliers: int,
+    max_planes: int,
     num_iterations: int,
 ) -> list[dict]:
     """
@@ -101,13 +150,14 @@ def extract_plane_groups(
         inlier_indices = working_indices[np.asarray(inliers)]
         plane_groups.append(
             {
-                "segment_id": plane_id,
+                "plane_id": plane_id,
                 "plane_model": plane_model,
                 "normal": normal,
                 "inlier_indices": inlier_indices,
                 "point_count": len(inliers),
             }
         )
+
         working_cloud = working_cloud.select_by_index(inliers, invert=True)
         working_indices = np.delete(working_indices, inliers)
 
@@ -119,7 +169,7 @@ def make_plane_colors(plane_groups: list[dict], n_points: int) -> np.ndarray:
     Create deterministic colors for plane visualization.
 
     Args:
-        plane_groups: List of plane groups with 'segment_id' and 'inlier_indices'.
+        plane_groups: List of plane groups with 'plane_id' and 'inlier_indices'.
         n_points: Total number of points in the original cloud.
 
     Returns:
@@ -127,20 +177,19 @@ def make_plane_colors(plane_groups: list[dict], n_points: int) -> np.ndarray:
     """
     colors = np.ones((n_points, 3), dtype=np.float64) * 0.35
     for plane_group in plane_groups:
-        segment_id = plane_group["segment_id"]
-        rng = np.random.default_rng(1337 + int(segment_id))
+        plane_id = plane_group["plane_id"]
+        rng = np.random.default_rng(1337 + int(plane_id))
         colors[plane_group["inlier_indices"]] = rng.random(3) * 0.6 + 0.25
     return colors
 
 
-def pick_seed_point(cloud, colors: np.ndarray, window_name: str = "Plane Picker") -> int | None:
+def pick_seed_point(cloud, colors: np.ndarray) -> int | None:
     """
     Open a selection-capable viewer and return one picked point index.
 
     Args:
         cloud: Open3D point cloud to visualize for picking.
         colors: Nx3 array of RGB colors for visualizing the cloud.
-        window_name: Title for the visualization window.
 
     Returns:
         Int: The index of the picked point, or None if no point was picked.
@@ -150,7 +199,7 @@ def pick_seed_point(cloud, colors: np.ndarray, window_name: str = "Plane Picker"
     picker_cloud.colors = o3d.utility.Vector3dVector(colors)
 
     visualizer = o3d.visualization.VisualizerWithEditing()
-    visualizer.create_window(window_name=window_name)
+    visualizer.create_window(window_name="Plane Picker")
     visualizer.add_geometry(picker_cloud)
     visualizer.run()
     picked = visualizer.get_picked_points()
