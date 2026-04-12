@@ -3,33 +3,18 @@ from pathlib import Path
 import numpy as np
 import open3d as o3d
 
-# from sensor2graph.worker.util import read_point_cloud
 
-
-# =========================================================================
-# Point cloud utilities
-# =========================================================================
 def _count_points(cloud) -> int:
-    """Return point count for an Open3D point cloud."""
+    """
+    Return point count for an Open3D point cloud.
+
+    Args:
+        cloud: Open3D PointCloud object.
+
+    Returns:
+        int: Number of points in the cloud.
+    """
     return len(np.asarray(cloud.points))
-
-
-# def voxel_downsample(cloud, voxel_size):
-#     """Apply voxel downsampling to reduce point density uniformly."""
-#     if voxel_size <= 0:
-#         return cloud
-#     return cloud.voxel_down_sample(voxel_size=voxel_size)
-
-# def remove_statistical_outliers(cloud, nb_neighbors, std_ratio):
-#     """Remove points that are far from their local neighborhood."""
-#     if nb_neighbors <= 0 or std_ratio <= 0:
-#         return cloud
-
-#     filtered, _ = cloud.remove_statistical_outlier(
-#         nb_neighbors=nb_neighbors,
-#         std_ratio=std_ratio,
-#     )
-#     return filtered
 
 
 def read_point_cloud(pcd_path: Path) -> o3d.geometry.PointCloud:
@@ -52,6 +37,9 @@ def read_point_cloud(pcd_path: Path) -> o3d.geometry.PointCloud:
     return cloud
 
 
+# ========================================================================
+# Point cloud preprocessing utilities (cleaning, downsampling, outlier removal)
+# ========================================================================
 def floor_removal(pcd_path: Path, cloud, floor_z_cutoff: float) -> Path:
     """
     Remove points below a certain Z value to eliminate floor points.
@@ -77,28 +65,26 @@ def floor_removal(pcd_path: Path, cloud, floor_z_cutoff: float) -> Path:
     return cleaned_path
 
 
-def compact_point_cloud(input_pcd: Path, index_list: list[int]) -> Path:
-    """
-    Rewrite a new PCD file containing only the points at the specified indices.
-
-    Args:
-        input_pcd: Path to the original PCD file.
-        index_list: List of point indices to include in the new PCD.
-
-    Returns:
-        output_pcd: Path to the newly created PCD file with filtered points.
-    """
-    output_pcd = input_pcd.with_name(
-        f"{input_pcd.stem}_excluded{input_pcd.suffix}")
-
-    input_cloud = read_point_cloud(input_pcd)
-    filtered_cloud = input_cloud.select_by_index(index_list, invert=True)
-    o3d.io.write_point_cloud(
-        str(output_pcd), filtered_cloud, write_ascii=True)
-
-    return output_pcd
+# def voxel_downsample(cloud, voxel_size):
+#     if voxel_size <= 0:
+#         return cloud
+#     return cloud.voxel_down_sample(voxel_size=voxel_size)
 
 
+# def remove_statistical_outliers(cloud, nb_neighbors, std_ratio):
+#     if nb_neighbors <= 0 or std_ratio <= 0:
+#         return cloud
+
+#     filtered, _ = cloud.remove_statistical_outlier(
+#         nb_neighbors=nb_neighbors,
+#         std_ratio=std_ratio,
+#     )
+#     return filtered
+
+
+# =========================================================================
+# Point cloud filtering utilities (plane segmentation)
+# =========================================================================
 def extract_plane_groups(
     cloud: o3d.geometry.PointCloud,
     distance_threshold: float,
@@ -222,3 +208,25 @@ def print_ifc_wall_options(walls):
         wall_name = getattr(wall, "Name", None) or "Unnamed"
         wall_id = getattr(wall, "GlobalId", None) or "NoGlobalId"
         print(f"  {idx}. IfcWall: {wall_id} ({wall_name})")
+
+
+def compact_point_cloud(input_pcd: Path, index_list: list[int]) -> Path:
+    """
+    Rewrite a new PCD file containing only the points at the specified indices.
+
+    Args:
+        input_pcd: Path to the original PCD file.
+        index_list: List of point indices to include in the new PCD.
+
+    Returns:
+        output_pcd: Path to the newly created PCD file with filtered points.
+    """
+    output_pcd = input_pcd.with_name(
+        f"{input_pcd.stem}_excluded{input_pcd.suffix}")
+
+    input_cloud = read_point_cloud(input_pcd)
+    filtered_cloud = input_cloud.select_by_index(index_list, invert=True)
+    o3d.io.write_point_cloud(
+        str(output_pcd), filtered_cloud, write_ascii=True)
+
+    return output_pcd

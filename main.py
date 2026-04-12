@@ -39,12 +39,12 @@ if __name__ == "__main__":
     logger.logText("PROJECT", "Started")
     logger.logText("Divider")
 
-    # Create driver once for all operations
-    driver = graph_initiate()
-
     # =========================================================================
     # BIM2GRAPH: Extract graph from BIM and persist to Neo4j
     # =========================================================================
+    # Initiate Neo4j driver for BIM2GRAPH operations
+    driver = graph_initiate()
+
     bim2graph(driver, ARC_PATH, STR_PATH, MEP_PATH, logger)
 
     # Close driver after BIM2GRAPH operations
@@ -52,9 +52,15 @@ if __name__ == "__main__":
     logger.logText("Divider")
 
     # =========================================================================
-    # SENSOR2GRAPH: Extract graph from sensor data and merge with BIM graph
+    # SENSOR2GRAPH: Extract point cloud from sensor data and merge with BIM graph
     # =========================================================================
-    sensor2graph(PCD_PATH, ARC_PATH, logger)
+    # Re-initiate driver for SENSOR2GRAPH operations
+    driver = graph_initiate()
+
+    sensor2graph(driver, PCD_PATH, ARC_PATH, logger)
+
+    # Close driver after SENSOR2GRAPH operations
+    graph_close(driver)
 
     logger.logText("Divider")
     logger.logText("PROJECT", "Ended")

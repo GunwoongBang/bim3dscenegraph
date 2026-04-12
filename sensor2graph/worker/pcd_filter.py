@@ -86,19 +86,17 @@ def segment_point_cloud(pcd_path: Path, ifc_model: Path, logger=None) -> Path:
 
         while True:
             selection = input(
-                "Choose IFC wall number, or type 'skip', 'done', or 'list': "
+                "Choose IFC wall number, or type 'done' or 'list': "
             ).strip().lower()
 
             if selection in {"done", "quit", "q", "exit"}:
-                break
-            if selection == "skip":
                 break
             if selection == "list":
                 print_ifc_wall_options(walls)
                 continue
 
             if not selection.isdigit():
-                print("Enter a valid number, or 'skip', 'done', or 'list'.")
+                print("Enter a valid number, or 'done', or 'list'.")
                 continue
 
             wall_index = int(selection) - 1
@@ -124,13 +122,13 @@ def segment_point_cloud(pcd_path: Path, ifc_model: Path, logger=None) -> Path:
         if continue_labeling in {"n", "no", "done", "q", "quit", "exit"}:
             break
 
-    plane_ids = np.full(n_points, -1, dtype=np.int32)
+    # plane_ids = np.full(n_points, -1, dtype=np.int32)
     surface_types = np.full(n_points, "unlabeled", dtype=object)
-    normal_x = np.full(n_points, np.nan, dtype=np.float64)
-    normal_y = np.full(n_points, np.nan, dtype=np.float64)
-    normal_z = np.full(n_points, np.nan, dtype=np.float64)
-    plane_offset = np.full(n_points, np.nan, dtype=np.float64)
-    semantic_type = np.full(n_points, "unassigned", dtype=object)
+    # normal_x = np.full(n_points, np.nan, dtype=np.float64)
+    # normal_y = np.full(n_points, np.nan, dtype=np.float64)
+    # normal_z = np.full(n_points, np.nan, dtype=np.float64)
+    # plane_offset = np.full(n_points, np.nan, dtype=np.float64)
+    # semantic_type = np.full(n_points, "unassigned", dtype=object)
     ifc_type = np.full(n_points, "", dtype=object)
     ifc_global_id = np.full(n_points, "", dtype=object)
     ifc_name = np.full(n_points, "", dtype=object)
@@ -138,20 +136,20 @@ def segment_point_cloud(pcd_path: Path, ifc_model: Path, logger=None) -> Path:
     for plane_group in plane_groups:
         plane_id = int(plane_group["plane_id"])
         inlier_indices = plane_group["inlier_indices"]
-        normal = plane_group["normal"]
-        offset = float(plane_group["plane_model"][3])
+        # normal = plane_group["normal"]
+        # offset = float(plane_group["plane_model"][3])
         plane_label = f"plane_{plane_id:02d}"
 
-        plane_ids[inlier_indices] = plane_id
+        # plane_ids[inlier_indices] = plane_id
         surface_types[inlier_indices] = plane_label
-        normal_x[inlier_indices] = normal[0]
-        normal_y[inlier_indices] = normal[1]
-        normal_z[inlier_indices] = normal[2]
-        plane_offset[inlier_indices] = offset
+        # normal_x[inlier_indices] = normal[0]
+        # normal_y[inlier_indices] = normal[1]
+        # normal_z[inlier_indices] = normal[2]
+        # plane_offset[inlier_indices] = offset
 
         if plane_id in plane_semantics:
             plane_semantic = plane_semantics[plane_id]
-            semantic_type[inlier_indices] = plane_semantic["ifc_type"]
+            # semantic_type[inlier_indices] = plane_semantic["ifc_type"]
             ifc_type[inlier_indices] = plane_semantic["ifc_type"]
             ifc_global_id[inlier_indices] = plane_semantic["ifc_global_id"]
             ifc_name[inlier_indices] = plane_semantic["ifc_name"]
@@ -167,7 +165,7 @@ def segment_point_cloud(pcd_path: Path, ifc_model: Path, logger=None) -> Path:
             # "semantic_type": semantic_type,
             "ifc_type": ifc_type,
             "ifc_global_id": ifc_global_id,
-            # "ifc_name": ifc_name,
+            "ifc_name": ifc_name,
         }
     )
     df.to_csv(output_csv, index=True, index_label="index")

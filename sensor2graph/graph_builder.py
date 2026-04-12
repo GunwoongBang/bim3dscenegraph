@@ -5,10 +5,13 @@ This module coordinates the conversion of BIM model geometry into
 a point cloud representation and persistence to Neo4j graph database.
 """
 
-from pathlib import Path
-
 import ifcopenshell
 
+from neo4j import Driver
+from pathlib import Path
+
+from .query_manager import QueryManager
+from .persistence import Neo4jOperations
 from .worker import (
     clean_point_cloud,
     segment_point_cloud,
@@ -16,7 +19,7 @@ from .worker import (
 )
 
 
-def sensor2graph(pcd_path, arc_path, logger=None):
+def sensor2graph(driver: Driver, pcd_path: Path, arc_path: Path, logger=None):
     """
     Generates a sensor-derived graph from an IFC model and persists to Neo4j.
 
@@ -56,6 +59,7 @@ def sensor2graph(pcd_path, arc_path, logger=None):
     # =========================================================================
     # Merge point cloud with BIM-derived graph
     # =========================================================================
+    # with driver.session() as session:
 
     if logger:
         logger.logText("SENSOR2GRAPH", "SENSOR2GRAPH under construction")

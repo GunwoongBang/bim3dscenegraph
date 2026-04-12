@@ -1,4 +1,6 @@
-"""Standalone point-cloud visualizer with CSV-driven categories."""
+"""
+Standalone point-cloud visualization module with CSV-driven categories.
+"""
 
 from __future__ import annotations
 
