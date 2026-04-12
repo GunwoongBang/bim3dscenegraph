@@ -32,10 +32,7 @@ def sensor2graph(pcd_path, arc_path, logger=None):
         logger: Optional logger for output messages
     """
     if logger:
-        if Path(pcd_path).exists():
-            logger.logText("SENSOR2GRAPH", "ARC, PCD IFC models loaded")
-        else:
-            logger.logText("SENSOR2GRAPH", "ARC IFC model loaded")
+        logger.logText("SENSOR2GRAPH", "ARC IFC model loaded")
 
     # Load ARC IFC model
     arc_model = ifcopenshell.open(arc_path)
