@@ -17,35 +17,35 @@ def _count_points(cloud) -> int:
     return len(np.asarray(cloud.points))
 
 
-def read_point_cloud(pcd_path: Path) -> o3d.geometry.PointCloud:
+def read_point_cloud(pcd_model: Path) -> o3d.geometry.PointCloud:
     """
     Load a point cloud from a PCD file using Open3D.
 
     Args:
-        pcd_path: Path to the input PCD file.
+        pcd_model: Path to the input PCD file.
 
     Returns:
         cloud: Open3D PointCloud object containing the loaded point cloud data.
     """
 
-    if not pcd_path.exists():
-        raise FileNotFoundError(f"Point cloud file not found: {pcd_path}")
+    if not pcd_model.exists():
+        raise FileNotFoundError(f"Point cloud file not found: {pcd_model}")
 
-    cloud = o3d.io.read_point_cloud(str(pcd_path))
+    cloud = o3d.io.read_point_cloud(str(pcd_model))
     if cloud.is_empty():
-        raise ValueError(f"Point cloud is empty or unreadable: {pcd_path}")
+        raise ValueError(f"Point cloud is empty or unreadable: {pcd_model}")
     return cloud
 
 
 # ========================================================================
 # Point cloud preprocessing utilities (cleaning, downsampling, outlier removal)
 # ========================================================================
-def floor_removal(pcd_path: Path, cloud, floor_z_cutoff: float) -> Path:
+def floor_removal(pcd_model: Path, cloud, floor_z_cutoff: float) -> Path:
     """
     Remove points below a certain Z value to eliminate floor points.
 
     Args:
-        pcd_path: Path to the original PCD file (used for naming the output).
+        pcd_model: Path to the original PCD file (used for naming the output).
         cloud: Open3D point cloud to process.
         floor_z_cutoff: Z value below which points are considered floor and removed.
 
@@ -57,8 +57,8 @@ def floor_removal(pcd_path: Path, cloud, floor_z_cutoff: float) -> Path:
         points) if point[2] > floor_z_cutoff]
     cleaned_cloud = cloud.select_by_index(keep_indices)
 
-    cleaned_path = pcd_path.with_name(
-        f"{pcd_path.stem}_cleaned{pcd_path.suffix}")
+    cleaned_path = pcd_model.with_name(
+        f"{pcd_model.stem}_cleaned{pcd_model.suffix}")
     o3d.io.write_point_cloud(
         str(cleaned_path), cleaned_cloud, write_ascii=True)
 

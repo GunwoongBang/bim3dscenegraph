@@ -17,22 +17,22 @@ from .util import (
 )
 
 
-def segment_point_cloud(pcd_path: Path, ifc_model: Path, logger=None) -> Path:
+def segment_point_cloud(pcd_model: Path, ifc_model: Path, logger=None) -> Path:
     """
     Pick a seed point, select its whole plane, then assign IFC wall semantics.
 
     Args:
-        pcd_path: Path to the input PCD file.
+        pcd_model: Path to the input PCD file.
         ifc_model: IFC model loaded with IfcOpenShell.
         logger: Optional logger for output messages.
 
     Returns:
         output_csv: Path to the CSV file containing plane semantic labels.
     """
-    if not pcd_path.exists():
-        raise FileNotFoundError(f"Point cloud file not found: {pcd_path}")
+    if not pcd_model.exists():
+        raise FileNotFoundError(f"Point cloud file not found: {pcd_model}")
 
-    cloud = read_point_cloud(pcd_path)
+    cloud = read_point_cloud(pcd_model)
     plane_groups = extract_plane_groups(
         cloud,
         distance_threshold=0.02,
@@ -54,7 +54,7 @@ def segment_point_cloud(pcd_path: Path, ifc_model: Path, logger=None) -> Path:
     if not walls:
         raise ValueError("No IfcWall elements were found in the IFC model.")
 
-    output_csv = pcd_path.with_name(f"{pcd_path.stem}.csv")
+    output_csv = pcd_model.with_name(f"{pcd_model.stem}.csv")
 
     plane_semantics = {}
     plane_colors = make_plane_colors(plane_groups, n_points)

@@ -57,7 +57,8 @@ if __name__ == "__main__":
     # Re-initiate driver for SENSOR2GRAPH operations
     driver = graph_initiate()
 
-    sensor2graph(driver, PCD_PATH, ARC_PATH, logger)
+    pcd_prep = False  # Set to True if point cloud preparation is needed
+    sensor2graph(driver, PCD_PATH, ARC_PATH, pcd_prep, logger)
 
     # Close driver after SENSOR2GRAPH operations
     graph_close(driver)
