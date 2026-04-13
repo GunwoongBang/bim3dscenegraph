@@ -10,7 +10,7 @@ import ifcopenshell
 from neo4j import Driver
 from pathlib import Path
 
-from .query_manager import QueryManager
+from query_manager import QueryManager
 from .persistence import Neo4jOperations
 from .worker import (
     clean_point_cloud,
@@ -38,6 +38,10 @@ def sensor2graph(driver: Driver, pcd_path: Path, arc_path: Path, pcd_prep: bool 
     """
     if logger:
         logger.logText("SENSOR2GRAPH", "ARC IFC model loaded")
+
+    # Initialize components
+    query_manager = QueryManager()
+    neo4j_ops = Neo4jOperations(query_manager, logger)
 
     # Load ARC IFC model
     arc_model = ifcopenshell.open(arc_path)
@@ -68,20 +72,16 @@ def sensor2graph(driver: Driver, pcd_path: Path, arc_path: Path, pcd_prep: bool 
     picked_global_id = retrieve_picked_point_id(PCD_MODEL, CSV_FILE, logger)
 
     with driver.session() as session:
-        result = session.run(
-            "MATCH (w:Wall {id: $element_id}) "
-            "RETURN w.id AS id, w.name AS name, w.layerCount AS layerCount",
-            element_id=picked_global_id,
-        )
+        wall_row = session.execute_read(
+            neo4j_ops.retrieve_wall_attr, picked_global_id)
 
-        rows = list(result)
-        if not rows:
+        if wall_row is None:
             print("No wall found")
             return
 
-        for row in rows:
-            print(row["id"])
-            print(row["layerCount"])
+        print(wall_row["id"])
+        print(wall_row["ifcClass"])
+        print(wall_row["layerCount"])
 
     if logger:
         logger.logText("SENSOR2GRAPH", "SENSOR2GRAPH under construction")

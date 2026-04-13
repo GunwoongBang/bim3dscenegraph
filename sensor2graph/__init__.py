@@ -9,8 +9,8 @@ Package structure:
 - query_manager.py: Manages Neo4j queries for graph persistence
 """
 
+from query_manager import QueryManager
 from .graph_builder import sensor2graph
-from .query_manager import QueryManager
 from .persistence import Neo4jOperations
 
 

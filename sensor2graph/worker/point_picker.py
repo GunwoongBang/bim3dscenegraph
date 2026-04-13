@@ -34,6 +34,7 @@ def retrieve_picked_point_id(pcd_path: Path, csv_path: Path, logger=None) -> str
     color_dict = dict(zip(ids, colors))
     point_colors = np.array([color_dict[id] for id in labels["ifc_global_id"]])
 
+    # Create a colored point cloud for point picking
     picker_cloud = o3d.geometry.PointCloud()
     picker_cloud.points = cloud.points
     picker_cloud.colors = o3d.utility.Vector3dVector(point_colors)
@@ -45,8 +46,9 @@ def retrieve_picked_point_id(pcd_path: Path, csv_path: Path, logger=None) -> str
     picked_index = visualizer.get_picked_points()
     visualizer.destroy_window()
 
-    if not picked_index and logger:
-        logger.logText("SENSOR2GRAPH", "No point was picked.")
+    if not picked_index:
+        if logger:
+            logger.logText("SENSOR2GRAPH", "No point was picked.")
 
     picked_global_id = labels.iloc[picked_index[0]]["ifc_global_id"]
 

@@ -17,9 +17,8 @@ class QueryManager:
         """
         if query_file is None:
             query_file = os.path.join(
-                os.path.dirname(os.path.dirname(__file__)),
-                "query_handler",
-                "cypher4bim.cypher"
+                os.path.dirname(__file__),
+                "query_handler.cypher"
             )
         self.query_file = query_file
         self.queries = self._load_queries(query_file)

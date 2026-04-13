@@ -13,9 +13,6 @@ from .util import (
 )
 
 
-# Later, when the cleaner is reintroduced, the visualization will be updated not to include the cleaning step
-# The returning file path has to be [file_name]_cleaned.pcd, since the future code will expect that and be built upon that assumption.
-
 def clean_point_cloud(pcd_path: Path, logger=None) -> Path:
     """
     Preprocess PCD data and export to {pcd_file_name}_cleaned.pcd.
