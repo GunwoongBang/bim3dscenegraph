@@ -122,13 +122,7 @@ def segment_point_cloud(pcd_model: Path, ifc_model: Path, logger=None) -> Path:
         if continue_labeling in {"n", "no", "done", "q", "quit", "exit"}:
             break
 
-    # plane_ids = np.full(n_points, -1, dtype=np.int32)
     surface_types = np.full(n_points, "unlabeled", dtype=object)
-    # normal_x = np.full(n_points, np.nan, dtype=np.float64)
-    # normal_y = np.full(n_points, np.nan, dtype=np.float64)
-    # normal_z = np.full(n_points, np.nan, dtype=np.float64)
-    # plane_offset = np.full(n_points, np.nan, dtype=np.float64)
-    # semantic_type = np.full(n_points, "unassigned", dtype=object)
     ifc_type = np.full(n_points, "", dtype=object)
     ifc_global_id = np.full(n_points, "", dtype=object)
     ifc_name = np.full(n_points, "", dtype=object)
@@ -136,33 +130,19 @@ def segment_point_cloud(pcd_model: Path, ifc_model: Path, logger=None) -> Path:
     for plane_group in plane_groups:
         plane_id = int(plane_group["plane_id"])
         inlier_indices = plane_group["inlier_indices"]
-        # normal = plane_group["normal"]
-        # offset = float(plane_group["plane_model"][3])
         plane_label = f"plane_{plane_id:02d}"
 
-        # plane_ids[inlier_indices] = plane_id
         surface_types[inlier_indices] = plane_label
-        # normal_x[inlier_indices] = normal[0]
-        # normal_y[inlier_indices] = normal[1]
-        # normal_z[inlier_indices] = normal[2]
-        # plane_offset[inlier_indices] = offset
 
         if plane_id in plane_semantics:
             plane_semantic = plane_semantics[plane_id]
-            # semantic_type[inlier_indices] = plane_semantic["ifc_type"]
             ifc_type[inlier_indices] = plane_semantic["ifc_type"]
             ifc_global_id[inlier_indices] = plane_semantic["ifc_global_id"]
             ifc_name[inlier_indices] = plane_semantic["ifc_name"]
 
     df = pd.DataFrame(
         {
-            # "plane_id": plane_ids,
             "plane_label": surface_types,
-            # "normal_x": normal_x,
-            # "normal_y": normal_y,
-            # "normal_z": normal_z,
-            # "plane_offset": plane_offset,
-            # "semantic_type": semantic_type,
             "ifc_type": ifc_type,
             "ifc_global_id": ifc_global_id,
             "ifc_name": ifc_name,

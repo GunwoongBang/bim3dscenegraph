@@ -17,5 +17,4 @@ log/
 .env
 
 # Files
-sdf_models/
 pc_models/
