@@ -10,7 +10,7 @@ import ifcopenshell
 from neo4j import Driver
 from pathlib import Path
 
-from .query_manager import QueryManager
+from query_manager import QueryManager
 from .persistence import Neo4jOperations
 from .worker import (
     extract_spaces,

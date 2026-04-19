@@ -1,3 +1,4 @@
+/// BIM2GRAPH Cypher queries
 -- name: RESET_DATABASE
 MATCH (n)
 DETACH DELETE n
@@ -123,3 +124,8 @@ SET r.source = edge.source,
     r.penetrationSizeXmm = edge.penetrationSizeXmm,
     r.penetrationSizeYmm = edge.penetrationSizeYmm,
     r.penetrationSizeZmm = edge.penetrationSizeZmm
+
+/// SENSOR2GRAPH Cypher queries
+-- name: RETRIEVE_WALL_ATTRIBUTES
+MATCH (w:Wall {id: $element_id})
+RETURN w.id AS id, w.name AS name, w.ifcClass AS ifcClass, w.layerCount AS layerCount

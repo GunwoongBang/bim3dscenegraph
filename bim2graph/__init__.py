@@ -6,8 +6,8 @@ Main entry point:
 Package structure:
 """
 
+from query_manager import QueryManager
 from .graph_builder import bim2graph
-from .query_manager import QueryManager
 from .persistence import Neo4jOperations
 
 __version__ = "0.1.0"
