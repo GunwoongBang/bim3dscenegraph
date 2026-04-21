@@ -96,7 +96,8 @@ def bim2graph(driver: Driver, arc_path: Path, str_path: Path = None, mep_path: P
     # Persist to Neo4j
     # =========================================================================
     with driver.session() as session:
-        # Incremental update mode: keep existing graph and upsert changes.
+        # Reset and setup schema
+        session.execute_write(neo4j_ops.reset_database)
         session.execute_write(neo4j_ops.ensure_schema)
 
         # Create nodes
@@ -133,4 +134,4 @@ def bim2graph(driver: Driver, arc_path: Path, str_path: Path = None, mep_path: P
                 neo4j_ops.create_mep_element_wall_rels, mep_element_wall_rels)
 
     if logger:
-        logger.logText("BIM2GRAPH", "Graph generation completed")
+        logger.logText("BIM2GRAPH", "BIM2GRAPH completed")

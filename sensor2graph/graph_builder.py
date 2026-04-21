@@ -84,4 +84,4 @@ def sensor2graph(driver: Driver, pcd_path: Path, arc_path: Path, pcd_prep: bool 
         print(wall_row["layerCount"])
 
     if logger:
-        logger.logText("SENSOR2GRAPH", "SENSOR2GRAPH under construction")
+        logger.logText("SENSOR2GRAPH", "SENSOR2GRAPH completed")
