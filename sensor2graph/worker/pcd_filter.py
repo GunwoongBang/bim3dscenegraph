@@ -130,11 +130,11 @@ def segment_point_cloud(pcd_model: Path, ifc_model: Path, logger=None) -> Path:
     for plane_group in plane_groups:
         plane_id = int(plane_group["plane_id"])
         inlier_indices = plane_group["inlier_indices"]
-        plane_label = f"plane_{plane_id:02d}"
-
-        surface_types[inlier_indices] = plane_label
-
+        # Keep unpicked segmented candidates as "unlabeled" so they are excluded later.
         if plane_id in plane_semantics:
+            plane_label = f"plane_{plane_id:02d}"
+            surface_types[inlier_indices] = plane_label
+
             plane_semantic = plane_semantics[plane_id]
             ifc_type[inlier_indices] = plane_semantic["ifc_type"]
             ifc_global_id[inlier_indices] = plane_semantic["ifc_global_id"]
@@ -181,16 +181,14 @@ def exclude_planes(input_pcd: Path, input_csv: Path, logger=None) -> tuple[Path,
 
     plane_series = df["plane_label"].fillna(
         "").astype(str).str.strip().str.lower()
-    filtered_df = df[plane_series != "unlabeled"]
     unlabeled_df = df[plane_series == "unlabeled"]
+    filtered_df = df[plane_series != "unlabeled"]
     unlabeled_indices = unlabeled_df["index"].astype(int).tolist()
 
     if unlabeled_df.empty:
         if logger:
             logger.logText(
-                "SENSOR2GRAPH",
-                f"No unlabeled rows found in {input_csv.name}; no points excluded.",
-            )
+                "SENSOR2GRAPH", f"No unlabeled rows found in {input_csv.name}; no points excluded.",)
         return input_pcd, input_csv
 
     output_csv = input_csv.with_name(
