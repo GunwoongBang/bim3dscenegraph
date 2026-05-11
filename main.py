@@ -1,13 +1,13 @@
 import os
 
+import logger
+
 from pathlib import Path
 from dotenv import load_dotenv
 from neo4j import GraphDatabase
 
 from bim2graph import bim2graph
 from sensor2graph import sensor2graph
-
-import logger
 
 load_dotenv()
 

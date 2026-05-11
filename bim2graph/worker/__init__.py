@@ -1,14 +1,5 @@
 """
 Main extractor module for BIM2GRAPH.
-
-This package provides functions for extracting data from IFC models:
-    - geometry: Low-level geometry utilities (centroid, bbox, placement)
-    - utils.wall_utils: Wall IFC utilities (property/material extraction)
-    - spaces: Space element extraction
-    - walls: Wall and material layer extraction
-    - openings: Opening extraction and wall-opening relations
-    - mep: MEP node extraction and relationships
-    - relationships: Topological relationships (space-wall boundaries)
 """
 
 from .space_extractor import extract_spaces

@@ -71,11 +71,9 @@ MERGE (me:MEPElement { id: elem.id })
 SET me.name = elem.name,
     me.ifcClass = elem.ifcClass,
     me.shapeType = elem.shapeType,
-    me.penetrationCenter = elem.penetrationCenter,
-    me.penetrationLengthMm = elem.penetrationLengthMm,
-    me.penetrationSizeXmm = elem.penetrationSizeXmm,
-    me.penetrationSizeYmm = elem.penetrationSizeYmm,
-    me.penetrationSizeZmm = elem.penetrationSizeZmm
+    me.bbox_min = elem.bbox_min,
+    me.bbox_max = elem.bbox_max
+    // me.radiusMm = elem.radiusMm,
 
 -- name: CREATE_SPACE_WALL_EDGES
 UNWIND $edges AS edge
