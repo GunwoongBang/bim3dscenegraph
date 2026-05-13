@@ -261,87 +261,88 @@ def compute_mep_element_wall_rels(mep_elements: list[dict], walls: list[dict], l
     return edges
 
 
-def compute_mep_system_space_rels(arc_model, mep_systems: list[dict], mep_memberships: list[dict], mep_elements: list[dict], logger=None) -> list[dict]:
-    """
-    Compute MEP system-to-space relationships using geometry only.
+# === I do not see the point of having system-space relationships ===
+# def compute_mep_system_space_rels(arc_model, mep_systems: list[dict], mep_memberships: list[dict], mep_elements: list[dict], logger=None) -> list[dict]:
+#     """
+#     Compute MEP system-to-space relationships using geometry only.
 
-    A system is connected to spaces if any of its member elements are in that space.
-    For separated ARC/MEP files, explicit IFC topology between systems/elements
-    and ARC spaces is typically unavailable, so relationships are inferred from
-    MEP-space bounding-box intersection.
+#     A system is connected to spaces if any of its member elements are in that space.
+#     For separated ARC/MEP files, explicit IFC topology between systems/elements
+#     and ARC spaces is typically unavailable, so relationships are inferred from
+#     MEP-space bounding-box intersection.
 
-    Args:
-        arc_model: ifcopenshell model instance for the ARC file
-        mep_systems: List of system dictionaries (from extract_mep_systems)
-        mep_memberships: List of system membership dicts (from extract_mep_system_memberships)
-        mep_elements: List of MEP dictionaries (from extract_mep_elements)
-        logger: Optional logger for output messages
+#     Args:
+#         arc_model: ifcopenshell model instance for the ARC file
+#         mep_systems: List of system dictionaries (from extract_mep_systems)
+#         mep_memberships: List of system membership dicts (from extract_mep_system_memberships)
+#         mep_elements: List of MEP dictionaries (from extract_mep_elements)
+#         logger: Optional logger for output messages
 
-    Returns:
-        edges:
-        List of system-space edge dictionaries with keys:
-            - system_id
-            - space_id
-            - source
-    """
-    mep_by_id = {elem["id"]: elem for elem in mep_elements}
-    system_to_meps = {}
-    for edge in mep_memberships:
-        system_to_meps.setdefault(edge["system_id"], set()).add(edge["mep_id"])
+#     Returns:
+#         edges:
+#         List of system-space edge dictionaries with keys:
+#             - system_id
+#             - space_id
+#             - source
+#     """
+#     mep_by_id = {elem["id"]: elem for elem in mep_elements}
+#     system_to_meps = {}
+#     for edge in mep_memberships:
+#         system_to_meps.setdefault(edge["system_id"], set()).add(edge["mep_id"])
 
-    # mep_id -> {space_id: {"source": ...}}
-    mep_to_spaces = {}
+#     # mep_id -> {space_id: {"source": ...}}
+#     mep_to_spaces = {}
 
-    def _add_mep_space(mep_id, space_id, source):
-        current = mep_to_spaces.setdefault(mep_id, {}).get(space_id)
-        if current is not None:
-            return
+#     def _add_mep_space(mep_id, space_id, source):
+#         current = mep_to_spaces.setdefault(mep_id, {}).get(space_id)
+#         if current is not None:
+#             return
 
-        mep_to_spaces.setdefault(mep_id, {})[space_id] = {
-            "source": source,
-        }
+#         mep_to_spaces.setdefault(mep_id, {})[space_id] = {
+#             "source": source,
+#         }
 
-    # Geometry-only mapping for separated ARC/MEP files.
-    space_bboxes = {}
-    for space in arc_model.by_type("IfcSpace"):
-        bbox = extract_bbox(space)
-        if bbox:
-            space_bboxes[space.GlobalId] = bbox
+#     # Geometry-only mapping for separated ARC/MEP files.
+#     space_bboxes = {}
+#     for space in arc_model.by_type("IfcSpace"):
+#         bbox = extract_bbox(space)
+#         if bbox:
+#             space_bboxes[space.GlobalId] = bbox
 
-    for mep_id, mep in mep_by_id.items():
-        mep_bbox_min = mep.get("bbox_min")
-        mep_bbox_max = mep.get("bbox_max")
-        if not mep_bbox_min or not mep_bbox_max:
-            continue
+#     for mep_id, mep in mep_by_id.items():
+#         mep_bbox_min = mep.get("bbox_min")
+#         mep_bbox_max = mep.get("bbox_max")
+#         if not mep_bbox_min or not mep_bbox_max:
+#             continue
 
-        for space_id, (space_bbox_min, space_bbox_max) in space_bboxes.items():
-            if check_bbox_intersection(
-                mep_bbox_min, mep_bbox_max, space_bbox_min, space_bbox_max
-            ):
-                _add_mep_space(mep_id, space_id, "geom_bbox_overlap")
+#         for space_id, (space_bbox_min, space_bbox_max) in space_bboxes.items():
+#             if check_bbox_intersection(
+#                 mep_bbox_min, mep_bbox_max, space_bbox_min, space_bbox_max
+#             ):
+#                 _add_mep_space(mep_id, space_id, "geom_bbox_overlap")
 
-    edges = []
-    for system in mep_systems:
-        system_id = system["id"]
-        mep_ids = system_to_meps.get(system_id, set())
-        space_edges_by_id = {}
+#     edges = []
+#     for system in mep_systems:
+#         system_id = system["id"]
+#         mep_ids = system_to_meps.get(system_id, set())
+#         space_edges_by_id = {}
 
-        for mep_id in mep_ids:
-            for space_id, meta in mep_to_spaces.get(mep_id, {}).items():
-                current = space_edges_by_id.get(space_id)
-                if current is None:
-                    space_edges_by_id[space_id] = meta
+#         for mep_id in mep_ids:
+#             for space_id, meta in mep_to_spaces.get(mep_id, {}).items():
+#                 current = space_edges_by_id.get(space_id)
+#                 if current is None:
+#                     space_edges_by_id[space_id] = meta
 
-        for space_id in sorted(space_edges_by_id.keys()):
-            meta = space_edges_by_id[space_id]
-            edges.append({
-                "system_id": system_id,
-                "space_id": space_id,
-                "source": meta["source"],
-            })
+#         for space_id in sorted(space_edges_by_id.keys()):
+#             meta = space_edges_by_id[space_id]
+#             edges.append({
+#                 "system_id": system_id,
+#                 "space_id": space_id,
+#                 "source": meta["source"],
+#             })
 
-    if logger:
-        logger.logText(
-            "BIM2GRAPH", f"Computed {len(edges)} MEPSystem-Space relationships")
+#     if logger:
+#         logger.logText(
+#             "BIM2GRAPH", f"Computed {len(edges)} MEPSystem-Space relationships")
 
-    return edges
+#     return edges

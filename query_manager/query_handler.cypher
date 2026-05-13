@@ -76,7 +76,6 @@ SET me.name = elem.name,
     me.bbox_min = elem.bbox_min,
     me.bbox_max = elem.bbox_max,
     me.face = elem.face
-    // me.radiusMm = elem.radiusMm,
 
 -- name: CREATE_SPACE_WALL_EDGES
 UNWIND $edges AS edge
