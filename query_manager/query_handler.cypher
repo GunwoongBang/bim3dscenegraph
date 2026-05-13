@@ -27,7 +27,9 @@ MERGE (s:Space { id: space.id })
 SET s.name = space.name,
     s.longName = space.longName,
     s.ifcClass = space.ifcClass,
-    s.centroid = space.centroid
+    s.centroid = space.centroid,
+    s.bbox_min = space.bbox_min,
+    s.bbox_max = space.bbox_max
 
 -- name: UPSERT_WALLS
 UNWIND $walls AS wall
@@ -72,7 +74,8 @@ SET me.name = elem.name,
     me.ifcClass = elem.ifcClass,
     me.shapeType = elem.shapeType,
     me.bbox_min = elem.bbox_min,
-    me.bbox_max = elem.bbox_max
+    me.bbox_max = elem.bbox_max,
+    me.face = elem.face
     // me.radiusMm = elem.radiusMm,
 
 -- name: CREATE_SPACE_WALL_EDGES

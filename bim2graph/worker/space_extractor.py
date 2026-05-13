@@ -2,7 +2,7 @@
 Space extraction from IFC models.
 """
 
-from .util import extract_centroid
+from .util import extract_centroid, extract_bbox
 
 
 def extract_spaces(arc_model, logger=None) -> list[dict]:
@@ -21,6 +21,7 @@ def extract_spaces(arc_model, logger=None) -> list[dict]:
             - longName: Long name (if available)
             - ifcClass: IFC class type
             - centroid: [x, y, z] in millimeters
+            - bbox_min, bbox_max: AABB in millimeters
     """
     spaces = []
 
@@ -34,13 +35,16 @@ def extract_spaces(arc_model, logger=None) -> list[dict]:
 
     for space in ifc_spaces:
         centroid = extract_centroid(space)
+        bbox_min, bbox_max = extract_bbox(space)
 
         space_data = {
             "id": space.GlobalId,
             "longName": getattr(space, "LongName", None),
             "name": getattr(space, "Name", None),
             "ifcClass": space.is_a(),
-            "centroid": centroid
+            "centroid": centroid,
+            "bbox_min": bbox_min,
+            "bbox_max": bbox_max,
         }
         spaces.append(space_data)
 

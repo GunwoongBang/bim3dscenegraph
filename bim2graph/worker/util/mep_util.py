@@ -167,43 +167,65 @@ def _generate_rotation_matrix_from_axis(position) -> np.ndarray:
     return np.column_stack((x, y, z))
 
 
-def extract_extrusion_axis(element) -> list[float] | None:
+# def extract_extrusion_axis(element) -> list[float] | None:
+#     """
+#     Extract the extrusion axis from an MEP element IFC geometry.
+
+#     Args:
+#         element: IFC element to analyze
+
+#     Returns:
+#         list: Normalized direction vector of the extrusion axis or None if not found.
+#     """
+#     item, mapped_rot = _classify_mep_element(element)
+#     if item is None or not item.is_a("IfcExtrudedAreaSolid"):
+#         return None
+
+#     extruded_dir = getattr(item, "ExtrudedDirection", None)
+#     direction = getattr(extruded_dir, "DirectionRatios", None)
+#     if not direction:
+#         return None
+
+#     local_dir = _normalize(direction)
+#     if local_dir is None:
+#         return None
+
+#     item_pos = getattr(item, "Position", None)
+#     item_rot = _generate_rotation_matrix_from_axis(item_pos)
+
+#     try:
+#         elem_matrix = ifcopenshell.util.placement.get_local_placement(
+#             element.ObjectPlacement
+#         )
+#         elem_rot = elem_matrix[:3, :3]
+#     except Exception:
+#         elem_rot = np.eye(3)
+
+#     world_dir = elem_rot @ mapped_rot @ item_rot @ local_dir
+#     world_dir = _normalize(world_dir)
+#     if world_dir is None:
+#         return None
+
+#     return np.round(world_dir, 5).tolist()
+
+
+def extract_facing(element) -> list[float] | None:
     """
-    Extract the extrusion axis from an MEP element IFC geometry.
+    Extract the facing direction (local Z-axis) of an IFC element in world coordinates.
+
+    For wall-mounted devices (switches, receptacles, etc.) modeled with a flat
+    backplate, the local Z-axis is the outward face normal.
 
     Args:
-        element: IFC element to analyze
+        element: IFC element with ObjectPlacement
 
     Returns:
-        list: Normalized direction vector of the extrusion axis or None if not found.
+        List [dx, dy, dz] unit direction vector, or None if extraction fails
     """
-    item, mapped_rot = _classify_mep_element(element)
-    if item is None or not item.is_a("IfcExtrudedAreaSolid"):
-        return None
-
-    extruded_dir = getattr(item, "ExtrudedDirection", None)
-    direction = getattr(extruded_dir, "DirectionRatios", None)
-    if not direction:
-        return None
-
-    local_dir = _normalize(direction)
-    if local_dir is None:
-        return None
-
-    item_pos = getattr(item, "Position", None)
-    item_rot = _generate_rotation_matrix_from_axis(item_pos)
-
     try:
-        elem_matrix = ifcopenshell.util.placement.get_local_placement(
+        matrix = ifcopenshell.util.placement.get_local_placement(
             element.ObjectPlacement
         )
-        elem_rot = elem_matrix[:3, :3]
+        return np.round(matrix[:3, 2], 5).tolist()
     except Exception:
-        elem_rot = np.eye(3)
-
-    world_dir = elem_rot @ mapped_rot @ item_rot @ local_dir
-    world_dir = _normalize(world_dir)
-    if world_dir is None:
         return None
-
-    return np.round(world_dir, 5).tolist()

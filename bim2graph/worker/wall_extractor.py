@@ -30,7 +30,7 @@ def extract_walls(arc_model, logger=None) -> list[dict]:
             - ifcClass: IFC class type
             - loadBearing: Boolean or None
             - isExternal: Boolean or None
-            - bbox_min, bbox_max: Bounding box in millimeters
+            - bbox_min, bbox_max: AABB in millimeters
             - center: Wall geometric center in millimeters
             - directionSense: Layer direction from material usage
             - layerCount: Number of material layers

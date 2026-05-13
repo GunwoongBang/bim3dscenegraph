@@ -6,6 +6,7 @@ from .util import (
     MEP_TYPES,
     extract_shape_signature,
     extract_bbox,
+    extract_facing,
 )
 
 
@@ -62,8 +63,10 @@ def extract_mep_elements(mep_model, logger=None) -> list[dict]:
             - id: GlobalId
             - name: Element name
             - ifcClass: IFC class type
-            - bbox_min, bbox_max: Bounding box in mm
-            - selective geometry fields (populated only for wall-related elements)
+            - shapeType: Extracted shape type (e.g., "cylinder", "box")
+            - bbox_min, bbox_max: AABB in millimeters
+            - radiusMm: Extracted radius in millimeters (if applicable)
+            - face: Facing direction unit vector [dx, dy, dz] in world coords
     """
     mep_elements = []
 
@@ -86,10 +89,11 @@ def extract_mep_elements(mep_model, logger=None) -> list[dict]:
                 "id": element.GlobalId,
                 "name": getattr(element, "Name", None),
                 "ifcClass": element.is_a(),
+                "shapeType": signature["shapeType"],
                 "bbox_min": bbox[0] if bbox else None,
                 "bbox_max": bbox[1] if bbox else None,
-                "shapeType": signature["shapeType"],
                 "radiusMm": signature.get("radiusMm"),
+                "face": extract_facing(element),
             }
 
             mep_elements.append(mep_data)
