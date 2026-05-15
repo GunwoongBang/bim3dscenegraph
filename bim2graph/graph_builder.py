@@ -24,7 +24,7 @@ from .worker import (
     compute_space_wall_rels,
     compute_mep_memberships,
     compute_mep_element_wall_rels,
-    compute_mep_system_space_rels,
+    # compute_mep_system_space_rels,
 )
 
 
@@ -88,9 +88,9 @@ def bim2graph(driver: Driver, arc_path: Path, str_path: Path = None, mep_path: P
         mep_element_wall_rels = compute_mep_element_wall_rels(
             mep_elements, walls, logger)
 
-        if mep_systems and mep_memberships:
-            mep_system_space_rels = compute_mep_system_space_rels(
-                arc_model, mep_systems, mep_memberships, mep_elements, logger)
+        # if mep_systems and mep_memberships:
+        #     mep_system_space_rels = compute_mep_system_space_rels(
+        #         arc_model, mep_systems, mep_memberships, mep_elements, logger)
 
     # =========================================================================
     # Persist to Neo4j
@@ -126,9 +126,9 @@ def bim2graph(driver: Driver, arc_path: Path, str_path: Path = None, mep_path: P
         if mep_memberships:
             session.execute_write(
                 neo4j_ops.create_mep_system_mep_element_rels, mep_memberships)
-        if mep_system_space_rels:
-            session.execute_write(
-                neo4j_ops.create_mep_system_space_rels, mep_system_space_rels)
+        # if mep_system_space_rels:
+        #     session.execute_write(
+        #         neo4j_ops.create_mep_system_space_rels, mep_system_space_rels)
         if mep_element_wall_rels:
             session.execute_write(
                 neo4j_ops.create_mep_element_wall_rels, mep_element_wall_rels)

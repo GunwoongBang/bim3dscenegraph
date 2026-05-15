@@ -130,12 +130,71 @@ def extract_shape_signature(element) -> dict:
     return {"shapeType": "other", "radiusMm": None, "xDimMm": None, "yDimMm": None}
 
 
+def _axis2placement_matrix(placement) -> np.ndarray:
+    """Build a 4x4 transform from an IfcAxis2Placement3D."""
+    loc = np.array(placement.Location.Coordinates, dtype=float)
+    z = np.array(
+        placement.Axis.DirectionRatios if placement.Axis else (0.0, 0.0, 1.0),
+        dtype=float,
+    )
+    x_ref = np.array(
+        placement.RefDirection.DirectionRatios if placement.RefDirection else (1.0, 0.0, 0.0),
+        dtype=float,
+    )
+    z /= np.linalg.norm(z)
+    x = x_ref - np.dot(x_ref, z) * z
+    x /= np.linalg.norm(x)
+    y = np.cross(z, x)
+    m = np.eye(4)
+    m[:3, 0] = x
+    m[:3, 1] = y
+    m[:3, 2] = z
+    m[:3, 3] = loc
+    return m
+
+
+def _extrusion_facing(element, obj_rotation: np.ndarray) -> list[float] | None:
+    """
+    Derive a world-space facing direction from the element's body representation.
+
+    Handles elements whose ObjectPlacement is identity and whose orientation is
+    encoded entirely in an IfcExtrudedAreaSolid inside the Body representation
+    (typical for straight pipes/ducts/cable trays in Revit-exported IFCs).
+    """
+    rep = getattr(element, "Representation", None)
+    if rep is None:
+        return None
+    for shape_rep in rep.Representations:
+        if shape_rep.RepresentationIdentifier != "Body":
+            continue
+        items = shape_rep.Items
+        if len(items) != 1 or not items[0].is_a("IfcExtrudedAreaSolid"):
+            continue
+        solid = items[0]
+        solid_rotation = _axis2placement_matrix(solid.Position)[:3, :3]
+        ext_dir = np.array(
+            solid.ExtrudedDirection.DirectionRatios, dtype=float
+        )
+        world_dir = obj_rotation @ solid_rotation @ ext_dir
+        norm = np.linalg.norm(world_dir)
+        if norm == 0:
+            return None
+        return np.round(world_dir / norm, 5).tolist()
+    return None
+
+
 def extract_facing(element) -> list[float] | None:
     """
-    Extract the facing direction (local Z-axis) of an IFC element in world coordinates.
+    Extract the facing direction of an IFC element as a world-space unit vector.
 
-    For wall-mounted devices (switches, receptacles, etc.) modeled with a flat
-    backplate, the local Z-axis is the outward face normal.
+    Resolution order:
+      1. If ObjectPlacement carries a non-identity rotation (wall-mounted devices
+         like switches/receptacles), use its local Z-axis as the outward normal.
+      2. Otherwise, if the Body representation is a single IfcExtrudedAreaSolid
+         (linear MEP elements such as pipes/ducts), use the world-space extrusion
+         direction as the run axis.
+      3. Otherwise, fall back to the ObjectPlacement local Z (which will be
+         (0, 0, 1) when the placement is identity).
 
     Args:
         element: IFC element with ObjectPlacement
@@ -147,6 +206,18 @@ def extract_facing(element) -> list[float] | None:
         matrix = ifcopenshell.util.placement.get_local_placement(
             element.ObjectPlacement
         )
-        return np.round(matrix[:3, 2], 5).tolist()
     except Exception:
         return None
+
+    rotation = matrix[:3, :3]
+    if not np.allclose(rotation, np.eye(3), atol=1e-6):
+        return np.round(rotation[:, 2], 5).tolist()
+
+    try:
+        ext = _extrusion_facing(element, rotation)
+    except Exception:
+        ext = None
+    if ext is not None:
+        return ext
+
+    return np.round(rotation[:, 2], 5).tolist()

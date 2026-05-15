@@ -1,5 +1,38 @@
 from typing import Any
 
+import ifcopenshell.util.placement
+import numpy as np
+
+
+def extract_placement(element) -> tuple[list[float], list[float]]:
+    """
+    Extract placement matrix components (origin and axis2) from an IFC element.
+
+    The origin is the element's reference point in world coordinates.
+    Axis2 is the Y-axis direction of the element's local coordinate system,
+    which for walls indicates the layer stratification direction.
+
+    Args:
+        element: IFC element with ObjectPlacement
+
+    Returns:
+        Tuple:
+        (origin, axis2) where:
+            - origin: List [x, y, z] in millimeters,
+            - axis2: List [dx, dy, dz] unit direction vector
+
+        Returns (None, None) if extraction fails
+    """
+    try:
+        matrix = ifcopenshell.util.placement.get_local_placement(
+            element.ObjectPlacement
+        )
+        origin = np.round(matrix[:3, 3], 5).tolist()
+        axis2 = np.round(matrix[:3, 1], 5).tolist()
+        return origin, axis2
+    except Exception:
+        return None, None
+
 
 def _get_material_association(element) -> tuple[Any, list[Any] | None]:
     """
