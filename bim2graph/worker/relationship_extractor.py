@@ -3,11 +3,53 @@ Relationship extraction from IFC models (space-wall boundaries, etc.).
 """
 
 from .util import (
-    extract_bbox,
     compute_space_side_of_wall,
     check_bbox_intersection,
     compute_bbox_overlap,
 )
+
+
+def compute_wall_opening_rels(arc_model, logger=None) -> list[dict]:
+    """
+    Extract Wall-Opening edges from IfcRelVoidsElement.
+
+    Args:
+        arc_model: ifcopenshell model instance
+        logger: Optional logger for output messages
+
+    Returns:
+        edges:
+        List of dictionaries with keys:
+            - wall_id: Wall GlobalId
+            - opening_id: Opening GlobalId
+    """
+    edges = []
+
+    for rel in arc_model.by_type("IfcRelVoidsElement"):
+        wall = getattr(rel, "RelatingBuildingElement", None)
+        opening = getattr(rel, "RelatedOpeningElement", None)
+
+        if not wall or not opening:
+            continue
+        if not wall.is_a("IfcWall"):
+            continue
+        if not opening.is_a("IfcOpeningElement"):
+            continue
+
+        wall_id = getattr(wall, "GlobalId", None)
+        opening_id = getattr(opening, "GlobalId", None)
+        if not wall_id or not opening_id:
+            continue
+
+        edges.append({
+            "wall_id": wall_id,
+            "opening_id": opening_id
+        })
+
+    if logger:
+        logger.logText(
+            "BIM2GRAPH", f"Computed {len(edges)} Wall-Opening relationships")
+    return edges
 
 
 def compute_space_wall_rels(arc_model, spaces: list[dict], walls: list[dict], logger=None) -> list[dict]:
@@ -89,49 +131,6 @@ def compute_space_wall_rels(arc_model, spaces: list[dict], walls: list[dict], lo
     return edges
 
 
-def compute_wall_opening_rels(arc_model, logger=None) -> list[dict]:
-    """
-    Extract Wall-Opening edges from IfcRelVoidsElement.
-
-    Args:
-        arc_model: ifcopenshell model instance
-        logger: Optional logger for output messages
-
-    Returns:
-        edges:
-        List of dictionaries with keys:
-            - wall_id: Wall GlobalId
-            - opening_id: Opening GlobalId
-    """
-    edges = []
-
-    for rel in arc_model.by_type("IfcRelVoidsElement"):
-        wall = getattr(rel, "RelatingBuildingElement", None)
-        opening = getattr(rel, "RelatedOpeningElement", None)
-
-        if not wall or not opening:
-            continue
-        if not wall.is_a("IfcWall"):
-            continue
-        if not opening.is_a("IfcOpeningElement"):
-            continue
-
-        wall_id = getattr(wall, "GlobalId", None)
-        opening_id = getattr(opening, "GlobalId", None)
-        if not wall_id or not opening_id:
-            continue
-
-        edges.append({
-            "wall_id": wall_id,
-            "opening_id": opening_id
-        })
-
-    if logger:
-        logger.logText(
-            "BIM2GRAPH", f"Computed {len(edges)} Wall-Opening relationships")
-    return edges
-
-
 def compute_mep_memberships(mep_model, mep_elements: list[dict], logger=None) -> list[dict]:
     """
     Extract MEP memberships (MEPSystem-MEPElement edges) from IfcRelAssignsToGroup.
@@ -144,8 +143,8 @@ def compute_mep_memberships(mep_model, mep_elements: list[dict], logger=None) ->
     Returns:
         edges:
         List of membership dictionaries with keys:
-            - system_id: System GlobalId
-            - mep_id: MEP element GlobalId
+            - mep_system_id: System GlobalId
+            - mep_element_id: MEP element GlobalId
     """
     mep_ids = {elem["id"] for elem in mep_elements}
     membership_pairs = set()
@@ -168,8 +167,8 @@ def compute_mep_memberships(mep_model, mep_elements: list[dict], logger=None) ->
             membership_pairs.add((rel_id, obj_id))
 
     memberships = [
-        {"system_id": system_id, "mep_id": mep_id}
-        for system_id, mep_id in sorted(membership_pairs)
+        {"mep_system_id": mep_system_id, "mep_element_id": mep_element_id}
+        for mep_system_id, mep_element_id in sorted(membership_pairs)
     ]
 
     if logger:
@@ -194,7 +193,7 @@ def compute_mep_element_wall_rels(mep_elements: list[dict], walls: list[dict], l
     Returns:
         edges:
         List of relationship dictionaries with keys:
-            - mep_id: MEP element GlobalId
+            - mep_element_id: MEP element GlobalId
             - wall_id: Wall GlobalId
             - relationship: "PASSES_THROUGH"
     """
@@ -228,7 +227,7 @@ def compute_mep_element_wall_rels(mep_elements: list[dict], walls: list[dict], l
 
             shape_type = mep.get("shapeType")
             edge_data = {
-                "mep_id": mep["id"],
+                "mep_element_id": mep["id"],
                 "wall_id": wall["id"],
                 "relationship": "PASSES_THROUGH",
                 "source": "geom_bbox_overlap",
@@ -261,88 +260,50 @@ def compute_mep_element_wall_rels(mep_elements: list[dict], walls: list[dict], l
     return edges
 
 
-# === I do not see the point of having system-space relationships ===
-# def compute_mep_system_space_rels(arc_model, mep_systems: list[dict], mep_memberships: list[dict], mep_elements: list[dict], logger=None) -> list[dict]:
-#     """
-#     Compute MEP system-to-space relationships using geometry only.
+def compute_mep_element_space_rels(mep_elements: list[dict], spaces: list[dict], logger=None) -> list[dict]:
+    """
+    Compute MEPElement-Space relationships via AABB intersection.
 
-#     A system is connected to spaces if any of its member elements are in that space.
-#     For separated ARC/MEP files, explicit IFC topology between systems/elements
-#     and ARC spaces is typically unavailable, so relationships are inferred from
-#     MEP-space bounding-box intersection.
+    A MEP element is considered visible in a space if their bounding boxes
+    intersect.
 
-#     Args:
-#         arc_model: ifcopenshell model instance for the ARC file
-#         mep_systems: List of system dictionaries (from extract_mep_systems)
-#         mep_memberships: List of system membership dicts (from extract_mep_system_memberships)
-#         mep_elements: List of MEP dictionaries (from extract_mep_elements)
-#         logger: Optional logger for output messages
+    Args:
+        mep_elements: List of MEP dictionaries (from extract_mep_elements)
+        spaces: List of space dictionaries (from extract_spaces)
+        logger: Optional logger for output messages
 
-#     Returns:
-#         edges:
-#         List of system-space edge dictionaries with keys:
-#             - system_id
-#             - space_id
-#             - source
-#     """
-#     mep_by_id = {elem["id"]: elem for elem in mep_elements}
-#     system_to_meps = {}
-#     for edge in mep_memberships:
-#         system_to_meps.setdefault(edge["system_id"], set()).add(edge["mep_id"])
+    Returns:
+        edges:
+        List of edge dictionaries with keys:
+            - mep_element_id: MEP element GlobalId
+            - space_id: Space GlobalId
+    """
+    edges = []
 
-#     # mep_id -> {space_id: {"source": ...}}
-#     mep_to_spaces = {}
+    for mep in mep_elements:
+        mep_bbox_min = mep.get("bbox_min")
+        mep_bbox_max = mep.get("bbox_max")
+        if not mep_bbox_min or not mep_bbox_max:
+            continue
 
-#     def _add_mep_space(mep_id, space_id, source):
-#         current = mep_to_spaces.setdefault(mep_id, {}).get(space_id)
-#         if current is not None:
-#             return
+        for space in spaces:
+            space_bbox_min = space.get("bbox_min")
+            space_bbox_max = space.get("bbox_max")
+            if not space_bbox_min or not space_bbox_max:
+                continue
 
-#         mep_to_spaces.setdefault(mep_id, {})[space_id] = {
-#             "source": source,
-#         }
+            if not check_bbox_intersection(
+                mep_bbox_min, mep_bbox_max, space_bbox_min, space_bbox_max
+            ):
+                continue
 
-#     # Geometry-only mapping for separated ARC/MEP files.
-#     space_bboxes = {}
-#     for space in arc_model.by_type("IfcSpace"):
-#         bbox = extract_bbox(space)
-#         if bbox:
-#             space_bboxes[space.GlobalId] = bbox
+            edges.append({
+                "mep_element_id": mep["id"],
+                "space_id": space["id"],
+            })
 
-#     for mep_id, mep in mep_by_id.items():
-#         mep_bbox_min = mep.get("bbox_min")
-#         mep_bbox_max = mep.get("bbox_max")
-#         if not mep_bbox_min or not mep_bbox_max:
-#             continue
+    if logger:
+        logger.logText(
+            "BIM2GRAPH", f"Computed {len(edges)} MEPElement-Space relationships")
 
-#         for space_id, (space_bbox_min, space_bbox_max) in space_bboxes.items():
-#             if check_bbox_intersection(
-#                 mep_bbox_min, mep_bbox_max, space_bbox_min, space_bbox_max
-#             ):
-#                 _add_mep_space(mep_id, space_id, "geom_bbox_overlap")
-
-#     edges = []
-#     for system in mep_systems:
-#         system_id = system["id"]
-#         mep_ids = system_to_meps.get(system_id, set())
-#         space_edges_by_id = {}
-
-#         for mep_id in mep_ids:
-#             for space_id, meta in mep_to_spaces.get(mep_id, {}).items():
-#                 current = space_edges_by_id.get(space_id)
-#                 if current is None:
-#                     space_edges_by_id[space_id] = meta
-
-#         for space_id in sorted(space_edges_by_id.keys()):
-#             meta = space_edges_by_id[space_id]
-#             edges.append({
-#                 "system_id": system_id,
-#                 "space_id": space_id,
-#                 "source": meta["source"],
-#             })
-
-#     if logger:
-#         logger.logText(
-#             "BIM2GRAPH", f"Computed {len(edges)} MEPSystem-Space relationships")
-
-#     return edges
+    return edges

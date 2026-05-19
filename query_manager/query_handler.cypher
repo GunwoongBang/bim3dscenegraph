@@ -1,4 +1,3 @@
-/// BIM2GRAPH Cypher queries
 -- name: RESET_DATABASE
 MATCH (n)
 DETACH DELETE n
@@ -21,6 +20,7 @@ CREATE CONSTRAINT mep_system_id IF NOT EXISTS FOR (ms:MEPSystem) REQUIRE ms.id I
 -- name: ENSURE_SCHEMA_MEP_ELEMENT
 CREATE CONSTRAINT mep_element_id IF NOT EXISTS FOR (me:MEPElement) REQUIRE me.id IS UNIQUE
 
+/// BIM2GRAPH Cypher queries
 -- name: UPSERT_SPACES
 UNWIND $spaces AS space
 MERGE (s:Space { id: space.id })
@@ -62,20 +62,20 @@ SET o.name = opening.name,
     o.center = opening.center
 
 -- name: UPSERT_MEP_SYSTEMS
-UNWIND $systems AS sys
-MERGE (ms:MEPSystem { id: sys.id })
-SET ms.name = sys.name,
-    ms.ifcClass = sys.ifcClass
+UNWIND $mep_systems AS mep_sys
+MERGE (ms:MEPSystem { id: mep_sys.id })
+SET ms.name = mep_sys.name,
+    ms.ifcClass = mep_sys.ifcClass
 
 -- name: UPSERT_MEP_ELEMENTS
-UNWIND $elements AS elem
-MERGE (me:MEPElement { id: elem.id })
-SET me.name = elem.name,
-    me.ifcClass = elem.ifcClass,
-    me.shapeType = elem.shapeType,
-    me.bbox_min = elem.bbox_min,
-    me.bbox_max = elem.bbox_max,
-    me.face = elem.face
+UNWIND $mep_elements AS mep_elem
+MERGE (me:MEPElement { id: mep_elem.id })
+SET me.name = mep_elem.name,
+    me.ifcClass = mep_elem.ifcClass,
+    me.shapeType = mep_elem.shapeType,
+    me.bbox_min = mep_elem.bbox_min,
+    me.bbox_max = mep_elem.bbox_max,
+    me.face = mep_elem.face
 
 -- name: CREATE_SPACE_WALL_EDGES
 UNWIND $edges AS edge
@@ -99,20 +99,19 @@ MERGE (w)-[:VOIDED_BY]->(o)
 
 -- name: CREATE_MEP_SYSTEM_MEP_ELEMENT_EDGES
 UNWIND $edges AS edge
-MATCH (ms:MEPSystem { id: edge.system_id })
-MATCH (me:MEPElement { id: edge.mep_id })
+MATCH (ms:MEPSystem { id: edge.mep_system_id })
+MATCH (me:MEPElement { id: edge.mep_element_id })
 MERGE (ms)-[:CONTAINS]->(me)
 
--- name: CREATE_MEP_SYSTEM_SPACE_EDGES
+-- name: CREATE_MEP_ELEMENT_SPACE_EDGES
 UNWIND $edges AS edge
-MATCH (ms:MEPSystem { id: edge.system_id })
+MATCH (me:MEPElement { id: edge.mep_element_id })
 MATCH (s:Space { id: edge.space_id })
-MERGE (ms)-[r:VISIBLE_IN]->(s)
-SET r.source = edge.source
+MERGE (me)-[:VISIBLE_IN]->(s)
 
 -- name: CREATE_MEP_ELEMENT_WALL_EDGES
 UNWIND $edges AS edge
-MATCH (me:MEPElement { id: edge.mep_id })
+MATCH (me:MEPElement { id: edge.mep_element_id })
 MATCH (w:Wall { id: edge.wall_id })
 WITH me, w, edge
 WHERE edge.relationship = 'PASSES_THROUGH'

@@ -102,15 +102,15 @@ class Neo4jOperations:
         """Create or update MEP element nodes in Neo4j."""
         q = self.qm.get("UPSERT_MEP_ELEMENTS")
         if q:
-            tx.run(q, elements=mep_elements)
+            tx.run(q, mep_elements=mep_elements)
         self._log(f"Upserted {len(mep_elements)} MEPElement nodes")
 
-    def upsert_mep_systems(self, tx, systems):
+    def upsert_mep_systems(self, tx, mep_systems):
         """Create or update MEP system nodes in Neo4j."""
         q = self.qm.get("UPSERT_MEP_SYSTEMS")
         if q:
-            tx.run(q, systems=systems)
-        self._log(f"Upserted {len(systems)} MEPSystem nodes")
+            tx.run(q, mep_systems=mep_systems)
+        self._log(f"Upserted {len(mep_systems)} MEPSystem nodes")
 
     def create_mep_element_wall_rels(self, tx, edges):
         """Create MEPElement-Wall relationships."""
@@ -126,9 +126,9 @@ class Neo4jOperations:
             tx.run(q, edges=edges)
         self._log(f"Created {len(edges)} MEPSystem-MEPElement relationships")
 
-    def create_mep_system_space_rels(self, tx, edges):
-        """Create MEPSystem-Space relationships."""
-        q = self.qm.get("CREATE_MEP_SYSTEM_SPACE_EDGES")
+    def create_mep_element_space_rels(self, tx, edges):
+        """Create MEPElement-Space relationships."""
+        q = self.qm.get("CREATE_MEP_ELEMENT_SPACE_EDGES")
         if q:
             tx.run(q, edges=edges)
-        self._log(f"Created {len(edges)} MEPSystem-Space relationships")
+        self._log(f"Created {len(edges)} MEPElement-Space relationships")
