@@ -20,7 +20,7 @@ from .worker import (
 )
 
 
-def sensor2graph(driver: Driver, pcd_path: Path, arc_path: Path, pcd_prep: bool = False, logger=None):
+def sensor2graph(driver: Driver, pcd_path: Path, arc_path: Path, pcd_prep: str, logger=None):
     """
     Generates a sensor-derived graph from an IFC model and persists to Neo4j.
 
@@ -33,7 +33,7 @@ def sensor2graph(driver: Driver, pcd_path: Path, arc_path: Path, pcd_prep: bool 
     Args:
         pcd_path: Path to the PCD PCD file
         arc_path: Path to the ARC IFC file
-        pcd_prep: Boolean flag to indicate if point cloud preparation is needed
+        pcd_prep: String flag to indicate if point cloud preparation is needed
         logger: Optional logger for output messages
     """
     if logger:
@@ -54,7 +54,7 @@ def sensor2graph(driver: Driver, pcd_path: Path, arc_path: Path, pcd_prep: bool 
     # Clean & Segment & filter point cloud
     # =========================================================================
     # Point cloud preparation (point cloud cleaning, plane segmentation, plane exclusion)
-    if pcd_prep is True:
+    if pcd_prep == 'y':
         cleaned_pcd_path = clean_point_cloud(pcd_path, logger)
 
         segmented_csv_path = segment_point_cloud(

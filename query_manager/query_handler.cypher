@@ -81,9 +81,9 @@ SET me.name = mep_elem.name,
 UNWIND $edges AS edge
 MATCH (s:Space { id: edge.space_id })
 MATCH (w:Wall { id: edge.wall_id })
-MERGE (s)-[r:BOUNDED_BY]->(w)
-SET r.side = edge.side,
-    r.boundaryType = edge.boundaryType
+MERGE (s)-[b:BOUNDED_BY]->(w)
+SET b.side = edge.side,
+    b.boundaryType = edge.boundaryType
 
 -- name: CREATE_WALL_LAYER_EDGES
 UNWIND $layers AS layer
@@ -107,7 +107,7 @@ MERGE (ms)-[:CONTAINS]->(me)
 UNWIND $edges AS edge
 MATCH (me:MEPElement { id: edge.mep_element_id })
 MATCH (s:Space { id: edge.space_id })
-MERGE (me)-[:VISIBLE_IN]->(s)
+MERGE (s)-[:HOSTS]->(me)
 
 -- name: CREATE_MEP_ELEMENT_WALL_EDGES
 UNWIND $edges AS edge
@@ -115,14 +115,14 @@ MATCH (me:MEPElement { id: edge.mep_element_id })
 MATCH (w:Wall { id: edge.wall_id })
 WITH me, w, edge
 WHERE edge.relationship = 'PASSES_THROUGH'
-MERGE (me)-[r:PASSES_THROUGH]->(w)
-SET r.source = edge.source,
-    r.penetrationCenter = edge.penetrationCenter,
-    r.radiusMm = edge.radiusMm,
-    r.penetrationLengthMm = edge.penetrationLengthMm,
-    r.penetrationSizeXmm = edge.penetrationSizeXmm,
-    r.penetrationSizeYmm = edge.penetrationSizeYmm,
-    r.penetrationSizeZmm = edge.penetrationSizeZmm
+MERGE (w)-[b:PENETRATED_BY]->(me)
+SET b.source = edge.source,
+    b.penetrationCenter = edge.penetrationCenter,
+    b.radiusMm = edge.radiusMm,
+    b.penetrationLengthMm = edge.penetrationLengthMm,
+    b.penetrationSizeXmm = edge.penetrationSizeXmm,
+    b.penetrationSizeYmm = edge.penetrationSizeYmm,
+    b.penetrationSizeZmm = edge.penetrationSizeZmm
 
 /// SENSOR2GRAPH Cypher queries
 -- name: RETRIEVE_WALL_ATTRIBUTES

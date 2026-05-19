@@ -54,7 +54,9 @@ if __name__ == "__main__":
     # SENSOR2GRAPH: Extract point cloud from sensor data and merge with BIM graph
     # =========================================================================
 
-    pcd_prep = False  # Set to True if point cloud preparation is needed
+    # Set to 'y' if point cloud preparation is needed (default: 'y')
+    pcd_prep = input(
+        "Do you want to prepare the point cloud? (y/n): ").lower() == 'y'
     sensor2graph(driver, PCD_PATH, ARC_PATH, pcd_prep, logger)
 
     # Close driver after SENSOR2GRAPH operations
