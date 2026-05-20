@@ -75,7 +75,6 @@ def compute_space_wall_rels(arc_model, spaces: list[dict], walls: list[dict], lo
             - space_id: Space GlobalId
             - wall_id: Wall GlobalId
             - side: "POSITIVE" or "NEGATIVE"
-            - boundaryType: "INTERNAL", "EXTERNAL", etc.
     """
     edges = []
     exiting_pairs = set()
@@ -114,14 +113,10 @@ def compute_space_wall_rels(arc_model, spaces: list[dict], walls: list[dict], lo
         side = compute_space_side_of_wall(
             space_centroid, wall_center, wall_axis2)
 
-        # Get boundary type (internal/external)
-        # boundary_type = getattr(rel, "InternalOrExternalBoundary", None)
-
         edges.append({
             "space_id": space_id,
             "wall_id": wall_id,
             "side": side,
-            # "boundaryType": str(boundary_type) if boundary_type else None
         })
 
     if logger:
@@ -195,7 +190,10 @@ def compute_mep_element_wall_rels(mep_elements: list[dict], walls: list[dict], l
         List of relationship dictionaries with keys:
             - mep_element_id: MEP element GlobalId
             - wall_id: Wall GlobalId
-            - relationship: "PASSES_THROUGH"
+            - penetrationCenter: [x, y, z] in mm
+            - radiusMm: radius (cylindrical) in mm
+            - penetrationLengthMm: length of penetration (cylindrical) in mm
+            - penetrationSizeXmm, penetrationSizeYmm, penetrationSizeZmm: size of penetration (rectangular) in mm
     """
     edges = []
 
@@ -229,8 +227,6 @@ def compute_mep_element_wall_rels(mep_elements: list[dict], walls: list[dict], l
             edge_data = {
                 "mep_element_id": mep["id"],
                 "wall_id": wall["id"],
-                "relationship": "PASSES_THROUGH",
-                "source": "geom_bbox_overlap",
                 "penetrationCenter": overlap["penetrationCenter"],
                 "radiusMm": None,
                 "penetrationLengthMm": None,

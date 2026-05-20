@@ -114,7 +114,6 @@ UNWIND $edges AS edge
 MATCH (me:MEPElement { id: edge.mep_element_id })
 MATCH (w:Wall { id: edge.wall_id })
 WITH me, w, edge
-WHERE edge.relationship = 'PASSES_THROUGH'
 MERGE (w)-[b:PENETRATED_BY]->(me)
 SET b.source = edge.source,
     b.penetrationCenter = edge.penetrationCenter,
