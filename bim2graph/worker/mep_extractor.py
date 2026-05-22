@@ -4,8 +4,9 @@ MEP (Mechanical, Electrical, Plumbing) element extraction from IFC models.
 
 from .util import (
     MEP_TYPES,
-    extract_shape_signature,
     extract_bbox,
+    extract_shape_signature,
+    extract_shape_dimensions,
     extract_facing,
 )
 
@@ -63,9 +64,10 @@ def extract_mep_elements(mep_model, logger=None) -> list[dict]:
             - id: GlobalId
             - name: Element name
             - ifcClass: IFC class type
-            - shapeType: Extracted shape type (e.g., "cylinder", "box")
+            - shapeType: "cylindrical", "rectangular", or "other"
             - bbox_min, bbox_max: AABB in millimeters
-            - radiusMm: Extracted radius in millimeters (if applicable)
+            - radius, length: cylindrical dims in mm (None otherwise)
+            - sizeX, sizeY, sizeZ: rectangular dims in mm (None otherwise)
             - face: Facing direction unit vector [dx, dy, dz] in world coords
     """
     mep_elements = []
@@ -83,16 +85,21 @@ def extract_mep_elements(mep_model, logger=None) -> list[dict]:
 
         for element in elements:
             bbox = extract_bbox(element)
+            shape_type = extract_shape_signature(element)
+            dims = extract_shape_dimensions(element)
 
-            signature = extract_shape_signature(element)
             mep_data = {
                 "id": element.GlobalId,
                 "name": getattr(element, "Name", None),
                 "ifcClass": element.is_a(),
-                "shapeType": signature["shapeType"],
+                "shapeType": shape_type,
                 "bbox_min": bbox[0] if bbox else None,
                 "bbox_max": bbox[1] if bbox else None,
-                "radiusMm": signature.get("radiusMm"),
+                "radius": dims.get("radius"),
+                "length": dims.get("length"),
+                "sizeX": dims.get("sizeX"),
+                "sizeY": dims.get("sizeY"),
+                "sizeZ": dims.get("sizeZ"),
                 "face": extract_facing(element),
             }
 

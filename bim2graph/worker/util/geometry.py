@@ -17,14 +17,17 @@ def _get_geom_settings():
 
 def _m_to_mm(coords: list[float]) -> list[float]:
     """
-    Convert coordinates from meters to millimeters.
+    Convert a scalar or array-like length from meters to millimeters.
 
     Args:
-        coords: Array-like coordinates in meters
+        coords: Scalar or array-like coordinates in meters, or None
 
     Returns:
-        List: List of coordinates in millimeters, rounded to 5 decimal places
+        Same shape as input (scalar or list) in millimeters rounded to 2
+        decimals, or None if input is None
     """
+    if coords is None:
+        return None
     return (np.array(coords) * 1000).round(2).tolist()
 
 
@@ -80,5 +83,3 @@ def extract_centroid(element) -> list[float] | None:
         return _m_to_mm(centroid_m)
     except Exception:
         return None
-
-

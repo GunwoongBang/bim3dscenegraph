@@ -97,37 +97,68 @@ def _classify_mep_element(element) -> tuple:
     return None, np.eye(3)
 
 
-def extract_shape_signature(element) -> dict:
+def extract_shape_signature(element) -> str:
     """
-    Extract shape signature (cylindrical vs rectangular) and dimensions from MEP element IFC geometry.
+    Classify an MEP element's geometric shape from its IFC representation.
 
     Args:
         element: IFC element to analyze
 
     Returns:
-        dict: Dictionary with shapeType ("cylindrical", "rectangular", or "other") and dimensions in mm
+        str: "cylindrical", "rectangular", or "other"
     """
     item, _ = _classify_mep_element(element)
+    if item is None or not item.is_a("IfcExtrudedAreaSolid"):
+        return "other"
 
-    # elements out of scope (e.g. tee, elbow, etc.)
-    if item is None:
-        return {"shapeType": "other", "radiusMm": None, "xDimMm": None, "yDimMm": None}
+    swept = getattr(item, "SweptArea", None)
+    if swept is None:
+        return "other"
+    if swept.is_a("IfcCircleProfileDef"):
+        return "cylindrical"
+    if swept.is_a("IfcRectangleProfileDef"):
+        return "rectangular"
+    return "other"
 
-    if item.is_a("IfcExtrudedAreaSolid"):
-        swept = getattr(item, "SweptArea", None)
 
-        # cylindrical elements (pipes)
-        if swept and swept.is_a("IfcCircleProfileDef"):
-            radius = getattr(swept, "Radius", None)
-            return {"shapeType": "cylindrical", "radiusMm": radius, "xDimMm": None, "yDimMm": None}
+def extract_shape_dimensions(element) -> dict:
+    """
+    Extract native IFC dimensions of an MEP element in millimeters.
 
-        # rectangular elements (switches, receptacles, panelboards)
-        if swept and swept.is_a("IfcRectangleProfileDef"):
-            x_dim = getattr(swept, "XDim", None)
-            y_dim = getattr(swept, "YDim", None)
-            return {"shapeType": "rectangular", "radiusMm": None, "xDimMm": x_dim, "yDimMm": y_dim}
+    Dimensions are read directly from the element's IfcExtrudedAreaSolid
+    (SweptArea profile + Depth) rather than from its AABB.
 
-    return {"shapeType": "other", "radiusMm": None, "xDimMm": None, "yDimMm": None}
+    Args:
+        element: IFC element to analyze
+
+    Returns:
+        dict: Keys vary by shape type:
+            - cylindrical: {radius, length}
+            - rectangular: {sizeX, sizeY, sizeZ}  (XDim, YDim, extrusion Depth)
+            - other:       {} (empty)
+        All values are in millimeters.
+    """
+    item, _ = _classify_mep_element(element)
+    if item is None or not item.is_a("IfcExtrudedAreaSolid"):
+        return {}
+
+    swept = getattr(item, "SweptArea", None)
+    depth = getattr(item, "Depth", None)
+
+    if swept and swept.is_a("IfcCircleProfileDef"):
+        return {
+            "radius": round(getattr(swept, "Radius", None), 2),
+            "length": round(depth, 2),
+        }
+
+    if swept and swept.is_a("IfcRectangleProfileDef"):
+        return {
+            "sizeX": round(getattr(swept, "XDim", None), 2),
+            "sizeY": round(getattr(swept, "YDim", None), 2),
+            "sizeZ": round(depth, 2),
+        }
+
+    return {}
 
 
 def _axis2placement_matrix(placement) -> np.ndarray:
@@ -138,7 +169,8 @@ def _axis2placement_matrix(placement) -> np.ndarray:
         dtype=float,
     )
     x_ref = np.array(
-        placement.RefDirection.DirectionRatios if placement.RefDirection else (1.0, 0.0, 0.0),
+        placement.RefDirection.DirectionRatios if placement.RefDirection else (
+            1.0, 0.0, 0.0),
         dtype=float,
     )
     z /= np.linalg.norm(z)

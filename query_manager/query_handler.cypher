@@ -75,6 +75,11 @@ SET me.name = mep_elem.name,
     me.shapeType = mep_elem.shapeType,
     me.bbox_min = mep_elem.bbox_min,
     me.bbox_max = mep_elem.bbox_max,
+    me.radius = mep_elem.radius,
+    me.length = mep_elem.length,
+    me.sizeX = mep_elem.sizeX,
+    me.sizeY = mep_elem.sizeY,
+    me.sizeZ = mep_elem.sizeZ,
     me.face = mep_elem.face
 
 -- name: CREATE_SPACE_WALL_EDGES
@@ -117,11 +122,11 @@ WITH me, w, edge
 MERGE (w)-[b:PENETRATED_BY]->(me)
 SET b.source = edge.source,
     b.penetrationCenter = edge.penetrationCenter,
-    b.radiusMm = edge.radiusMm,
-    b.penetrationLengthMm = edge.penetrationLengthMm,
-    b.penetrationSizeXmm = edge.penetrationSizeXmm,
-    b.penetrationSizeYmm = edge.penetrationSizeYmm,
-    b.penetrationSizeZmm = edge.penetrationSizeZmm
+    b.penetrationRadius = edge.penetrationRadius,
+    b.penetrationLength = edge.penetrationLength,
+    b.penetrationSizeX = edge.penetrationSizeX,
+    b.penetrationSizeY = edge.penetrationSizeY,
+    b.penetrationSizeZ = edge.penetrationSizeZ
 
 /// SENSOR2GRAPH Cypher queries
 -- name: RETRIEVE_WALL_ATTRIBUTES

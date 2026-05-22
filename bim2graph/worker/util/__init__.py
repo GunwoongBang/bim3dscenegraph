@@ -17,6 +17,7 @@ from .wall_util import (
 from .mep_util import (
     MEP_TYPES,
     extract_shape_signature,
+    extract_shape_dimensions,
     extract_facing
 )
 from .rel_util import (
@@ -36,6 +37,7 @@ __all__ = [
     'match_layer_to_str',
     'MEP_TYPES',
     'extract_shape_signature',
+    'extract_shape_dimensions',
     'extract_facing',
     'compute_space_side_of_wall',
     'check_bbox_intersection',

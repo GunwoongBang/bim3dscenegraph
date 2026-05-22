@@ -93,9 +93,9 @@ def compute_bbox_overlap(bbox1_min, bbox1_max, bbox2_min, bbox2_max) -> dict | N
         "overlapBBoxMin": overlap_min,
         "overlapBBoxMax": overlap_max,
         "penetrationCenter": overlap_center,
-        "penetrationSizeXmm": overlap_size[0],
-        "penetrationSizeYmm": overlap_size[1],
-        "penetrationSizeZmm": overlap_size[2],
+        "penetrationSizeX": overlap_size[0],
+        "penetrationSizeY": overlap_size[1],
+        "penetrationSizeZ": overlap_size[2],
     }
 
 

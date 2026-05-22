@@ -191,9 +191,9 @@ def compute_mep_element_wall_rels(mep_elements: list[dict], walls: list[dict], l
             - mep_element_id: MEP element GlobalId
             - wall_id: Wall GlobalId
             - penetrationCenter: [x, y, z] in mm
-            - radiusMm: radius (cylindrical) in mm
-            - penetrationLengthMm: length of penetration (cylindrical) in mm
-            - penetrationSizeXmm, penetrationSizeYmm, penetrationSizeZmm: size of penetration (rectangular) in mm
+            - penetrationRadius: radius (cylindrical) in mm
+            - penetrationLength: length of penetration (cylindrical) in mm
+            - penetrationSizeX, penetrationSizeY, penetrationSizeZ: size of penetration (rectangular) in mm
     """
     edges = []
 
@@ -228,24 +228,24 @@ def compute_mep_element_wall_rels(mep_elements: list[dict], walls: list[dict], l
                 "mep_element_id": mep["id"],
                 "wall_id": wall["id"],
                 "penetrationCenter": overlap["penetrationCenter"],
-                "radiusMm": None,
-                "penetrationLengthMm": None,
-                "penetrationSizeXmm": None,
-                "penetrationSizeYmm": None,
-                "penetrationSizeZmm": None,
+                "penetrationRadius": None,
+                "penetrationLength": None,
+                "penetrationSizeX": None,
+                "penetrationSizeY": None,
+                "penetrationSizeZ": None,
             }
 
             if shape_type == "cylindrical":
-                edge_data["radiusMm"] = mep.get("radiusMm")
-                edge_data["penetrationLengthMm"] = round(max(
-                    overlap["penetrationSizeXmm"],
-                    overlap["penetrationSizeYmm"],
-                    overlap["penetrationSizeZmm"],
+                edge_data["penetrationRadius"] = mep.get("radius")
+                edge_data["penetrationLength"] = round(max(
+                    overlap["penetrationSizeX"],
+                    overlap["penetrationSizeY"],
+                    overlap["penetrationSizeZ"],
                 ), 5)
             elif shape_type == "rectangular":
-                edge_data["penetrationSizeXmm"] = overlap["penetrationSizeXmm"]
-                edge_data["penetrationSizeYmm"] = overlap["penetrationSizeYmm"]
-                edge_data["penetrationSizeZmm"] = overlap["penetrationSizeZmm"]
+                edge_data["penetrationSizeX"] = overlap["penetrationSizeX"]
+                edge_data["penetrationSizeY"] = overlap["penetrationSizeY"]
+                edge_data["penetrationSizeZ"] = overlap["penetrationSizeZ"]
 
             edges.append(edge_data)
 
