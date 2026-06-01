@@ -7,7 +7,7 @@ from .util import (
     extract_bbox,
     extract_shape_signature,
     extract_shape_dimensions,
-    extract_facing,
+    extract_centroid,
 )
 
 
@@ -84,8 +84,9 @@ def extract_mep_elements(mep_model, logger=None) -> list[dict]:
             continue
 
         for element in elements:
-            bbox = extract_bbox(element)
+            center = extract_centroid(element)
             shape_type = extract_shape_signature(element)
+            bbox = extract_bbox(element)
             dims = extract_shape_dimensions(element)
 
             mep_data = {
@@ -93,6 +94,7 @@ def extract_mep_elements(mep_model, logger=None) -> list[dict]:
                 "name": getattr(element, "Name", None),
                 "ifcClass": element.is_a(),
                 "shapeType": shape_type,
+                "center": center,
                 "bbox_min": bbox[0] if bbox else None,
                 "bbox_max": bbox[1] if bbox else None,
                 "radius": dims.get("radius"),
@@ -100,7 +102,6 @@ def extract_mep_elements(mep_model, logger=None) -> list[dict]:
                 "sizeX": dims.get("sizeX"),
                 "sizeY": dims.get("sizeY"),
                 "sizeZ": dims.get("sizeZ"),
-                "face": extract_facing(element),
             }
 
             mep_elements.append(mep_data)

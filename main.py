@@ -37,17 +37,17 @@ def graph_close(driver):
 
 if __name__ == "__main__":
     logger.logText("PROJECT", "Started")
+    # Initiate Neo4j driver for BIM2GRAPH operations
+    driver = graph_initiate()
     logger.logText("Divider")
 
     # =========================================================================
     # BIM2GRAPH: Extract graph from BIM and persist to Neo4j
     # =========================================================================
-    # Initiate Neo4j driver for BIM2GRAPH operations
-    driver = graph_initiate()
 
     bim2graph(driver, ARC_PATH, STR_PATH, MEP_PATH, logger)
-
     print("Neo4j host: http://localhost:7474/browser/")
+
     logger.logText("Divider")
 
     # =========================================================================
@@ -59,8 +59,7 @@ if __name__ == "__main__":
         "Do you want to prepare the point cloud? (y/n): ").lower() == 'y'
     sensor2graph(driver, PCD_PATH, ARC_PATH, pcd_prep, logger)
 
+    logger.logText("Divider")
     # Close driver after SENSOR2GRAPH operations
     graph_close(driver)
-
-    logger.logText("Divider")
     logger.logText("PROJECT", "Ended")

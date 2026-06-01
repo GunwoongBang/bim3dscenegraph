@@ -73,6 +73,7 @@ MERGE (me:MEPElement { id: mep_elem.id })
 SET me.name = mep_elem.name,
     me.ifcClass = mep_elem.ifcClass,
     me.shapeType = mep_elem.shapeType,
+    me.center = mep_elem.center,
     me.bbox_min = mep_elem.bbox_min,
     me.bbox_max = mep_elem.bbox_max,
     me.radius = mep_elem.radius,
@@ -80,7 +81,6 @@ SET me.name = mep_elem.name,
     me.sizeX = mep_elem.sizeX,
     me.sizeY = mep_elem.sizeY,
     me.sizeZ = mep_elem.sizeZ,
-    me.face = mep_elem.face
 
 -- name: CREATE_SPACE_WALL_EDGES
 UNWIND $edges AS edge
