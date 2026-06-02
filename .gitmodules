@@ -1,0 +1,3 @@
+[submodule "sensor2graph/ifc2pointcloud"]
+	path = sensor2graph/ifc2pointcloud
+	url = https://github.com/GunwoongBang/ifc2pointcloud

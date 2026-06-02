@@ -5,6 +5,7 @@ This module coordinates the conversion of BIM model geometry into
 a point cloud representation and persistence to Neo4j graph database.
 """
 
+
 import ifcopenshell
 
 from neo4j import Driver
@@ -13,10 +14,15 @@ from pathlib import Path
 from query_manager import QueryManager
 from .persistence import Neo4jOperations
 from .worker import (
+    export_ifc_to_sdf,
     clean_point_cloud,
     segment_point_cloud,
     exclude_planes,
     retrieve_picked_point_id,
+)
+from .commander import (
+    launch_ros2_pipeline,
+    stop_ros2_pipeline,
 )
 
 
@@ -50,18 +56,18 @@ def sensor2graph(driver: Driver, pcd_path: Path, arc_path: Path, logger=None):
     PCD_MODEL = Path("pc_models/test/cloudGlobal_cleaned_excluded.pcd")
     CSV_FILE = Path("pc_models/test/cloudGlobal_cleaned_excluded.csv")
 
-    # Type 'y' if point cloud preparation is needed (default: 'y')
     pcd_prep = input(
         "Do you want to prepare the point cloud? (y/n): ").lower() == 'y'
     # =========================================================================
-    # Generate point cloud from IFC model (if PCD data is missing)
+    # Generate point cloud from IFC model (if PCD data is missing) & Post-process
     # =========================================================================
+    if pcd_prep:
+        export_ifc_to_sdf(arc_model, logger)
 
-    # =========================================================================
-    # Clean & Segment & filter point cloud
-    # =========================================================================
-    # Point cloud preparation (point cloud cleaning, plane segmentation, plane exclusion)
-    if pcd_prep == 'y':
+        sim_proc, lio_proc, teleop_proc = launch_ros2_pipeline(logger)
+        input("Drive the robot to collect the point cloud, then press Enter to continue...")
+        stop_ros2_pipeline(sim_proc, lio_proc, teleop_proc, logger)
+
         cleaned_pcd_path = clean_point_cloud(pcd_path, logger)
 
         segmented_csv_path = segment_point_cloud(
@@ -85,6 +91,10 @@ def sensor2graph(driver: Driver, pcd_path: Path, arc_path: Path, logger=None):
         if wall_row is None:
             print("No wall found")
             return
+
+        print(wall_row["id"])
+        print(wall_row["ifcClass"])
+        print(wall_row["layerCount"])
 
     if logger:
         logger.logText("SENSOR2GRAPH", "SENSOR2GRAPH completed")
