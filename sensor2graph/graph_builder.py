@@ -20,7 +20,7 @@ from .worker import (
 )
 
 
-def sensor2graph(driver: Driver, pcd_path: Path, arc_path: Path, pcd_prep: str, logger=None):
+def sensor2graph(driver: Driver, pcd_path: Path, arc_path: Path, logger=None):
     """
     Generates a sensor-derived graph from an IFC model and persists to Neo4j.
 
@@ -47,8 +47,15 @@ def sensor2graph(driver: Driver, pcd_path: Path, arc_path: Path, pcd_prep: str, 
     arc_model = ifcopenshell.open(arc_path)
 
     # load PCD model and CSV results
-    PCD_MODEL = Path("pc_models/cloudGlobal_cleaned_excluded.pcd")
-    CSV_FILE = Path("pc_models/cloudGlobal_cleaned_excluded.csv")
+    PCD_MODEL = Path("pc_models/test/cloudGlobal_cleaned_excluded.pcd")
+    CSV_FILE = Path("pc_models/test/cloudGlobal_cleaned_excluded.csv")
+
+    # Type 'y' if point cloud preparation is needed (default: 'y')
+    pcd_prep = input(
+        "Do you want to prepare the point cloud? (y/n): ").lower() == 'y'
+    # =========================================================================
+    # Generate point cloud from IFC model (if PCD data is missing)
+    # =========================================================================
 
     # =========================================================================
     # Clean & Segment & filter point cloud
@@ -78,10 +85,6 @@ def sensor2graph(driver: Driver, pcd_path: Path, arc_path: Path, pcd_prep: str, 
         if wall_row is None:
             print("No wall found")
             return
-
-        print(wall_row["id"])
-        print(wall_row["ifcClass"])
-        print(wall_row["layerCount"])
 
     if logger:
         logger.logText("SENSOR2GRAPH", "SENSOR2GRAPH completed")

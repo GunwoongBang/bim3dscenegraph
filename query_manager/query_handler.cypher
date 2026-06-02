@@ -80,7 +80,7 @@ SET me.name = mep_elem.name,
     me.length = mep_elem.length,
     me.sizeX = mep_elem.sizeX,
     me.sizeY = mep_elem.sizeY,
-    me.sizeZ = mep_elem.sizeZ,
+    me.sizeZ = mep_elem.sizeZ
 
 -- name: CREATE_SPACE_WALL_EDGES
 UNWIND $edges AS edge

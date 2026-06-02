@@ -44,7 +44,6 @@ if __name__ == "__main__":
     # =========================================================================
     # BIM2GRAPH: Extract graph from BIM and persist to Neo4j
     # =========================================================================
-
     bim2graph(driver, ARC_PATH, STR_PATH, MEP_PATH, logger)
     print("Neo4j host: http://localhost:7474/browser/")
 
@@ -53,11 +52,7 @@ if __name__ == "__main__":
     # =========================================================================
     # SENSOR2GRAPH: Extract point cloud from sensor data and merge with BIM graph
     # =========================================================================
-
-    # Set to 'y' if point cloud preparation is needed (default: 'y')
-    pcd_prep = input(
-        "Do you want to prepare the point cloud? (y/n): ").lower() == 'y'
-    sensor2graph(driver, PCD_PATH, ARC_PATH, pcd_prep, logger)
+    sensor2graph(driver, PCD_PATH, ARC_PATH, logger)
 
     logger.logText("Divider")
     # Close driver after SENSOR2GRAPH operations
