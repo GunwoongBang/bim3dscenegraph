@@ -52,10 +52,6 @@ def sensor2graph(driver: Driver, pcd_path: Path, arc_path: Path, logger=None):
     # Load ARC IFC model
     arc_model = ifcopenshell.open(arc_path)
 
-    # load PCD model and CSV results
-    PCD_MODEL = Path("pc_models/test/cloudGlobal_cleaned_excluded.pcd")
-    CSV_FILE = Path("pc_models/test/cloudGlobal_cleaned_excluded.csv")
-
     pcd_prep = input(
         "Do you want to prepare the point cloud? (y/n): ").lower() == 'y'
     # =========================================================================
@@ -64,9 +60,10 @@ def sensor2graph(driver: Driver, pcd_path: Path, arc_path: Path, logger=None):
     if pcd_prep:
         export_ifc_to_sdf(arc_model, logger)
 
-        sim_proc, lio_proc, teleop_proc = launch_ros2_pipeline(logger)
+        proc = launch_ros2_pipeline(logger)
+
         input("Drive the robot to collect the point cloud, then press Enter to continue...")
-        stop_ros2_pipeline(sim_proc, lio_proc, teleop_proc, logger)
+        stop_ros2_pipeline(proc, logger)
 
         cleaned_pcd_path = clean_point_cloud(pcd_path, logger)
 
@@ -82,6 +79,7 @@ def sensor2graph(driver: Driver, pcd_path: Path, arc_path: Path, logger=None):
     # =========================================================================
     # Merge point cloud with BIM-derived graph
     # =========================================================================
+    # Check if the point cloud with the semantic CSV file can be used for querying the BIM graph
     picked_global_id = retrieve_picked_point_id(PCD_MODEL, CSV_FILE, logger)
 
     with driver.session() as session:

@@ -25,8 +25,11 @@ def export_ifc_to_sdf(ifc_model, logger=None):
         ifc_model: Open ifcopenshell model
         logger: Optional logger with logText(category, message)
     """
-    model_name = Path("ifc_world").stem
-    output_path = Path("src/robot_gazebo/worlds") / "ifc_world.sdf"
+    model_name = "ifc_world"
+    output_path = (
+        Path(__file__).parent.parent
+        / "ifc2pointcloud" / "src" / "robot_gazebo" / "worlds" / "ifc_world.sdf"
+    ).resolve()
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     sdf = ET.Element("sdf", version="1.6")

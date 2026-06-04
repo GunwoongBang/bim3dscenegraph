@@ -10,9 +10,6 @@ import pandas as pd
 
 
 def retrieve_picked_point_id(pcd_path: Path, csv_path: Path, logger=None) -> str:
-    if logger:
-        logger.logText("SENSOR2GRAPH", "Launching point picker visualizer...")
-
     cloud = o3d.io.read_point_cloud(str(pcd_path))
     points = np.asarray(cloud.points)
     labels = pd.read_csv(csv_path)

@@ -11,9 +11,9 @@ from sensor2graph import sensor2graph
 
 load_dotenv()
 
-ARC_PATH = Path("ifc_models/Example/Example_ARC.ifc")
-STR_PATH = Path("ifc_models/Example/Example_STR.ifc")
-MEP_PATH = Path("ifc_models/Example/Example_MEP.ifc")
+ARC_PATH = Path("ifc_models/test/test_ARC.ifc")
+STR_PATH = Path("ifc_models/test/test_STR.ifc")
+MEP_PATH = Path("ifc_models/test/test_MEP.ifc")
 PCD_PATH = Path("pc_models/cloudGlobal.pcd")
 
 NEO4J_URI = os.getenv("NEO4J_URI")
