@@ -1,5 +1,4 @@
 import numpy as np
-import ifcopenshell.util.placement
 
 
 # MEP element types to extract
