@@ -43,37 +43,37 @@ bim3dscenegraph/
 
 ## Full Pipeline
 
-```
-IFC Models (ARC / STR / MEP)
-        │
-        ▼
-  ┌─────────────┐
-  │  BIM2GRAPH  │  ← bim2graph/
-  └─────────────┘
-        │  Nodes: Space, Wall, Layer, Opening, MEPElement, MEPSystem
-        │  Edges: HAS_LAYER, VOIDED_BY, BOUNDED_BY, PASSES_THROUGH, VISIBLE_IN
-        ▼
-   Neo4j Graph
-        ▲
-        │  RETRIEVE_WALL_ATTRIBUTES (by ifc_global_id)
-  ┌──────────────────┐
-  │  SENSOR2GRAPH    │  ← sensor2graph/
-  └──────────────────┘
-        ▲
-        │  Segmented, labeled PCD (ifc_global_id per point)
-  ┌───────────────────────┐
-  │  Point Cloud Pipeline │
-  │  ┌─────────────────┐  │
-  │  │ IFC → SDF world │  │  sdf_exporter.py
-  │  └────────┬────────┘  │
-  │           ▼           │
-  │  ROS2 / Gazebo sim    │  commander.py
-  │  LIO-SAM SLAM scan    │
-  │           ▼           │
-  │  Clean PCD            │  pcd_cleaner.py
-  │  RANSAC segmentation  │  pcd_filter.py
-  │  Interactive labeling │
-  └───────────────────────┘
+```mermaid
+flowchart TB
+    IFC[("IFC Models\nARC / STR / MEP")]
+
+    subgraph BIM2GRAPH["BIM2GRAPH  (bim2graph/)"]
+        B2G["Extract semantic entities + topology"]
+    end
+
+    NEO4J[("Neo4j Graph")]
+
+    subgraph PCP["Point Cloud Pipeline  (sensor2graph/worker/)"]
+        direction TB
+        SDF["IFC → SDF world\nsdf_exporter.py"]
+        SIM["ROS2 / Gazebo sim + LIO-SAM SLAM\ncommander.py"]
+        CLEAN["Clean PCD (floor removal)\npcd_cleaner.py"]
+        SEG["RANSAC segmentation + interactive labeling\npcd_filter.py · segment_point_cloud"]
+        EXC["Exclude unlabeled planes\npcd_filter.py · exclude_planes"]
+        SDF --> SIM --> CLEAN --> SEG --> EXC
+    end
+
+    subgraph SENSOR2GRAPH["SENSOR2GRAPH  (sensor2graph/)"]
+        S2G["Pick sensor point → query graph\npoint_picker.py"]
+    end
+
+    IFC -->|ARC / STR / MEP| B2G
+    B2G -->|"Nodes: Space, Wall, Layer, Opening, MEPElement, MEPSystem\nEdges: HAS_LAYER, VOIDED_BY, BOUNDED_BY, CONTAINS, HOSTS, PENETRATED_BY"| NEO4J
+
+    IFC -->|ARC geometry| SDF
+    EXC -->|"Labeled PCD + CSV\n(ifc_global_id per point)"| S2G
+    S2G -->|"RETRIEVE_WALL_ATTRIBUTES\n(by ifc_global_id)"| NEO4J
+    NEO4J -.->|wall attributes| S2G
 ```
 
 ### Step 1 — BIM2GRAPH

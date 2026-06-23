@@ -1,4 +1,4 @@
-# SENSOR2GRAPH
+# sensor2graph
 
 ## Overview
 

@@ -1,4 +1,4 @@
-# BIM2GRAPH
+# bim2graph
 
 ## Overview
 
@@ -7,10 +7,10 @@ BIM2GRAPH converts IFC models into a Neo4j graph.
 It reads architectural/structural/MEP IFC files, extracts semantic entities and topology, and writes nodes/relationships using parameterized Cypher queries.
 
 Current implementation is orchestrated in `bim2graph/graph_builder.py` and uses:
-- extractors in `bim2graph/extractor/*`
-- query loader in `bim2graph/query_manager.py`
+- extractors in `bim2graph/worker/*`
+- query loader in `query_manager/` (shared `QueryManager`)
 - persistence layer in `bim2graph/persistence/neo4j_ops.py`
-- Cypher definitions in `query_handler/cypher4bim.cypher`
+- Cypher definitions in `query_manager/query_handler.cypher`
 
 ---
 
@@ -36,34 +36,34 @@ In `graph_builder.py`:
 
 ### 2) Extract ARC/STR data
 
-#### Spaces (`extractor/spaces.py`)
+#### Spaces (`worker/space_extractor.py`)
 - Extract `IfcSpace`
 - Properties: `id`, `name`, `longName`, `ifcClass`, `centroid`
 
-#### Walls (`extractor/walls.py`)
+#### Walls (`worker/wall_extractor.py`)
 - Extract `IfcWall`
 - Properties: `id`, `name`, `ifcClass`, `directionSense`, `layerCount`, `axis2`
 
-#### Structural hints (`extractor/walls.py`)
+#### Structural hints (`worker/wall_extractor.py`)
 - From optional STR IFC, extract wall-level data for layer enrichment:
 	- `loadBearing`, `thickness`, `materials`
 
-#### Layers (`extractor/walls.py`)
+#### Layers (`worker/wall_extractor.py`)
 - Extract material layers from wall material associations
 - Properties: `id`, `wall_id`, `layerIndex`, `loadBearing`, `thickness`, `name`, `ifcClass`
 
-#### Openings (`extractor/openings.py`)
+#### Openings (`worker/opening_extractor.py`)
 - Extract `IfcOpeningElement` nodes via `IfcRelVoidsElement`
 - Create wall-opening edges:
 	- `(:Wall)-[:VOIDED_BY]->(:Opening)`
 
-#### Space-wall boundaries (`extractor/relationships.py`)
+#### Space-wall boundaries (`worker/relationship_extractor.py`)
 - Extract via `IfcRelSpaceBoundary`
 - Edge payload: `space_id`, `wall_id`, `side`, `boundaryType`
 
 ### 3) Extract MEP data (if MEP IFC provided)
 
-In `extractor/mep.py`:
+In `worker/mep_extractor.py`:
 - MEP elements: selected IFC classes (flow segment/fitting/proxy)
 - MEP systems: `IfcSystem`
 - System memberships: `IfcRelAssignsToGroup`
@@ -86,18 +86,18 @@ In `graph_builder.py` + `persistence/neo4j_ops.py`:
 	 - `Wall-[:VOIDED_BY]->Opening`
 	 - `Space-[:BOUNDED_BY]->Wall` (with `side`, `boundaryType`)
 	 - `MEPSystem-[:CONTAINS]->MEPElement`
-	 - `MEPElement-[:PASSES_THROUGH]->Wall`
-	 - `MEPSystem-[:VISIBLE_IN]->Space`
+	 - `Wall-[:PENETRATED_BY]->MEPElement` (with penetration geometry)
+	 - `Space-[:HOSTS]->MEPElement`
 
 ---
 
 ## Data/Query Layer
 
 Cypher queries are stored in:
-- `query_handler/cypher4bim.cypher`
+- `query_manager/query_handler.cypher`
 
 Loaded dynamically by:
-- `bim2graph/query_manager.py`
+- `query_manager/` (shared `QueryManager`)
 
 Executed by:
 - `bim2graph/persistence/neo4j_ops.py`
