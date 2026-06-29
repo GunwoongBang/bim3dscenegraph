@@ -38,6 +38,7 @@ flowchart TB
     velodyne_simulator --> |streams </br>point cloud| LIO-SAM-ros2
     LIO-SAM-ros2 --> |maps cloud| PCD
     PCD --> SENSOR2GRAPH
+    PCD --> robot_rviz
 
     Neo4j --> |exports </br>BIM model| robot_graph
     robot_graph --> |serves </br>BIM entities| robot_task
