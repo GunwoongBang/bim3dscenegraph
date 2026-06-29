@@ -31,6 +31,7 @@ flowchart TB
     Neo4j --> |confirms </br>BIM-sensor match| SENSOR2GRAPH
 
     SENSOR2GRAPH --> |exports </br>world file| GAZEBO1
+    SENSOR2GRAPH --> |exports </br>world file| GAZEBO2
     robot_description --> |robot URDF| GAZEBO1
     robot_control --> |/cmd_vel| GAZEBO1
     GAZEBO1 --> |hosts sensor| velodyne_simulator

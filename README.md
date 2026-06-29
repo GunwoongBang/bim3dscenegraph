@@ -23,7 +23,7 @@ bim3dscenegraph/
 ├── logger.py                   # Shared file logger
 ├── bim2graph/                  # BIM → Neo4j graph pipeline
 │   ├── graph_builder.py
-│   ├── extractor/              # Spaces, walls, layers, openings, MEP
+│   ├── worker/                 # Spaces, walls, layers, openings, MEP extraction
 │   ├── persistence/
 │   └── README.md
 ├── sensor2graph/               # Sensor → point cloud → BIM graph query
@@ -41,7 +41,7 @@ bim3dscenegraph/
 
 ---
 
-## Full Pipeline
+## System Architecture
 
 ```mermaid
 flowchart TB
@@ -68,8 +68,7 @@ flowchart TB
     end
 
     IFC -->|ARC / STR / MEP| B2G
-    B2G -->|"Nodes: Space, Wall, Layer, Opening, MEPElement, MEPSystem\nEdges: HAS_LAYER, VOIDED_BY, BOUNDED_BY, CONTAINS, HOSTS, PENETRATED_BY"| NEO4J
-
+    B2G -->|"Nodes & Edges"| NEO4J
     IFC -->|ARC geometry| SDF
     EXC -->|"Labeled PCD + CSV\n(ifc_global_id per point)"| S2G
     S2G -->|"RETRIEVE_WALL_ATTRIBUTES\n(by ifc_global_id)"| NEO4J
