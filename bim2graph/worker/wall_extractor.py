@@ -48,21 +48,21 @@ def extract_walls(arc_model, logger=None) -> list[dict]:
 
     for wall in ifc_walls:
         # Extract geometry
-        bbox = extract_bbox(wall)
+        bbox_min, bbox_max = extract_bbox(wall)
         center = extract_centroid(wall)
 
         # Only need axis2 for layer direction
-        _, axis2 = extract_placement(wall)
+        axis2 = extract_placement(wall)
 
         # Extract material info
-        direction_sense, layer_count, _ = get_material_info(wall)
+        direction_sense, layer_count = get_material_info(wall)
 
         wall_data = {
             "id": wall.GlobalId,
             "name": getattr(wall, "Name", None) or "Unknown",
             "ifcClass": wall.is_a(),
-            "bbox_min": bbox[0] if bbox else None,
-            "bbox_max": bbox[1] if bbox else None,
+            "bbox_min": bbox_min,
+            "bbox_max": bbox_max,
             "center": center,
             "directionSense": direction_sense,
             "layerCount": layer_count,

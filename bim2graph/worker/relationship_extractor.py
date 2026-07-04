@@ -6,50 +6,8 @@ from .util import (
     compute_space_side_of_wall,
     check_bbox_intersection,
     compute_bbox_overlap,
+    swept_solid_aabb,
 )
-
-
-def compute_wall_opening_rels(arc_model, logger=None) -> list[dict]:
-    """
-    Extract Wall-Opening edges from IfcRelVoidsElement.
-
-    Args:
-        arc_model: ifcopenshell model instance
-        logger: Optional logger for output messages
-
-    Returns:
-        edges:
-        List of dictionaries with keys:
-            - wall_id: Wall GlobalId
-            - opening_id: Opening GlobalId
-    """
-    edges = []
-
-    for rel in arc_model.by_type("IfcRelVoidsElement"):
-        wall = getattr(rel, "RelatingBuildingElement", None)
-        opening = getattr(rel, "RelatedOpeningElement", None)
-
-        if not wall or not opening:
-            continue
-        if not wall.is_a("IfcWall"):
-            continue
-        if not opening.is_a("IfcOpeningElement"):
-            continue
-
-        wall_id = getattr(wall, "GlobalId", None)
-        opening_id = getattr(opening, "GlobalId", None)
-        if not wall_id or not opening_id:
-            continue
-
-        edges.append({
-            "wall_id": wall_id,
-            "opening_id": opening_id
-        })
-
-    if logger:
-        logger.logText(
-            "BIM2GRAPH", f"Computed {len(edges)} Wall-Opening relationships")
-    return edges
 
 
 def compute_space_wall_rels(arc_model, spaces: list[dict], walls: list[dict], logger=None) -> list[dict]:
@@ -126,6 +84,97 @@ def compute_space_wall_rels(arc_model, spaces: list[dict], walls: list[dict], lo
     return edges
 
 
+def compute_space_mep_element_rels(mep_elements: list[dict], spaces: list[dict], logger=None) -> list[dict]:
+    """
+    Compute MEPElement-Space relationships via AABB intersection.
+
+    A MEP element is considered visible in a space if their bounding boxes
+    intersect.
+
+    Args:
+        mep_elements: List of MEP dictionaries (from extract_mep_elements)
+        spaces: List of space dictionaries (from extract_spaces)
+        logger: Optional logger for output messages
+
+    Returns:
+        edges:
+        List of edge dictionaries with keys:
+            - mep_element_id: MEP element GlobalId
+            - space_id: Space GlobalId
+    """
+    edges = []
+
+    for mep in mep_elements:
+        mep_bbox_min, mep_bbox_max = swept_solid_aabb(mep)
+        if not mep_bbox_min or not mep_bbox_max:
+            continue
+
+        for space in spaces:
+            space_bbox_min = space.get("bbox_min")
+            space_bbox_max = space.get("bbox_max")
+            if not space_bbox_min or not space_bbox_max:
+                continue
+
+            if not check_bbox_intersection(
+                mep_bbox_min, mep_bbox_max, space_bbox_min, space_bbox_max
+            ):
+                continue
+
+            edges.append({
+                "mep_element_id": mep["id"],
+                "space_id": space["id"],
+            })
+
+    if logger:
+        logger.logText(
+            "BIM2GRAPH", f"Computed {len(edges)} MEPElement-Space relationships")
+
+    return edges
+
+
+def compute_wall_opening_rels(arc_model, logger=None) -> list[dict]:
+    """
+    Extract Wall-Opening edges from IfcRelVoidsElement.
+
+    Args:
+        arc_model: ifcopenshell model instance
+        logger: Optional logger for output messages
+
+    Returns:
+        edges:
+        List of dictionaries with keys:
+            - wall_id: Wall GlobalId
+            - opening_id: Opening GlobalId
+    """
+    edges = []
+
+    for rel in arc_model.by_type("IfcRelVoidsElement"):
+        wall = getattr(rel, "RelatingBuildingElement", None)
+        opening = getattr(rel, "RelatedOpeningElement", None)
+
+        if not wall or not opening:
+            continue
+        if not wall.is_a("IfcWall"):
+            continue
+        if not opening.is_a("IfcOpeningElement"):
+            continue
+
+        wall_id = getattr(wall, "GlobalId", None)
+        opening_id = getattr(opening, "GlobalId", None)
+        if not wall_id or not opening_id:
+            continue
+
+        edges.append({
+            "wall_id": wall_id,
+            "opening_id": opening_id
+        })
+
+    if logger:
+        logger.logText(
+            "BIM2GRAPH", f"Computed {len(edges)} Wall-Opening relationships")
+    return edges
+
+
 def compute_mep_memberships(mep_model, mep_elements: list[dict], logger=None) -> list[dict]:
     """
     Extract MEP memberships (MEPSystem-MEPElement edges) from IfcRelAssignsToGroup.
@@ -198,8 +247,7 @@ def compute_mep_element_wall_rels(mep_elements: list[dict], walls: list[dict], l
     edges = []
 
     for mep in mep_elements:
-        mep_bbox_min = mep.get("bbox_min")
-        mep_bbox_max = mep.get("bbox_max")
+        mep_bbox_min, mep_bbox_max = swept_solid_aabb(mep)
 
         if not mep_bbox_min or not mep_bbox_max:
             continue
@@ -252,54 +300,5 @@ def compute_mep_element_wall_rels(mep_elements: list[dict], walls: list[dict], l
     if logger:
         logger.logText(
             "BIM2GRAPH", f"Computed {len(edges)} MEPElement-Wall relationships")
-
-    return edges
-
-
-def compute_mep_element_space_rels(mep_elements: list[dict], spaces: list[dict], logger=None) -> list[dict]:
-    """
-    Compute MEPElement-Space relationships via AABB intersection.
-
-    A MEP element is considered visible in a space if their bounding boxes
-    intersect.
-
-    Args:
-        mep_elements: List of MEP dictionaries (from extract_mep_elements)
-        spaces: List of space dictionaries (from extract_spaces)
-        logger: Optional logger for output messages
-
-    Returns:
-        edges:
-        List of edge dictionaries with keys:
-            - mep_element_id: MEP element GlobalId
-            - space_id: Space GlobalId
-    """
-    edges = []
-
-    for mep in mep_elements:
-        mep_bbox_min = mep.get("bbox_min")
-        mep_bbox_max = mep.get("bbox_max")
-        if not mep_bbox_min or not mep_bbox_max:
-            continue
-
-        for space in spaces:
-            space_bbox_min = space.get("bbox_min")
-            space_bbox_max = space.get("bbox_max")
-            if not space_bbox_min or not space_bbox_max:
-                continue
-
-            if not check_bbox_intersection(
-                mep_bbox_min, mep_bbox_max, space_bbox_min, space_bbox_max
-            ):
-                continue
-
-            edges.append({
-                "mep_element_id": mep["id"],
-                "space_id": space["id"],
-            })
-
-    if logger:
-        logger.logText(
-            "BIM2GRAPH", f"Computed {len(edges)} MEPElement-Space relationships")
 
     return edges

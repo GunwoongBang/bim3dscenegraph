@@ -20,7 +20,8 @@ CREATE CONSTRAINT mep_system_id IF NOT EXISTS FOR (ms:MEPSystem) REQUIRE ms.id I
 -- name: ENSURE_SCHEMA_MEP_ELEMENT
 CREATE CONSTRAINT mep_element_id IF NOT EXISTS FOR (me:MEPElement) REQUIRE me.id IS UNIQUE
 
-/// BIM2GRAPH Cypher queries
+// BIM2GRAPH Cypher queries
+//  Nodes
 -- name: UPSERT_SPACES
 UNWIND $spaces AS space
 MERGE (s:Space { id: space.id })
@@ -74,14 +75,17 @@ SET me.name = mep_elem.name,
     me.ifcClass = mep_elem.ifcClass,
     me.shapeType = mep_elem.shapeType,
     me.center = mep_elem.center,
-    me.bbox_min = mep_elem.bbox_min,
-    me.bbox_max = mep_elem.bbox_max,
+    me.bbox_min = CASE WHEN mep_elem.shapeType = 'other' THEN mep_elem.bbox_min ELSE null END,
+    me.bbox_max = CASE WHEN mep_elem.shapeType = 'other' THEN mep_elem.bbox_max ELSE null END,
     me.radius = mep_elem.radius,
     me.length = mep_elem.length,
     me.sizeX = mep_elem.sizeX,
     me.sizeY = mep_elem.sizeY,
-    me.sizeZ = mep_elem.sizeZ
+    me.sizeZ = mep_elem.sizeZ,
+    me.axisX = mep_elem.axisX,
+    me.direction = mep_elem.direction
 
+// Edges
 -- name: CREATE_SPACE_WALL_EDGES
 UNWIND $edges AS edge
 MATCH (s:Space { id: edge.space_id })

@@ -4,7 +4,7 @@ import ifcopenshell.util.placement
 import numpy as np
 
 
-def extract_placement(element) -> tuple[list[float], list[float]]:
+def extract_placement(element) -> list[float]:
     """
     Extract placement matrix components (origin and axis2) from an IFC element.
 
@@ -27,9 +27,8 @@ def extract_placement(element) -> tuple[list[float], list[float]]:
         matrix = ifcopenshell.util.placement.get_local_placement(
             element.ObjectPlacement
         )
-        origin = np.round(matrix[:3, 3], 5).tolist()
         axis2 = np.round(matrix[:3, 1], 5).tolist()
-        return origin, axis2
+        return axis2
     except Exception:
         return None, None
 
@@ -88,7 +87,6 @@ def get_material_info(element) -> tuple[str | None, int, str | None]:
 
     direction_sense = None
     layer_count = 0
-    material_type = material_def.is_a()
 
     if material_def.is_a("IfcMaterialLayerSetUsage"):
         direction_sense = getattr(material_def, "DirectionSense", None)
@@ -97,7 +95,7 @@ def get_material_info(element) -> tuple[str | None, int, str | None]:
     elif material_def.is_a("IfcMaterial"):
         layer_count = 1
 
-    return direction_sense, layer_count, material_type
+    return direction_sense, layer_count
 
 
 def get_pset_property(element, prop_name, pset_name=None) -> Any:

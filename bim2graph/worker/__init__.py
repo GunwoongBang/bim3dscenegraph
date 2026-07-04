@@ -18,7 +18,7 @@ from .relationship_extractor import (
     compute_space_wall_rels,
     compute_mep_memberships,
     compute_mep_element_wall_rels,
-    compute_mep_element_space_rels,
+    compute_space_mep_element_rels,
 )
 
 __all__ = [
@@ -33,5 +33,5 @@ __all__ = [
     "compute_space_wall_rels",
     "compute_mep_memberships",
     "compute_mep_element_wall_rels",
-    "compute_mep_element_space_rels",
+    "compute_space_mep_element_rels",
 ]

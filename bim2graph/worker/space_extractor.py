@@ -34,7 +34,7 @@ def extract_spaces(arc_model, logger=None) -> list[dict]:
         return spaces
 
     for space in ifc_spaces:
-        centroid = extract_centroid(space)
+        center = extract_centroid(space)
         bbox_min, bbox_max = extract_bbox(space)
 
         space_data = {
@@ -42,7 +42,7 @@ def extract_spaces(arc_model, logger=None) -> list[dict]:
             "longName": getattr(space, "LongName", None),
             "name": getattr(space, "Name", None),
             "ifcClass": space.is_a(),
-            "centroid": centroid,
+            "centroid": center,
             "bbox_min": bbox_min,
             "bbox_max": bbox_max,
         }

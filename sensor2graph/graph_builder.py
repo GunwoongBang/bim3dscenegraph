@@ -75,6 +75,9 @@ def sensor2graph(driver: Driver, pcd_path: Path, arc_path: Path, logger=None):
 
         PCD_MODEL = excluded_pcd_path
         CSV_FILE = excluded_csv_path
+    else:
+        PCD_MODEL = Path("pcd_models/cloudGlobal_cleaned_excluded.pcd")
+        CSV_FILE = Path("pcd_models/cloudGlobal_cleaned_excluded.csv")
 
     # =========================================================================
     # Merge point cloud with BIM-derived graph

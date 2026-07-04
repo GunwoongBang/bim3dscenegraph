@@ -24,7 +24,7 @@ from .worker import (
     compute_space_wall_rels,
     compute_mep_memberships,
     compute_mep_element_wall_rels,
-    compute_mep_element_space_rels,
+    compute_space_mep_element_rels,
 )
 
 
@@ -87,7 +87,7 @@ def bim2graph(driver: Driver, arc_path: Path, str_path: Path = None, mep_path: P
             mep_model, mep_elements, logger)
         mep_element_wall_rels = compute_mep_element_wall_rels(
             mep_elements, walls, logger)
-        mep_element_space_rels = compute_mep_element_space_rels(
+        mep_element_space_rels = compute_space_mep_element_rels(
             mep_elements, spaces, logger)
 
     # =========================================================================
