@@ -22,6 +22,16 @@ CREATE CONSTRAINT mep_element_id IF NOT EXISTS FOR (me:MEPElement) REQUIRE me.id
 
 // BIM2GRAPH Cypher queries
 //  Nodes
+-- name: UPSERT_BUILDING
+UNWIND $buildings AS building
+MERGE (b:Building { id: building.id })
+SET b.ifcClass = building.ifcClass
+
+-- name: UPSERT_STOREYS
+UNWIND $storeys AS storey
+MERGE (s:Storey { id: storey.id })
+SET s.ifcClass = storey.ifcClass
+
 -- name: UPSERT_SPACES
 UNWIND $spaces AS space
 MERGE (s:Space { id: space.id })
@@ -86,6 +96,18 @@ SET me.name = mep_elem.name,
     me.direction = mep_elem.direction
 
 // Edges
+-- name: CREATE_BUILDING_STOREY_EDGES
+UNWIND $edges AS edge
+MATCH (b:Building { id: edge.building_id })
+MATCH (s:Storey { id: edge.storey_id })
+MERGE (b)-[:HAS_STOREY]->(s)
+
+-- name: CREATE_STOREY_SPACE_EDGES
+UNWIND $edges AS edge
+MATCH (s:Storey { id: edge.storey_id })
+MATCH (sp:Space { id: edge.space_id })
+MERGE (s)-[:HAS_SPACE]->(sp)
+
 -- name: CREATE_SPACE_WALL_EDGES
 UNWIND $edges AS edge
 MATCH (s:Space { id: edge.space_id })

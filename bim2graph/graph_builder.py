@@ -13,6 +13,10 @@ from pathlib import Path
 from query_manager import QueryManager
 from .persistence import Neo4jOperations
 from .worker import (
+    extract_buildings,
+    extract_storeys,
+    compute_building_storey_rels,
+    compute_storey_space_rels,
     extract_spaces,
     extract_walls,
     extract_str_elements,
@@ -64,6 +68,8 @@ def bim2graph(driver: Driver, arc_path: Path, str_path: Path = None, mep_path: P
     # Extract data from IFC
     # =========================================================================
     # Extract nodes
+    buildings = extract_buildings(arc_model, logger)
+    storeys = extract_storeys(arc_model, logger)
     spaces = extract_spaces(arc_model, logger)
     walls = extract_walls(arc_model, logger)
 
@@ -78,6 +84,8 @@ def bim2graph(driver: Driver, arc_path: Path, str_path: Path = None, mep_path: P
         mep_elements = extract_mep_elements(mep_model, logger)
 
     # Extract relationships
+    building_storey_rels = compute_building_storey_rels(arc_model, logger)
+    storey_space_rels = compute_storey_space_rels(arc_model, logger)
     space_wall_rels = compute_space_wall_rels(
         arc_model, spaces, walls, logger)
     wall_opening_rels = compute_wall_opening_rels(arc_model, logger)
@@ -99,6 +107,10 @@ def bim2graph(driver: Driver, arc_path: Path, str_path: Path = None, mep_path: P
         session.execute_write(neo4j_ops.ensure_schema)
 
         # Create nodes
+        if buildings:
+            session.execute_write(neo4j_ops.upsert_buildings, buildings)
+        if storeys:
+            session.execute_write(neo4j_ops.upsert_storeys, storeys)
         if spaces:
             session.execute_write(neo4j_ops.upsert_spaces, spaces)
         if walls:
@@ -113,6 +125,12 @@ def bim2graph(driver: Driver, arc_path: Path, str_path: Path = None, mep_path: P
             session.execute_write(neo4j_ops.upsert_mep_elements, mep_elements)
 
         # Create relationships
+        if building_storey_rels:
+            session.execute_write(
+                neo4j_ops.create_building_storey_rels, building_storey_rels)
+        if storey_space_rels:
+            session.execute_write(
+                neo4j_ops.create_storey_space_rels, storey_space_rels)
         if space_wall_rels:
             session.execute_write(
                 neo4j_ops.create_space_wall_rels, space_wall_rels)

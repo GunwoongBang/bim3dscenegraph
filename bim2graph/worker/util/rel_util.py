@@ -1,6 +1,15 @@
 import numpy as np
 
 
+def aggregation_parent(element, parent_ifc_class):
+    """Return the GlobalId of element's aggregation parent, if it matches the class."""
+    for rel in getattr(element, "Decomposes", []):
+        parent = getattr(rel, "RelatingObject", None)
+        if parent and parent.is_a(parent_ifc_class):
+            return parent.GlobalId
+    return None
+
+
 def compute_space_side_of_wall(space_centroid, wall_center, wall_axis2) -> str | None:
     """
     Determine which side of the wall's AXIS2 the space is on.

@@ -15,6 +15,3 @@ log/
 
 # Environment variables
 .env
-
-# Files
-pc_models/

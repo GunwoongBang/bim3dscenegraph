@@ -2,12 +2,61 @@
 Relationship extraction from IFC models (space-wall boundaries, etc.).
 """
 
+from bim2graph.worker.util.rel_util import aggregation_parent
+
 from .util import (
     compute_space_side_of_wall,
     check_bbox_intersection,
     compute_bbox_overlap,
     swept_solid_aabb,
 )
+
+
+def compute_building_storey_rels(arc_model, logger=None) -> list[dict]:
+    """
+    Compute Building-Storey edges from the IFC spatial decomposition.
+
+    Returns:
+        List of edge dictionaries with keys:
+            - building_id: Building GlobalId
+            - storey_id: Storey GlobalId
+    """
+    edges = []
+
+    for storey in arc_model.by_type("IfcBuildingStorey"):
+        building_id = aggregation_parent(storey, "IfcBuilding")
+        if building_id:
+            edges.append({"building_id": building_id,
+                         "storey_id": storey.GlobalId})
+
+    if logger:
+        logger.logText(
+            "BIM2GRAPH", f"Computed {len(edges)} Building-Storey relationships")
+
+    return edges
+
+
+def compute_storey_space_rels(arc_model, logger=None) -> list[dict]:
+    """
+    Compute Storey-Space edges from the IFC spatial decomposition.
+
+    Returns:
+        List of edge dictionaries with keys:
+            - storey_id: Storey GlobalId
+            - space_id: Space GlobalId
+    """
+    edges = []
+
+    for space in arc_model.by_type("IfcSpace"):
+        storey_id = aggregation_parent(space, "IfcBuildingStorey")
+        if storey_id:
+            edges.append({"storey_id": storey_id, "space_id": space.GlobalId})
+
+    if logger:
+        logger.logText(
+            "BIM2GRAPH", f"Computed {len(edges)} Storey-Space relationships")
+
+    return edges
 
 
 def compute_space_wall_rels(arc_model, spaces: list[dict], walls: list[dict], logger=None) -> list[dict]:

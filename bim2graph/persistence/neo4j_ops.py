@@ -49,6 +49,20 @@ class Neo4jOperations:
                 tx.run(q)
         self._log("Schema constraints created")
 
+    def upsert_buildings(self, tx, buildings):
+        """Create or update Building nodes in Neo4j."""
+        q = self.qm.get("UPSERT_BUILDING")
+        if q:
+            tx.run(q, buildings=buildings)
+        self._log(f"Upserted {len(buildings)} Building nodes")
+
+    def upsert_storeys(self, tx, storeys):
+        """Create or update Storey nodes in Neo4j."""
+        q = self.qm.get("UPSERT_STOREYS")
+        if q:
+            tx.run(q, storeys=storeys)
+        self._log(f"Upserted {len(storeys)} Storey nodes")
+
     def upsert_spaces(self, tx, spaces):
         """Create or update Space nodes in Neo4j."""
         q = self.qm.get("UPSERT_SPACES")
@@ -76,6 +90,20 @@ class Neo4jOperations:
         if q:
             tx.run(q, openings=openings)
         self._log(f"Upserted {len(openings)} Opening nodes")
+
+    def create_building_storey_rels(self, tx, edges):
+        """Create Building-Storey relationships."""
+        q = self.qm.get("CREATE_BUILDING_STOREY_EDGES")
+        if q:
+            tx.run(q, edges=edges)
+        self._log(f"Created {len(edges)} Building-Storey relationships")
+
+    def create_storey_space_rels(self, tx, edges):
+        """Create Storey-Space relationships."""
+        q = self.qm.get("CREATE_STOREY_SPACE_EDGES")
+        if q:
+            tx.run(q, edges=edges)
+        self._log(f"Created {len(edges)} Storey-Space relationships")
 
     def create_wall_layer_rels(self, tx, layers):
         """Create relationships between walls and their layers."""
