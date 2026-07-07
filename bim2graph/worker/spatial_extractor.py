@@ -21,6 +21,7 @@ def extract_buildings(arc_model, storeys: list[dict], building_storey_rels: list
     Returns:
         List of building dictionaries with keys:
             - id: GlobalId
+            - name: Building name
             - ifcClass: IFC class type
             - center: [x, y, z] center point in millimeters, or None
     """
@@ -38,11 +39,16 @@ def extract_buildings(arc_model, storeys: list[dict], building_storey_rels: list
         building_storeys.setdefault(rel["building_id"], []).append(bbox)
 
     buildings = []
-    for b in arc_model.by_type("IfcBuilding"):
-        bbox_min, bbox_max = aabb_union(building_storeys.get(b.GlobalId, []))
+
+    ifc_buildings = arc_model.by_type("IfcBuilding")
+
+    for building in ifc_buildings:
+        bbox_min, bbox_max = aabb_union(
+            building_storeys.get(building.GlobalId, []))
         buildings.append({
-            "id": b.GlobalId,
-            "ifcClass": b.is_a(),
+            "id": building.GlobalId,
+            "name": getattr(building, "Name", None),
+            "ifcClass": building.is_a(),
             "center": aabb_center(bbox_min, bbox_max),
         })
 
@@ -70,6 +76,7 @@ def extract_storeys(arc_model, spaces: list[dict], storey_space_rels: list[dict]
     Returns:
         List of storey dictionaries with keys:
             - id: GlobalId
+            - name: Storey name
             - ifcClass: IFC class type
             - center: [x, y, z] center point in millimeters
             - bbox_min, bbox_max: aggregate AABB of contained spaces in mm
@@ -85,16 +92,20 @@ def extract_storeys(arc_model, spaces: list[dict], storey_space_rels: list[dict]
             space_bbox.get(rel["space_id"]))
 
     storeys = []
-    for s in arc_model.by_type("IfcBuildingStorey"):
-        bboxes = storey_spaces.get(s.GlobalId)
+
+    ifc_storeys = arc_model.by_type("IfcBuildingStorey")
+
+    for storey in ifc_storeys:
+        bboxes = storey_spaces.get(storey.GlobalId)
         if not bboxes:
             # No HAS_SPACE relationship with any room -> do not load
             continue
 
         bbox_min, bbox_max = aabb_union(bboxes)
         storeys.append({
-            "id": s.GlobalId,
-            "ifcClass": s.is_a(),
+            "id": storey.GlobalId,
+            "name": getattr(storey, "Name", None),
+            "ifcClass": storey.is_a(),
             "center": aabb_center(bbox_min, bbox_max),
             "bbox_min": bbox_min,
             "bbox_max": bbox_max,

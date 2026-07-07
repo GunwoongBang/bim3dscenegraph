@@ -25,13 +25,15 @@ CREATE CONSTRAINT mep_element_id IF NOT EXISTS FOR (me:MEPElement) REQUIRE me.id
 -- name: UPSERT_BUILDING
 UNWIND $buildings AS building
 MERGE (b:Building { id: building.id })
-SET b.ifcClass = building.ifcClass,
+SET b.name = building.name,
+    b.ifcClass = building.ifcClass,
     b.center = building.center
 
 -- name: UPSERT_STOREYS
 UNWIND $storeys AS storey
 MERGE (s:Storey { id: storey.id })
-SET s.ifcClass = storey.ifcClass,
+SET s.name = storey.name,
+    s.ifcClass = storey.ifcClass,
     s.center = storey.center
 
 -- name: UPSERT_SPACES
