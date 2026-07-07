@@ -25,12 +25,14 @@ CREATE CONSTRAINT mep_element_id IF NOT EXISTS FOR (me:MEPElement) REQUIRE me.id
 -- name: UPSERT_BUILDING
 UNWIND $buildings AS building
 MERGE (b:Building { id: building.id })
-SET b.ifcClass = building.ifcClass
+SET b.ifcClass = building.ifcClass,
+    b.center = building.center
 
 -- name: UPSERT_STOREYS
 UNWIND $storeys AS storey
 MERGE (s:Storey { id: storey.id })
-SET s.ifcClass = storey.ifcClass
+SET s.ifcClass = storey.ifcClass,
+    s.center = storey.center
 
 -- name: UPSERT_SPACES
 UNWIND $spaces AS space
@@ -154,7 +156,7 @@ SET b.source = edge.source,
     b.penetrationSizeY = edge.penetrationSizeY,
     b.penetrationSizeZ = edge.penetrationSizeZ
 
-/// SENSOR2GRAPH Cypher queries
+// SENSOR2GRAPH Cypher queries
 -- name: RETRIEVE_WALL_ATTRIBUTES
 MATCH (w:Wall {id: $element_id})
 RETURN w.id AS id, w.name AS name, w.ifcClass AS ifcClass, w.layerCount AS layerCount

@@ -4,7 +4,9 @@ Util extractor module for BIM2GRAPH.
 
 from .geometry import (
     extract_bbox,
-    extract_centroid
+    extract_centroid,
+    aabb_union,
+    aabb_center,
 )
 from .wall_util import (
     extract_placement,
@@ -32,6 +34,8 @@ from .rel_util import (
 __all__ = [
     'extract_bbox',
     'extract_centroid',
+    'aabb_union',
+    'aabb_center',
     'extract_placement',
     'get_material_info',
     'get_pset_property',

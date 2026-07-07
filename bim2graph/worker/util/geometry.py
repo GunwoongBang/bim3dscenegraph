@@ -83,3 +83,40 @@ def extract_centroid(element) -> list[float] | None:
         return _m_to_mm(centroid_m)
     except Exception:
         return None
+
+
+def aabb_union(bboxes) -> tuple[list[float], list[float]]:
+    """
+    Compute the axis-aligned bounding box enclosing several bounding boxes.
+
+    Args:
+        bboxes: iterable of (bbox_min, bbox_max) pairs, each [x, y, z] in mm.
+            Either element of a pair may be None.
+
+    Returns:
+        Tuple (bbox_min, bbox_max) in millimeters, or (None, None) if no valid
+        bounding box is provided.
+    """
+    mins = [b[0] for b in bboxes if b and b[0] is not None]
+    maxs = [b[1] for b in bboxes if b and b[1] is not None]
+    if not mins or not maxs:
+        return None, None
+    lo = np.array(mins).min(axis=0)
+    hi = np.array(maxs).max(axis=0)
+    return lo.round(2).tolist(), hi.round(2).tolist()
+
+
+def aabb_center(bbox_min, bbox_max) -> list[float] | None:
+    """
+    Compute the center point of an axis-aligned bounding box.
+
+    Args:
+        bbox_min: [x, y, z] lower corner in mm, or None
+        bbox_max: [x, y, z] upper corner in mm, or None
+
+    Returns:
+        List [x, y, z] center in millimeters, or None if either corner is None.
+    """
+    if bbox_min is None or bbox_max is None:
+        return None
+    return ((np.array(bbox_min) + np.array(bbox_max)) / 2).round(2).tolist()

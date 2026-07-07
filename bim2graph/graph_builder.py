@@ -68,8 +68,6 @@ def bim2graph(driver: Driver, arc_path: Path, str_path: Path = None, mep_path: P
     # Extract data from IFC
     # =========================================================================
     # Extract nodes
-    buildings = extract_buildings(arc_model, logger)
-    storeys = extract_storeys(arc_model, logger)
     spaces = extract_spaces(arc_model, logger)
     walls = extract_walls(arc_model, logger)
 
@@ -83,9 +81,23 @@ def bim2graph(driver: Driver, arc_path: Path, str_path: Path = None, mep_path: P
         mep_systems = extract_mep_systems(mep_model, logger)
         mep_elements = extract_mep_elements(mep_model, logger)
 
-    # Extract relationships
+    # Extract spatial relationships (needed to derive storey/building centers)
     building_storey_rels = compute_building_storey_rels(arc_model, logger)
     storey_space_rels = compute_storey_space_rels(arc_model, logger)
+
+    # Only storeys that contain rooms are retained (and given a center point);
+    # buildings derive their center from those retained storeys.
+    storeys = extract_storeys(arc_model, spaces, storey_space_rels, logger)
+    buildings = extract_buildings(arc_model, storeys, building_storey_rels, logger)
+
+    # Drop Building-Storey edges pointing to storeys that were not retained
+    retained_storey_ids = {s["id"] for s in storeys}
+    building_storey_rels = [
+        rel for rel in building_storey_rels
+        if rel["storey_id"] in retained_storey_ids
+    ]
+
+    # Extract remaining relationships
     space_wall_rels = compute_space_wall_rels(
         arc_model, spaces, walls, logger)
     wall_opening_rels = compute_wall_opening_rels(arc_model, logger)
