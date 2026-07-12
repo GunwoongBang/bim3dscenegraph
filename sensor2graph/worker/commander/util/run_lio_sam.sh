@@ -2,7 +2,7 @@
 # Terminal 2: LIO-SAM lidar-inertial odometry and mapping.
 set -e
 
-WS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../ifc2pointcloud" && pwd)"
+WS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../ifc2pointcloud" && pwd)"
 cd "$WS_DIR"
 
 source /opt/ros/humble/setup.bash

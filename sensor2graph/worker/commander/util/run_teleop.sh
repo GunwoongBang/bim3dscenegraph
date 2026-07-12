@@ -2,7 +2,7 @@
 # Terminal 3: Keyboard teleoperation to drive the robot.
 set -e
 
-WS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../ifc2pointcloud" && pwd)"
+WS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../ifc2pointcloud" && pwd)"
 cd "$WS_DIR"
 
 source /opt/ros/humble/setup.bash

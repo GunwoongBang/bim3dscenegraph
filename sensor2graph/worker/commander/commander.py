@@ -101,7 +101,7 @@ def _kill_all_ros2():
     subprocess.run("rm -rf /dev/shm/fastrtps_*", shell=True, check=False)
 
 
-_WS_SETUP = str(UTIL.parent.parent / "ifc2pointcloud" /
+_WS_SETUP = str(UTIL.parent.parent.parent / "ifc2pointcloud" /
                 "install" / "setup.bash")
 
 
