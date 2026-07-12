@@ -15,6 +15,10 @@ from .util import (
     print_ifc_wall_options,
     compact_point_cloud,
 )
+from .validation import (
+    log_segmentation_validation,
+    log_labeling_validation,
+)
 
 
 def segment_point_cloud(pcd_model: Path, ifc_model: Path, logger=None) -> Path:
@@ -53,6 +57,9 @@ def segment_point_cloud(pcd_model: Path, ifc_model: Path, logger=None) -> Path:
     walls = list(ifc_model.by_type("IfcWall"))
     if not walls:
         raise ValueError("No IfcWall elements were found in the IFC model.")
+
+    # Stage 1 validation: RANSAC planarity/coverage before any labeling.
+    log_segmentation_validation(plane_groups, walls, logger)
 
     output_csv = pcd_model.with_name(f"{pcd_model.stem}.csv")
 
@@ -121,6 +128,9 @@ def segment_point_cloud(pcd_model: Path, ifc_model: Path, logger=None) -> Path:
             "Label another plane? [Y/n]: ").strip().lower()
         if continue_labeling in {"n", "no", "done", "q", "quit", "exit"}:
             break
+
+    # Stage 2 validation: cluster -> wall mapping, coverage, clutter rejected.
+    log_labeling_validation(plane_groups, plane_semantics, walls, logger)
 
     surface_types = np.full(n_points, "unlabeled", dtype=object)
     ifc_type = np.full(n_points, "", dtype=object)

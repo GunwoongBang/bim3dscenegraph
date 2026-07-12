@@ -18,6 +18,7 @@ from .worker import (
     clean_point_cloud,
     segment_point_cloud,
     exclude_planes,
+    register_point_clouds,
     retrieve_picked_point_id,
 )
 from .worker.commander import (
@@ -68,16 +69,22 @@ def sensor2graph(driver: Driver, pcd_path: Path, arc_path: Path, logger=None):
     else:
         pcd_path = Path("pcd_models/cloudGlobal.pcd")
 
+    # Point cloud cleaning
     cleaned_pcd_path = clean_point_cloud(pcd_path, logger)
 
+    # Point cloud segmentation
     segmented_csv_path = segment_point_cloud(
         cleaned_pcd_path, arc_model, logger)
 
+    # Undefined points exclusion
     excluded_pcd_path, excluded_csv_path = exclude_planes(
         cleaned_pcd_path, segmented_csv_path, logger)
 
     PCD_MODEL = excluded_pcd_path
     CSV_FILE = excluded_csv_path
+
+    # Point cloud registration
+    register_point_clouds(PCD_MODEL, CSV_FILE, arc_model, logger)
 
     # =========================================================================
     # Merge point cloud with BIM-derived graph

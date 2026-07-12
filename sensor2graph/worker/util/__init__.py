@@ -12,6 +12,11 @@ from .pcd_util import (
     make_plane_colors,
     pick_seed_point,
     print_ifc_wall_options,
+    RegistrationValidation,
+    load_ifc_reference_cloud,
+    preprocess_point_cloud,
+    global_registration,
+    refine_registration,
 )
 from .sdf_util import (
     safe_name,
@@ -32,5 +37,10 @@ __all__ = [
     'print_ifc_wall_options',
     'safe_name',
     'write_obj',
-    'pretty_xml'
+    'pretty_xml',
+    'RegistrationValidation',
+    'load_ifc_reference_cloud',
+    'preprocess_point_cloud',
+    'global_registration',
+    'refine_registration',
 ]

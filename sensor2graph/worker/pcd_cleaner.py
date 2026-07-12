@@ -4,6 +4,7 @@ Point cloud preprocessing (downsampling, outlier removal, cropping) of PCD data.
 
 from pathlib import Path
 
+import numpy as np
 
 from .util import (
     read_point_cloud,
@@ -11,6 +12,7 @@ from .util import (
     # remove_statistical_outliers,
     floor_removal,
 )
+from .validation import log_cleaning_validation
 
 
 def clean_point_cloud(pcd_path: Path, logger=None) -> Path:
@@ -37,7 +39,12 @@ def clean_point_cloud(pcd_path: Path, logger=None) -> Path:
     #     std_ratio = std_ratio,
     # )
 
+    input_count = len(np.asarray(cloud.points))
     cleaned_path = floor_removal(pcd_path, cloud, floor_z_cutoff)
+
+    # Stage 0 validation: incoming vs. surviving points after floor removal.
+    output_count = len(np.asarray(read_point_cloud(cleaned_path).points))
+    log_cleaning_validation(input_count, output_count, logger)
 
     if logger:
         logger.logText(

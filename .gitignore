@@ -15,3 +15,5 @@ log/
 
 # Environment variables
 .env
+
+/pcd_models_archive/
