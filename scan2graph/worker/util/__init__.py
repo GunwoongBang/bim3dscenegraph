@@ -1,5 +1,5 @@
 """
-Util extractor module for SENSOR2GRAPH.
+Util extractor module for SCAN2GRAPH.
 """
 from .geometry import extract_mesh_from_shape
 from .pcd_util import (

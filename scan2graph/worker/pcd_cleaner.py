@@ -48,6 +48,6 @@ def clean_point_cloud(pcd_path: Path, logger=None) -> Path:
 
     if logger:
         logger.logText(
-            "SENSOR2GRAPH", f"Cleaned PCD saved: {cleaned_path} (floor removal)")
+            "SCAN2GRAPH", f"Cleaned PCD saved: {cleaned_path} (floor removal)")
 
     return cleaned_path

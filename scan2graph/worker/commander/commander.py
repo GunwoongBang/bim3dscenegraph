@@ -26,7 +26,7 @@ def launch_ros2_pipeline(logger=None):
     )
 
     if logger:
-        logger.logText("SENSOR2GRAPH", "Built ROS2 workspace")
+        logger.logText("SCAN2GRAPH", "Built ROS2 workspace")
 
     sim_proc = subprocess.Popen(
         [str(UTIL / "run_sim.sh")],
@@ -43,7 +43,7 @@ def launch_ros2_pipeline(logger=None):
     )
 
     if logger:
-        logger.logText("SENSOR2GRAPH", "Launched ROS2 point cloud generation")
+        logger.logText("SCAN2GRAPH", "Launched ROS2 point cloud generation")
 
     terminal = next(
         (t for t in ("gnome-terminal", "xterm", "konsole", "xfce4-terminal")
@@ -125,7 +125,7 @@ def stop_ros2_pipeline(proc, logger=None):
     _save_lio_sam_map()
 
     if logger:
-        logger.logText("SENSOR2GRAPH", "Saved LIO-SAM point cloud")
+        logger.logText("SCAN2GRAPH", "Saved LIO-SAM point cloud")
 
     for process in proc:
         if process and process.poll() is None:
@@ -134,4 +134,4 @@ def stop_ros2_pipeline(proc, logger=None):
     _kill_all_ros2()
 
     if logger:
-        logger.logText("SENSOR2GRAPH", "Stopped ROS2 point cloud generation")
+        logger.logText("SCAN2GRAPH", "Stopped ROS2 point cloud generation")

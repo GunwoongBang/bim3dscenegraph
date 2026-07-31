@@ -26,7 +26,7 @@ flowchart TB
     IFC -->|"extract entities + topology<br/>(bim2graph)"| GRAPH
     IFC -->|"tessellate geometry<br/>(sdf_exporter)"| SDF
     SDF -->|"LiDAR sim + LIO-SAM SLAM"| PCD
-    PCD -->|"clean → RANSAC segment → label<br/>(sensor2graph)"| LPCD
+    PCD -->|"clean → RANSAC segment → label<br/>(scan2graph)"| LPCD
     LPCD -.->|"pick point → ifc_global_id<br/>confirms BIM–sensor match"| GRAPH
 
     GRAPH -->|"query → serialize<br/>(robot_graph)"| JSON
@@ -42,7 +42,7 @@ flowchart TB
 | 2 | Semantic graph | Neo4j property graph | `bim2graph` |
 | 3 | Simulation world | `SDF` + `OBJ` | `sdf_exporter` |
 | 4 | Raw point cloud | `PCD` (XYZ) | LiDAR sim + LIO-SAM |
-| 5 | Labeled point cloud | `PCD` + `CSV` | `sensor2graph` |
+| 5 | Labeled point cloud | `PCD` + `CSV` | `scan2graph` |
 | 6 | Robot-facing BIM | `JSON` | `robot_graph` |
 | 7 | Task plan | drill parameters | `robot_task` |
 | 8 | Motion | MoveIt trajectory | `robot_gazebo` |

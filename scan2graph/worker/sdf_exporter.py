@@ -135,4 +135,4 @@ def export_ifc_to_sdf(ifc_model, logger=None):
     output_path.write_text(pretty_xml(sdf), encoding="utf-8")
 
     if logger:
-        logger.logText("SENSOR2GRAPH", "IFC to SDF export completed")
+        logger.logText("SCAN2GRAPH", "IFC to SDF export completed")

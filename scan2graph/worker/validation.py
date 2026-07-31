@@ -1,5 +1,5 @@
 """
-Stage validation for SENSOR2GRAPH.
+Stage validation for SCAN2GRAPH.
 
 Reports per-stage quality metrics to the log while the pipeline runs:
 

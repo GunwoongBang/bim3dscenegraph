@@ -165,7 +165,7 @@ def segment_point_cloud(pcd_model: Path, ifc_model: Path, logger=None) -> Path:
 
     if logger:
         logger.logText(
-            "SENSOR2GRAPH", f"Segmented CSV file saved: {output_csv}")
+            "SCAN2GRAPH", f"Segmented CSV file saved: {output_csv}")
 
     return output_csv
 
@@ -198,7 +198,7 @@ def exclude_planes(input_pcd: Path, input_csv: Path, logger=None) -> tuple[Path,
     if unlabeled_df.empty:
         if logger:
             logger.logText(
-                "SENSOR2GRAPH", f"No unlabeled rows found in {input_csv.name}; no points excluded.",)
+                "SCAN2GRAPH", f"No unlabeled rows found in {input_csv.name}; no points excluded.",)
         return input_pcd, input_csv
 
     output_csv = input_csv.with_name(
@@ -206,12 +206,12 @@ def exclude_planes(input_pcd: Path, input_csv: Path, logger=None) -> tuple[Path,
     filtered_df.to_csv(output_csv, index=False)
 
     if logger:
-        logger.logText("SENSOR2GRAPH", f"Filtered CSV saved: {output_csv}")
+        logger.logText("SCAN2GRAPH", f"Filtered CSV saved: {output_csv}")
 
     # Rewrite the PCD file to include only the points corresponding to the filtered CSV
     output_pcd = compact_point_cloud(input_pcd, unlabeled_indices)
 
     if logger:
-        logger.logText("SENSOR2GRAPH", f"Filtered PCD saved: {output_pcd}")
+        logger.logText("SCAN2GRAPH", f"Filtered PCD saved: {output_pcd}")
 
     return output_pcd, output_csv

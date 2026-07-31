@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from neo4j import GraphDatabase
 
 from bim2graph import bim2graph
-from sensor2graph import sensor2graph
+from scan2graph import scan2graph
 
 load_dotenv()
 
@@ -49,13 +49,13 @@ if __name__ == "__main__":
     logger.logText("Divider")
 
     # =========================================================================
-    # SENSOR2GRAPH: Extract point cloud from sensor data and merge with BIM graph
+    # SCAN2GRAPH: Extract point cloud from sensor data and merge with BIM graph
     # =========================================================================
-    s2g_proc = input("Do you want to run SENSOR2GRAPH? (y/n): ").lower() == 'y'
+    s2g_proc = input("Do you want to run SCAN2GRAPH? (y/n): ").lower() == 'y'
     if s2g_proc:
-        sensor2graph(driver, PCD_PATH, ARC_PATH, logger)
+        scan2graph(driver, PCD_PATH, ARC_PATH, logger)
 
     logger.logText("Divider")
-    # Close driver after SENSOR2GRAPH operations
+    # Close driver after SCAN2GRAPH operations
     graph_close(driver)
     logger.logText("PROJECT", "Ended")

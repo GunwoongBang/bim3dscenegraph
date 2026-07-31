@@ -158,7 +158,7 @@ SET b.source = edge.source,
     b.penetrationSizeY = edge.penetrationSizeY,
     b.penetrationSizeZ = edge.penetrationSizeZ
 
-// SENSOR2GRAPH Cypher queries
+// SCAN2GRAPH Cypher queries
 -- name: RETRIEVE_WALL_ATTRIBUTES
 MATCH (w:Wall {id: $element_id})
 RETURN w.id AS id, w.name AS name, w.ifcClass AS ifcClass, w.layerCount AS layerCount

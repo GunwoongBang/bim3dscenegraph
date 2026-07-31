@@ -9,7 +9,7 @@ The project is composed of two main pipelines:
 | Module | Purpose |
 |---|---|
 | `bim2graph` | Parse IFC models (ARC/STR/MEP) and persist a semantic graph to Neo4j |
-| `sensor2graph` | Generate or load a point cloud, label and register it against IFC geometry, and query the BIM graph from a picked sensor point |
+| `scan2graph` | Generate or load a point cloud, label and register it against IFC geometry, and query the BIM graph from a picked sensor point |
 
 Both pipelines are orchestrated from `main.py` and share a common `QueryManager` and `Neo4jOperations` layer.
 
@@ -27,17 +27,17 @@ bim3dscenegraph/
 │   │   └── util/               # Geometry, wall/material, MEP shape, relationship helpers
 │   ├── persistence/            # Neo4jOperations: upserts and edge creation
 │   └── README.md               # Full breakdown of the BIM2GRAPH pipeline
-├── sensor2graph/               # Sensor -> point cloud -> BIM graph query
-│   ├── graph_builder.py        # Orchestrator: sensor2graph()
+├── scan2graph/                 # Scan -> point cloud -> BIM graph query
+│   ├── graph_builder.py        # Orchestrator: scan2graph()
 │   ├── worker/                 # SDF export, PCD cleaning, segmentation, registration, picking
 │   │   ├── commander/          # ROS2/Gazebo pipeline control
 │   │   └── util/               # Open3D IO, RANSAC planes, ICP + metrics, mesh/SDF helpers
 │   ├── ifc2pointcloud/         # ROS2 workspace (submodule): Gazebo world, Velodyne sim, LIO-SAM
 │   ├── persistence/            # Neo4jOperations: graph reads
-│   └── README.md               # Full breakdown of the SENSOR2GRAPH pipeline
+│   └── README.md               # Full breakdown of the SCAN2GRAPH pipeline
 ├── query_manager/              # Shared Cypher query loader
 │   ├── query_manager.py        # QueryManager: loads named queries from the .cypher file
-│   └── query_handler.cypher    # Named Cypher statements (BIM2GRAPH + SENSOR2GRAPH sections)
+│   └── query_handler.cypher    # Named Cypher statements (BIM2GRAPH + SCAN2GRAPH sections)
 ├── docs/                       # Architecture, data transformation, and evaluation notes
 ├── ifc_models/                 # Input IFC files (ARC, STR, MEP)
 ├── pcd_models/                 # Input/output PCD files, label CSVs, transform YAML
@@ -58,7 +58,7 @@ flowchart TB
 
     NEO4J[("Neo4j Graph")]
 
-    subgraph PCP["Point Cloud Pipeline  (sensor2graph/worker/)"]
+    subgraph PCP["Point Cloud Pipeline  (scan2graph/worker/)"]
         direction TB
         SDF["IFC → SDF world\nsdf_exporter.py"]
         SIM["ROS2 / Gazebo sim + LIO-SAM SLAM\ncommander.py"]
@@ -69,7 +69,7 @@ flowchart TB
         SDF --> SIM --> CLEAN --> SEG --> EXC --> REG
     end
 
-    subgraph SENSOR2GRAPH["SENSOR2GRAPH  (sensor2graph/)"]
+    subgraph SCAN2GRAPH["SCAN2GRAPH  (scan2graph/)"]
         S2G["Pick sensor point → query graph\npoint_picker.py"]
     end
 
@@ -91,16 +91,16 @@ Entrypoint call:
 
 See [bim2graph/README.md](bim2graph/README.md) for the full breakdown.
 
-### Step 2 — SENSOR2GRAPH
+### Step 2 — SCAN2GRAPH
 
 Takes a PCD file and the same ARC IFC model. If point cloud data is not yet available, it generates one via a Gazebo simulation using the IFC geometry, then runs LIO-SAM SLAM. The resulting cloud is cleaned, segmented by RANSAC plane detection, interactively labeled against IFC walls, and registered to the IFC-derived reference cloud. Finally, the user picks a sensor point and its `ifc_global_id` is used to query the BIM graph in Neo4j.
 
 Per-stage quality metrics (cleaning, segmentation, labeling, registration) are reported to the log under the `VALIDATION` phase.
 
 Entrypoint call:
-- `sensor2graph(driver, pcd_path, arc_path, logger=None)`
+- `scan2graph(driver, pcd_path, arc_path, logger=None)`
 
-See [sensor2graph/README.md](sensor2graph/README.md) for the full breakdown.
+See [scan2graph/README.md](scan2graph/README.md) for the full breakdown.
 
 ---
 
@@ -114,7 +114,7 @@ Loaded dynamically by:
 
 Executed by:
 - `bim2graph/persistence/neo4j_ops.py` (writes: reset, schema, upserts, edges)
-- `sensor2graph/persistence/neo4j_ops.py` (reads: wall attribute retrieval)
+- `scan2graph/persistence/neo4j_ops.py` (reads: wall attribute retrieval)
 
 ---
 
@@ -155,7 +155,7 @@ python main.py
 The pipeline will:
 1. Connect to Neo4j
 2. Run BIM2GRAPH — parse IFC files and populate the graph
-3. Prompt whether to run SENSOR2GRAPH — process the point cloud and query the graph
+3. Prompt whether to run SCAN2GRAPH — process the point cloud and query the graph
 4. Close the Neo4j driver
 
 Logs are written to `log/project.log`.

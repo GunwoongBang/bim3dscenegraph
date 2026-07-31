@@ -1,5 +1,5 @@
 """
-Main extractor module for SENSOR2GRAPH.
+Main extractor module for SCAN2GRAPH.
 """
 
 from .sdf_exporter import export_ifc_to_sdf

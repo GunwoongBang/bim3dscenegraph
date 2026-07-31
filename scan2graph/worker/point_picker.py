@@ -45,12 +45,12 @@ def retrieve_picked_point_id(pcd_path: Path, csv_path: Path, logger=None) -> str
 
     if not picked_index:
         if logger:
-            logger.logText("SENSOR2GRAPH", "No point was picked.")
+            logger.logText("SCAN2GRAPH", "No point was picked.")
 
     picked_global_id = labels.iloc[picked_index[0]]["ifc_global_id"]
 
     if logger:
         logger.logText(
-            "SENSOR2GRAPH", "Sensor graph is connected to BIM graph")
+            "SCAN2GRAPH", "Sensor graph is connected to BIM graph")
 
     return picked_global_id

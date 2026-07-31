@@ -125,7 +125,7 @@ def register_point_clouds(
 
     if logger:
         logger.logText(
-            "SENSOR2GRAPH", f"Registration transform saved: {transform_path}")
+            "SCAN2GRAPH", f"Registration transform saved: {transform_path}")
 
     # Report the stage-3 metrics as soon as registration is done, so all
     # pipeline validations land in the log together.

@@ -28,7 +28,7 @@ bim3dscenegraph/
 │   └── persistence/
 │       └── neo4j_ops.py                # Neo4j writer: schema, node upserts, edge creation
 │
-├── sensor2graph/                       # pipeline 2 — point cloud → label → graph query
+├── scan2graph/                         # pipeline 2 — point cloud → label → graph query
 │   ├── graph_builder.py                # orchestrator: generate → clean → segment → query
 │   ├── worker/
 │   │   ├── sdf_exporter.py             # IFC geometry → Gazebo SDF world + OBJ meshes
@@ -52,7 +52,7 @@ bim3dscenegraph/
 
 ---
 
-## ifc2pointcloud — ROS 2 workspace (git submodule of sensor2graph)
+## ifc2pointcloud — ROS 2 workspace (git submodule of scan2graph)
 
 Generates a point cloud by driving a simulated robot through the IFC-derived world.
 

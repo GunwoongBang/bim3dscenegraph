@@ -1,17 +1,17 @@
-# sensor2graph
+# scan2graph
 
 ## Overview
 
-SENSOR2GRAPH merges sensor-derived point cloud data with a BIM graph in Neo4j.
+SCAN2GRAPH merges sensor-derived point cloud data with a BIM graph in Neo4j.
 
 It takes a PCD file and an ARC IFC model, optionally generates the point cloud via a ROS2/Gazebo simulation, segments and labels the point cloud against IFC geometry, registers it to the IFC reference cloud, and queries the existing BIM graph to retrieve semantic wall attributes for any picked sensor point.
 
-Current implementation is orchestrated in `sensor2graph/graph_builder.py` and uses:
-- workers in `sensor2graph/worker/*`
-- point cloud/geometry helpers in `sensor2graph/worker/util/*`
-- ROS2 pipeline control in `sensor2graph/worker/commander/commander.py`
+Current implementation is orchestrated in `scan2graph/graph_builder.py` and uses:
+- workers in `scan2graph/worker/*`
+- point cloud/geometry helpers in `scan2graph/worker/util/*`
+- ROS2 pipeline control in `scan2graph/worker/commander/commander.py`
 - query loader in `query_manager/` (shared `QueryManager`)
-- persistence layer in `sensor2graph/persistence/neo4j_ops.py`
+- persistence layer in `scan2graph/persistence/neo4j_ops.py`
 - Cypher definitions in `query_manager/query_handler.cypher`
 
 ---
@@ -19,9 +19,9 @@ Current implementation is orchestrated in `sensor2graph/graph_builder.py` and us
 ## Module Structure
 
 ```
-sensor2graph/
-├── __init__.py                     # Package exports: sensor2graph, QueryManager, Neo4jOperations
-├── graph_builder.py                # Orchestrator: sensor2graph() - generate, process, register, query
+scan2graph/
+├── __init__.py                     # Package exports: scan2graph, QueryManager, Neo4jOperations
+├── graph_builder.py                # Orchestrator: scan2graph() - generate, process, register, query
 ├── worker/                         # Processing layer (IFC/PCD -> labeled point cloud)
 │   ├── __init__.py                 # Re-exports all worker functions
 │   ├── sdf_exporter.py             # IfcWall/IfcSlab -> OBJ meshes + Gazebo SDF world
@@ -57,7 +57,7 @@ sensor2graph/
 - `arc_path` (required): ARC IFC model (for geometry and wall semantics)
 
 Entrypoint call:
-- `sensor2graph(driver, pcd_path, arc_path, logger=None)`
+- `scan2graph(driver, pcd_path, arc_path, logger=None)`
 
 ---
 
@@ -142,4 +142,4 @@ Loaded dynamically by:
 - `query_manager/` (shared `QueryManager`)
 
 Executed by:
-- `sensor2graph/persistence/neo4j_ops.py`
+- `scan2graph/persistence/neo4j_ops.py`

@@ -1,10 +1,10 @@
 """
-Neo4j database operations for BIM graph persistence.
+Neo4j database operations for scan data management.
 """
 
 
 class Neo4jOperations:
-    """Handles all Neo4j CRUD operations for BIM data."""
+    """Handles all Neo4j CRUD operations for scan data."""
 
     def __init__(self, query_manager, logger=None):
         """
@@ -20,7 +20,7 @@ class Neo4jOperations:
     def _log(self, message):
         """Log a message if logger is available."""
         if self.logger:
-            self.logger.logText("BIM2GRAPH", message)
+            self.logger.logText("SCAN2GRAPH", message)
 
     # tx: A transaction object passed from the session context
     # A transaction ensures that a group of operations is executed as a single unit

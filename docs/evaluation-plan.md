@@ -66,7 +66,7 @@ generalization, and performance as cross-cutting concerns.
 
 ---
 
-## Stage 4 — sensor2graph (point pick → graph query)
+## Stage 4 — scan2graph (point pick → graph query)
 
 - **RQ4.** Does selecting a sensor point retrieve the correct BIM element and its attributes
   from the graph?

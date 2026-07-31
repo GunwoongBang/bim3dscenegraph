@@ -1,5 +1,5 @@
 """
-Main orchestrator for SENSOR2GRAPH.
+Main orchestrator for SCAN2GRAPH.
 
 This module coordinates the conversion of BIM model geometry into
 a point cloud representation and persistence to Neo4j graph database.
@@ -27,7 +27,7 @@ from .worker.commander import (
 )
 
 
-def sensor2graph(driver: Driver, pcd_path: Path, arc_path: Path, logger=None):
+def scan2graph(driver: Driver, pcd_path: Path, arc_path: Path, logger=None):
     """
     Generates a sensor-derived graph from an IFC model and persists to Neo4j.
 
@@ -44,7 +44,7 @@ def sensor2graph(driver: Driver, pcd_path: Path, arc_path: Path, logger=None):
         logger: Optional logger for output messages
     """
     if logger:
-        logger.logText("SENSOR2GRAPH", "ARC IFC model loaded")
+        logger.logText("SCAN2GRAPH", "ARC IFC model loaded")
 
     # Initialize components
     query_manager = QueryManager()
@@ -105,4 +105,4 @@ def sensor2graph(driver: Driver, pcd_path: Path, arc_path: Path, logger=None):
         print(wall_row["layerCount"])
 
     if logger:
-        logger.logText("SENSOR2GRAPH", "SENSOR2GRAPH completed")
+        logger.logText("SCAN2GRAPH", "SCAN2GRAPH completed")

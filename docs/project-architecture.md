@@ -4,7 +4,7 @@ flowchart TB
 
     subgraph BIM3DSG["BIM3DSCENEGRAPH"]
         BIM2GRAPH
-        SENSOR2GRAPH
+        SCAN2GRAPH
         Neo4j[("Neo4j Graph DB")]
     end
     
@@ -26,19 +26,19 @@ flowchart TB
     PCD["Point cloud model"]
 
     BIM --> |ARC/STR/MEP models| BIM2GRAPH
-    BIM --> |ARC model| SENSOR2GRAPH
+    BIM --> |ARC model| SCAN2GRAPH
     BIM2GRAPH --> |persists </br>nodes & edges| Neo4j
-    Neo4j --> |confirms </br>BIM-sensor match| SENSOR2GRAPH
+    Neo4j --> |confirms </br>BIM-sensor match| SCAN2GRAPH
 
-    SENSOR2GRAPH --> |exports </br>world file| GAZEBO1
-    SENSOR2GRAPH --> |exports </br>world file| GAZEBO2
+    SCAN2GRAPH --> |exports </br>world file| GAZEBO1
+    SCAN2GRAPH --> |exports </br>world file| GAZEBO2
     robot_description --> |robot URDF| GAZEBO1
     robot_control --> |/cmd_vel| GAZEBO1
     GAZEBO1 --> |hosts sensor| velodyne_simulator
     GAZEBO1 --> |streams </br>IMU data| LIO-SAM-ros2
     velodyne_simulator --> |streams </br>point cloud| LIO-SAM-ros2
     LIO-SAM-ros2 --> |maps cloud| PCD
-    PCD --> SENSOR2GRAPH
+    PCD --> SCAN2GRAPH
     PCD --> robot_rviz
 
     Neo4j --> |exports </br>BIM model| robot_graph
