@@ -2,17 +2,17 @@
 
 Each repository's package organization, annotated with the role of every module.
 
-`bim3dscenegraph` is a Python orchestration layer; both of its pipelines follow the same
+`bimscanfusion` is a Python orchestration layer; both of its pipelines follow the same
 pattern — an **orchestrator** (`graph_builder.py`) that fans out to stateless **workers**,
 writing through a **persistence** layer, over a **shared query layer** (`query_manager/`).
 `ifc2pointcloud` and `graph2robot` are ROS 2 workspaces, each a set of cooperating packages.
 
 ---
 
-## bim3dscenegraph — Python orchestration + graph
+## bimscanfusion — Python orchestration + graph
 
 ```text
-bim3dscenegraph/
+bimscanfusion/
 ├── main.py                             # entrypoint: open Neo4j driver, run both pipelines
 ├── logger.py                           # shared file logger
 │

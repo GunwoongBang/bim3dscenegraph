@@ -1,8 +1,8 @@
-# BIM 3D Scene Graph
+# BIMScanFusion
 
 ## Overview
 
-BIM 3D Scene Graph constructs a semantically rich 3D scene graph by fusing BIM data and sensor-derived point clouds into a Neo4j graph database.
+BIMScanFusion constructs a semantically rich 3D scene graph by fusing BIM data and sensor-derived point clouds into a Neo4j graph database.
 
 The project is composed of two main pipelines:
 
@@ -18,7 +18,7 @@ Both pipelines are orchestrated from `main.py` and share a common `QueryManager`
 ## Module Structure
 
 ```
-bim3dscenegraph/
+bimscanfusion/
 ├── main.py                     # Top-level entrypoint: Neo4j driver, runs both pipelines
 ├── logger.py                   # Shared file logger (phase-tagged, writes to log/project.log)
 ├── bim2graph/                  # BIM -> Neo4j graph pipeline

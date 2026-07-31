@@ -2,7 +2,7 @@
 flowchart TB
     BIM["BIM model"]
 
-    subgraph BIM3DSG["BIM3DSCENEGRAPH"]
+    subgraph BIMSCANFUSION["BIMSCANFUSION"]
         BIM2GRAPH
         SCAN2GRAPH
         Neo4j[("Neo4j Graph DB")]
