@@ -53,11 +53,11 @@ def sensor2graph(driver: Driver, pcd_path: Path, arc_path: Path, logger=None):
     # Load ARC IFC model
     arc_model = ifcopenshell.open(arc_path)
 
-    pcd_prep = input(
-        "Do you want to prepare the point cloud? (y/n): ").lower() == 'y'
     # =========================================================================
     # Generate point cloud from IFC model (if PCD data is missing) & Post-process
     # =========================================================================
+    pcd_prep = input(
+        "Do you want to prepare the point cloud? (y/n): ").lower() == 'y'
     if pcd_prep:
         export_ifc_to_sdf(arc_model, logger)
 

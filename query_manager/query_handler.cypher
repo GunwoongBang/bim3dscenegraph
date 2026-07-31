@@ -142,7 +142,7 @@ MERGE (ms)-[:CONTAINS]->(me)
 UNWIND $edges AS edge
 MATCH (me:MEPElement { id: edge.mep_element_id })
 MATCH (s:Space { id: edge.space_id })
-MERGE (s)-[:HOSTS]->(me)
+MERGE (s)-[:INTERSECTS]->(me)
 
 -- name: CREATE_MEP_ELEMENT_WALL_EDGES
 UNWIND $edges AS edge

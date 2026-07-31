@@ -51,7 +51,9 @@ if __name__ == "__main__":
     # =========================================================================
     # SENSOR2GRAPH: Extract point cloud from sensor data and merge with BIM graph
     # =========================================================================
-    sensor2graph(driver, PCD_PATH, ARC_PATH, logger)
+    s2g_proc = input("Do you want to run SENSOR2GRAPH? (y/n): ").lower() == 'y'
+    if s2g_proc:
+        sensor2graph(driver, PCD_PATH, ARC_PATH, logger)
 
     logger.logText("Divider")
     # Close driver after SENSOR2GRAPH operations

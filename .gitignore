@@ -16,4 +16,5 @@ log/
 # Environment variables
 .env
 
+/ifc_models_archive/
 /pcd_models_archive/

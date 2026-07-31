@@ -42,7 +42,7 @@ def read_point_cloud(pcd_model: Path) -> o3d.geometry.PointCloud:
 
 
 # ========================================================================
-# Point cloud preprocessing utilities (cleaning, downsampling, outlier removal)
+# region: Post-processing
 # ========================================================================
 def floor_removal(pcd_model: Path, cloud, floor_z_cutoff: float) -> Path:
     """
@@ -84,10 +84,11 @@ def floor_removal(pcd_model: Path, cloud, floor_z_cutoff: float) -> Path:
 #         std_ratio=std_ratio,
 #     )
 #     return filtered
+# endregion
 
 
 # =========================================================================
-# Point cloud filtering utilities (plane segmentation)
+# region: Segmentation
 # =========================================================================
 def extract_plane_groups(
     cloud: o3d.geometry.PointCloud,
@@ -242,9 +243,11 @@ def compact_point_cloud(input_pcd: Path, index_list: list[int]) -> Path:
         str(output_pcd), filtered_cloud, write_ascii=True)
 
     return output_pcd
+# endregion
+
 
 # =========================================================================
-# Point cloud registration utilities
+# region: Registration
 # =========================================================================
 @dataclass
 class IcpStageMetric:
@@ -395,8 +398,12 @@ def preprocess_point_cloud(pcd, voxel_size: float):
 
 
 def global_registration(
-    source_down, target_down, source_fpfh, target_fpfh, voxel_size: float
-):
+    source_down,
+    target_down,
+    source_fpfh,
+    target_fpfh,
+    voxel_size: float
+) -> o3d.pipelines.registration.RegistrationResult:
     """
     Coarse global alignment via RANSAC on FPFH feature matches.
 
@@ -476,3 +483,4 @@ def refine_registration(
         )
 
     return transformation, stages
+# endregion

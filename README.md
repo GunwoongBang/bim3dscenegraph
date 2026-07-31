@@ -9,34 +9,39 @@ The project is composed of two main pipelines:
 | Module | Purpose |
 |---|---|
 | `bim2graph` | Parse IFC models (ARC/STR/MEP) and persist a semantic graph to Neo4j |
-| `sensor2graph` | Generate or load a point cloud, label it against IFC geometry, and query the BIM graph from a picked sensor point |
+| `sensor2graph` | Generate or load a point cloud, label and register it against IFC geometry, and query the BIM graph from a picked sensor point |
 
 Both pipelines are orchestrated from `main.py` and share a common `QueryManager` and `Neo4jOperations` layer.
 
 ---
 
-## Repository Structure
+## Module Structure
 
 ```
 bim3dscenegraph/
-├── main.py                     # Top-level entrypoint
-├── logger.py                   # Shared file logger
-├── bim2graph/                  # BIM → Neo4j graph pipeline
-│   ├── graph_builder.py
-│   ├── worker/                 # Spaces, walls, layers, openings, MEP extraction
-│   ├── persistence/
-│   └── README.md
-├── sensor2graph/               # Sensor → point cloud → BIM graph query
-│   ├── graph_builder.py
-│   ├── worker/                 # SDF export, PCD cleaning, segmentation, picking
-│   │   └── commander/          # ROS2/Gazebo pipeline control
-│   ├── persistence/
-│   └── README.md
+├── main.py                     # Top-level entrypoint: Neo4j driver, runs both pipelines
+├── logger.py                   # Shared file logger (phase-tagged, writes to log/project.log)
+├── bim2graph/                  # BIM -> Neo4j graph pipeline
+│   ├── graph_builder.py        # Orchestrator: bim2graph()
+│   ├── worker/                 # Buildings, storeys, spaces, walls, layers, openings, MEP extraction
+│   │   └── util/               # Geometry, wall/material, MEP shape, relationship helpers
+│   ├── persistence/            # Neo4jOperations: upserts and edge creation
+│   └── README.md               # Full breakdown of the BIM2GRAPH pipeline
+├── sensor2graph/               # Sensor -> point cloud -> BIM graph query
+│   ├── graph_builder.py        # Orchestrator: sensor2graph()
+│   ├── worker/                 # SDF export, PCD cleaning, segmentation, registration, picking
+│   │   ├── commander/          # ROS2/Gazebo pipeline control
+│   │   └── util/               # Open3D IO, RANSAC planes, ICP + metrics, mesh/SDF helpers
+│   ├── ifc2pointcloud/         # ROS2 workspace (submodule): Gazebo world, Velodyne sim, LIO-SAM
+│   ├── persistence/            # Neo4jOperations: graph reads
+│   └── README.md               # Full breakdown of the SENSOR2GRAPH pipeline
 ├── query_manager/              # Shared Cypher query loader
-│   ├── query_manager.py
-│   └── query_handler.cypher
+│   ├── query_manager.py        # QueryManager: loads named queries from the .cypher file
+│   └── query_handler.cypher    # Named Cypher statements (BIM2GRAPH + SENSOR2GRAPH sections)
+├── docs/                       # Architecture, data transformation, and evaluation notes
 ├── ifc_models/                 # Input IFC files (ARC, STR, MEP)
-└── pc_models/                  # Input/output PCD files
+├── pcd_models/                 # Input/output PCD files, label CSVs, transform YAML
+└── log/                        # Run log (project.log)
 ```
 
 ---
@@ -60,7 +65,8 @@ flowchart TB
         CLEAN["Clean PCD (floor removal)\npcd_cleaner.py"]
         SEG["RANSAC segmentation + interactive labeling\npcd_filter.py · segment_point_cloud"]
         EXC["Exclude unlabeled planes\npcd_filter.py · exclude_planes"]
-        SDF --> SIM --> CLEAN --> SEG --> EXC
+        REG["Global registration + coarse-to-fine ICP\npcd_register.py"]
+        SDF --> SIM --> CLEAN --> SEG --> EXC --> REG
     end
 
     subgraph SENSOR2GRAPH["SENSOR2GRAPH  (sensor2graph/)"]
@@ -70,7 +76,8 @@ flowchart TB
     IFC -->|ARC / STR / MEP| B2G
     B2G -->|"Nodes & Edges"| NEO4J
     IFC -->|ARC geometry| SDF
-    EXC -->|"Labeled PCD + CSV\n(ifc_global_id per point)"| S2G
+    IFC -->|"Reference cloud from OBJ meshes"| REG
+    REG -->|"Labeled PCD + CSV\n(ifc_global_id per point)"| S2G
     S2G -->|"RETRIEVE_WALL_ATTRIBUTES\n(by ifc_global_id)"| NEO4J
     NEO4J -.->|wall attributes| S2G
 ```
@@ -79,13 +86,35 @@ flowchart TB
 
 Reads ARC (+ optional STR, MEP) IFC files, extracts semantic entities and topology, and persists nodes and relationships to Neo4j.
 
+Entrypoint call:
+- `bim2graph(driver, arc_path, str_path=None, mep_path=None, logger=None)`
+
 See [bim2graph/README.md](bim2graph/README.md) for the full breakdown.
 
 ### Step 2 — SENSOR2GRAPH
 
-Takes a PCD file and the same ARC IFC model. If point cloud data is not yet available, it generates one via a Gazebo simulation using the IFC geometry, then runs LIO-SAM SLAM. The resulting cloud is cleaned, segmented by RANSAC plane detection, and interactively labeled against IFC walls. Finally, the user picks a sensor point and its `ifc_global_id` is used to query the BIM graph in Neo4j.
+Takes a PCD file and the same ARC IFC model. If point cloud data is not yet available, it generates one via a Gazebo simulation using the IFC geometry, then runs LIO-SAM SLAM. The resulting cloud is cleaned, segmented by RANSAC plane detection, interactively labeled against IFC walls, and registered to the IFC-derived reference cloud. Finally, the user picks a sensor point and its `ifc_global_id` is used to query the BIM graph in Neo4j.
+
+Per-stage quality metrics (cleaning, segmentation, labeling, registration) are reported to the log under the `VALIDATION` phase.
+
+Entrypoint call:
+- `sensor2graph(driver, pcd_path, arc_path, logger=None)`
 
 See [sensor2graph/README.md](sensor2graph/README.md) for the full breakdown.
+
+---
+
+## Data/Query Layer
+
+Cypher queries are stored in:
+- `query_manager/query_handler.cypher`
+
+Loaded dynamically by:
+- `query_manager/` (shared `QueryManager`)
+
+Executed by:
+- `bim2graph/persistence/neo4j_ops.py` (writes: reset, schema, upserts, edges)
+- `sensor2graph/persistence/neo4j_ops.py` (reads: wall attribute retrieval)
 
 ---
 
@@ -95,7 +124,7 @@ See [sensor2graph/README.md](sensor2graph/README.md) for the full breakdown.
 
 - Python 3.10+
 - Neo4j running locally (or remote)
-- `ifcopenshell`, `open3d`, `numpy`, `pandas`, `python-dotenv`, `neo4j` Python packages
+- `ifcopenshell`, `open3d`, `numpy`, `pandas`, `pyyaml`, `python-dotenv`, `neo4j` Python packages
 - ROS2 Humble + Gazebo (required only for point cloud generation step)
 
 ### Configuration
@@ -114,7 +143,7 @@ Set IFC and PCD paths in `main.py`:
 ARC_PATH = Path("ifc_models/test/test_ARC.ifc")
 STR_PATH = Path("ifc_models/test/test_STR.ifc")
 MEP_PATH = Path("ifc_models/test/test_MEP.ifc")
-PCD_PATH = Path("pc_models/cloudGlobal.pcd")
+PCD_PATH = Path("pcd_models/cloudGlobal.pcd")
 ```
 
 ### Run
@@ -126,7 +155,7 @@ python main.py
 The pipeline will:
 1. Connect to Neo4j
 2. Run BIM2GRAPH — parse IFC files and populate the graph
-3. Run SENSOR2GRAPH — process the point cloud and query the graph
+3. Prompt whether to run SENSOR2GRAPH — process the point cloud and query the graph
 4. Close the Neo4j driver
 
 Logs are written to `log/project.log`.
